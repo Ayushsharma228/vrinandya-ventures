@@ -1,0 +1,177 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { CheckCircle, XCircle, Clock, Package, ChevronDown, ChevronUp } from "lucide-react";
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  sku: string;
+  category: string | null;
+  description: string;
+  status: string;
+  adminNote: string | null;
+  createdAt: string;
+  supplier: { name: string; email: string };
+}
+
+export default function AdminProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("PENDING");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [actionNote, setActionNote] = useState<Record<string, string>>({});
+  const [processing, setProcessing] = useState<string | null>(null);
+
+  async function fetchProducts() {
+    setLoading(true);
+    const res = await fetch(`/api/admin/products?status=${filter}`);
+    const data = await res.json();
+    setProducts(data.products || []);
+    setLoading(false);
+  }
+
+  useEffect(() => { fetchProducts(); }, [filter]);
+
+  async function handleAction(productId: string, status: "APPROVED" | "REJECTED") {
+    setProcessing(productId);
+    const res = await fetch("/api/admin/products", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId, status, adminNote: actionNote[productId] || "" }),
+    });
+    if (res.ok) {
+      fetchProducts();
+      setExpanded(null);
+    }
+    setProcessing(null);
+  }
+
+  const tabs = ["PENDING", "APPROVED", "REJECTED"];
+
+  return (
+    <div className="max-w-5xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Product Approvals</h1>
+        <p className="text-sm text-gray-400 mt-0.5">Review and approve supplier product submissions</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit mb-6">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setFilter(tab)}
+            className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+              filter === tab ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="bg-white rounded-xl border border-gray-100 p-16 text-center">
+          <p className="text-gray-400">Loading...</p>
+        </div>
+      ) : products.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-100 p-16 text-center">
+          <Package className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+          <p className="text-gray-500 font-medium">No {filter.toLowerCase()} products</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {products.map((product) => (
+            <div key={product.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+              <div
+                className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50/50"
+                onClick={() => setExpanded(expanded === product.id ? null : product.id)}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                    <Package className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-800">{product.name}</p>
+                    <p className="text-xs text-gray-400">by {product.supplier.name} · SKU: {product.sku}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <p className="text-sm font-bold text-gray-700">₹{product.price.toLocaleString()}</p>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                    product.status === "APPROVED" ? "bg-green-50 text-green-700" :
+                    product.status === "REJECTED" ? "bg-red-50 text-red-700" :
+                    "bg-yellow-50 text-yellow-700"
+                  }`}>
+                    {product.status}
+                  </span>
+                  {expanded === product.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                </div>
+              </div>
+
+              {expanded === product.id && (
+                <div className="px-5 pb-5 border-t border-gray-100 pt-4">
+                  <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                    <div>
+                      <p className="text-gray-400 text-xs mb-1">Description</p>
+                      <p className="text-gray-700">{product.description}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400 text-xs">Category</span>
+                        <span className="text-gray-700 text-xs">{product.category || "—"}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400 text-xs">Supplier Email</span>
+                        <span className="text-gray-700 text-xs">{product.supplier.email}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400 text-xs">Submitted</span>
+                        <span className="text-gray-700 text-xs">{new Date(product.createdAt).toLocaleDateString("en-IN")}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {product.status === "PENDING" && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Note to Supplier (optional)</label>
+                        <input
+                          type="text"
+                          value={actionNote[product.id] || ""}
+                          onChange={(e) => setActionNote((prev) => ({ ...prev, [product.id]: e.target.value }))}
+                          placeholder="Add a note for the supplier..."
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleAction(product.id, "APPROVED")}
+                          disabled={processing === product.id}
+                          className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          {processing === product.id ? "Processing..." : "Approve"}
+                        </button>
+                        <button
+                          onClick={() => handleAction(product.id, "REJECTED")}
+                          disabled={processing === product.id}
+                          className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

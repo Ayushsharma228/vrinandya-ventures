@@ -1,0 +1,247 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  SELLER
+  SUPPLIER
+}
+
+enum Plan {
+  DROPSHIPPING
+  MARKETPLACE
+}
+
+enum ProductStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ListingStatus {
+  PENDING
+  IN_PROGRESS
+  LISTED
+  FAILED
+}
+
+enum OrderStatus {
+  NEW
+  PROCESSING
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+enum OrderSource {
+  SHOPIFY
+  AMAZON
+  EBAY
+  ETSY
+  WALMART
+  OTHER
+}
+
+enum NotificationType {
+  PRODUCT_APPROVED
+  PRODUCT_REJECTED
+  LISTING_REQUEST
+  LISTING_DONE
+  ORDER_UPDATE
+  AWB_GENERATED
+  GENERAL
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String
+  role          Role      @default(SELLER)
+  plan          Plan?
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  shopifyStore        ShopifyStore?
+  marketplaceAccounts MarketplaceAccount[]
+  orders              Order[]
+  listingRequests     ListingRequest[]
+  notifications       Notification[]
+  suppliedProducts    Product[]
+  warehouses          Warehouse[]
+  remittances         Remittance[]
+
+  @@map("users")
+}
+
+model ShopifyStore {
+  id          String   @id @default(cuid())
+  sellerId    String   @unique
+  seller      User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  storeName   String
+  storeUrl    String
+  accessToken String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("shopify_stores")
+}
+
+model MarketplaceAccount {
+  id          String      @id @default(cuid())
+  sellerId    String
+  seller      User        @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  platform    OrderSource
+  credentials Json
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([sellerId, platform])
+  @@map("marketplace_accounts")
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  supplierId  String
+  supplier    User          @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  price       Float
+  stock       Int           @default(0)
+  images      String[]
+  category    String?
+  sku         String?       @unique
+  status      ProductStatus @default(PENDING)
+  adminNote   String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  listingRequests ListingRequest[]
+  orderItems      OrderItem[]
+
+  @@map("products")
+}
+
+model ListingRequest {
+  id        String        @id @default(cuid())
+  sellerId  String
+  seller    User          @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  platform  OrderSource
+  status    ListingStatus @default(PENDING)
+  adminNote String?
+  listedUrl String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@map("listing_requests")
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  sellerId        String
+  seller          User        @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  externalOrderId String
+  source          OrderSource
+  status          OrderStatus @default(NEW)
+  customerName    String?
+  customerEmail   String?
+  customerAddress Json?
+  totalAmount     Float
+  currency        String      @default("INR")
+  awbNumber       String?
+  trackingUrl     String?
+  courier         String?
+  rawData         Json?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  items OrderItem[]
+
+  @@unique([externalOrderId, source])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  name      String
+  sku       String?
+  quantity  Int
+  price     Float
+
+  @@map("order_items")
+}
+
+enum WarehouseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum WarehousePanel {
+  PANEL_1
+  PANEL_2
+  BOTH
+}
+
+model Warehouse {
+  id            String          @id @default(cuid())
+  supplierId    String
+  supplier      User            @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  name          String
+  contactName   String
+  phone         String
+  addressLine1  String
+  addressLine2  String?
+  pincode       String
+  city          String
+  state         String
+  email         String?
+  targetPanel   WarehousePanel  @default(BOTH)
+  status        WarehouseStatus @default(PENDING)
+  adminNote     String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@map("warehouses")
+}
+
+model Remittance {
+  id          String   @id @default(cuid())
+  supplierId  String
+  supplier    User     @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  amount      Float
+  note        String?
+  orderId     String?
+  createdAt   DateTime @default(now())
+
+  @@map("remittances")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  data      Json?
+  createdAt DateTime         @default(now())
+
+  @@map("notifications")
+}
