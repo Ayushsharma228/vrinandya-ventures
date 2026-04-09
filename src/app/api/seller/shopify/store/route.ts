@@ -20,3 +20,12 @@ export async function GET() {
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
 }
+
+export async function DELETE() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "SELLER") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  await prisma.shopifyStore.deleteMany({ where: { sellerId: session.user.id } });
+  return NextResponse.json({ success: true });
+}
