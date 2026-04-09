@@ -66,6 +66,7 @@ export default function SellerOrdersPage() {
 
   async function handleRefresh() {
     setRefreshing(true);
+    await fetch("/api/seller/shopify/sync-orders", { method: "POST" });
     await fetchOrders();
     setRefreshing(false);
   }
