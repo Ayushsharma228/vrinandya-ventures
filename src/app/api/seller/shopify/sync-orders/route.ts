@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { OrderStatus } from "@prisma/client";
+import { OrderStatus, Prisma } from "@prisma/client";
 
 function mapShopifyStatus(financial: string, fulfillment: string | null): OrderStatus {
   if (financial === "refunded" || financial === "voided") return OrderStatus.CANCELLED;
@@ -41,13 +41,13 @@ export async function POST() {
   for (const so of shopifyOrders) {
     const status = mapShopifyStatus(so.financial_status, so.fulfillment_status);
 
-    const customerAddress = so.shipping_address
+    const customerAddress: Prisma.InputJsonValue | undefined = so.shipping_address
       ? {
-          address: so.shipping_address.address1,
-          city: so.shipping_address.city,
-          state: so.shipping_address.province,
-          pincode: so.shipping_address.zip,
-          phone: so.shipping_address.phone || so.customer?.phone || null,
+          address: so.shipping_address.address1 ?? "",
+          city: so.shipping_address.city ?? "",
+          state: so.shipping_address.province ?? "",
+          pincode: so.shipping_address.zip ?? "",
+          phone: so.shipping_address.phone || so.customer?.phone || "",
         }
       : undefined;
 
