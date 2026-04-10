@@ -78,8 +78,27 @@ model User {
   suppliedProducts    Product[]
   warehouses          Warehouse[]
   remittances         Remittance[]
+  walletTransactions  WalletTransaction[]
 
   @@map("users")
+}
+
+enum WalletTxType {
+  CREDIT
+  DEBIT
+}
+
+model WalletTransaction {
+  id          String       @id @default(cuid())
+  sellerId    String
+  seller      User         @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  type        WalletTxType
+  amount      Float
+  note        String?
+  orderId     String?
+  createdAt   DateTime     @default(now())
+
+  @@map("wallet_transactions")
 }
 
 model ShopifyStore {

@@ -11,44 +11,17 @@ export async function GET() {
 
   const sellerId = session.user.id;
 
-  const [orders, store] = await Promise.all([
-    prisma.order.findMany({
-      where: { sellerId },
-      select: { status: true, totalAmount: true, createdAt: true, externalOrderId: true, id: true },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.shopifyStore.findFirst({
-      where: { sellerId },
-      select: { storeUrl: true },
-    }),
-  ]);
-
-  const totalOrders = orders.length;
-  const confirmed = orders
-    .filter((o) => ["DELIVERED", "SHIPPED", "IN_TRANSIT", "PROCESSING"].includes(o.status))
-    .reduce((sum, o) => sum + o.totalAmount, 0);
-  const rto = orders
-    .filter((o) => o.status === "CANCELLED")
-    .reduce((sum, o) => sum + o.totalAmount, 0);
-  const netBalance = confirmed - rto;
-
-  return NextResponse.json({
-    totalOrders,
-    confirmed,
-    rto,
-    netBalance,
-    currentBalance: netBalance,
-    totalMargins: 0,
-    totalPenalties: 0,
-    remitted: 0,
-    storeUrl: store?.storeUrl ?? null,
-    lastUpdated: new Date().toISOString(),
-    orders: orders.map((o) => ({
-      id: o.id,
-      externalOrderId: o.externalOrderId,
-      status: o.status,
-      amount: o.totalAmount,
-      createdAt: o.createdAt,
-    })),
+  const transactions = await prisma.walletTransaction.findMany({
+    where: { sellerId },
+    orderBy: { createdAt: "desc" },
   });
+
+  const balance = transactions.reduce((acc, t) =>
+    t.type === "CREDIT" ? acc + t.amount : acc - t.amount, 0
+  );
+
+  const totalCredit = transactions.filter((t) => t.type === "CREDIT").reduce((s, t) => s + t.amount, 0);
+  const totalDebit = transactions.filter((t) => t.type === "DEBIT").reduce((s, t) => s + t.amount, 0);
+
+  return NextResponse.json({ balance, totalCredit, totalDebit, transactions });
 }
