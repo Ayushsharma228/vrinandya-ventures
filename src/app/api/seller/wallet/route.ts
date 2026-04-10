@@ -23,5 +23,24 @@ export async function GET() {
   const totalCredit = transactions.filter((t) => t.type === "CREDIT").reduce((s, t) => s + t.amount, 0);
   const totalDebit = transactions.filter((t) => t.type === "DEBIT").reduce((s, t) => s + t.amount, 0);
 
-  return NextResponse.json({ balance, totalCredit, totalDebit, transactions });
+  // Remitted orders for transparency
+  const remittedOrders = await prisma.order.findMany({
+    where: { sellerId, remittedAt: { not: null } },
+    select: {
+      id: true,
+      externalOrderId: true,
+      status: true,
+      courier: true,
+      customerName: true,
+      totalAmount: true,
+      productCost: true,
+      shippingCharge: true,
+      packingCharge: true,
+      rtoCharge: true,
+      remittedAt: true,
+    },
+    orderBy: { remittedAt: "desc" },
+  });
+
+  return NextResponse.json({ balance, totalCredit, totalDebit, transactions, remittedOrders });
 }

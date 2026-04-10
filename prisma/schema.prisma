@@ -183,6 +183,11 @@ model Order {
   trackingUrl     String?
   courier         String?
   rawData         Json?
+  productCost     Float?
+  shippingCharge  Float?
+  packingCharge   Float?
+  rtoCharge       Float?
+  remittedAt      DateTime?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
