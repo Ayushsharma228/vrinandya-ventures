@@ -205,7 +205,7 @@ export default function SellerOrdersPage() {
                     <input type="checkbox" checked={selected.size === orders.length && orders.length > 0}
                       onChange={toggleAll} className="w-4 h-4 rounded accent-blue-600" />
                   </th>
-                  {["Order #", "Name", "Email", "Phone Number", "Products", "Shipping Address", "Quantities", "Amount", "Payment", "Date", "Ship", "Cancel"].map((h) => (
+                  {["Order #", "Name", "Phone Number", "Products", "Shipping Address", "Quantities", "Amount", "Date", "Cancel"].map((h) => (
                     <th key={h} className="px-3 py-3 text-left text-xs font-semibold text-gray-500 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -229,9 +229,8 @@ export default function SellerOrdersPage() {
                           <input type="checkbox" checked={selected.has(order.id)}
                             onChange={() => toggleSelect(order.id)} className="w-4 h-4 rounded accent-blue-600" />
                         </td>
-                        <td className="px-3 py-3 font-mono text-xs text-blue-600 whitespace-nowrap">#{order.externalOrderId}</td>
+                        <td className="px-3 py-3 font-mono text-xs text-blue-600 whitespace-nowrap">{order.externalOrderId}</td>
                         <td className="px-3 py-3 text-gray-700 whitespace-nowrap">{order.customerName || "—"}</td>
-                        <td className="px-3 py-3 text-gray-500 text-xs">{order.customerEmail || "—"}</td>
                         <td className="px-3 py-3 text-gray-500 text-xs">{addr?.phone || "—"}</td>
                         <td className="px-3 py-3 max-w-[140px]">
                           {order.items.map((i, idx) => (
@@ -243,18 +242,8 @@ export default function SellerOrdersPage() {
                         </td>
                         <td className="px-3 py-3 text-center text-gray-700 font-medium">{totalQty}</td>
                         <td className="px-3 py-3 font-semibold text-gray-800 whitespace-nowrap">₹{order.totalAmount.toLocaleString()}</td>
-                        <td className="px-3 py-3">
-                          <span className={`text-xs font-semibold ${STATUS_COLOR[order.status] || "text-gray-500"}`}>
-                            {order.status}
-                          </span>
-                        </td>
                         <td className="px-3 py-3 text-xs text-gray-400 whitespace-nowrap">
                           {new Date(order.createdAt).toLocaleDateString("en-IN")}
-                        </td>
-                        <td className="px-3 py-3">
-                          <button className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap">
-                            Ship
-                          </button>
                         </td>
                         <td className="px-3 py-3">
                           <button className="px-3 py-1.5 border border-red-200 text-red-500 hover:bg-red-50 text-xs font-semibold rounded-lg transition-colors">
