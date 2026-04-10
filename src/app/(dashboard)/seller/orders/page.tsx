@@ -49,6 +49,7 @@ export default function SellerOrdersPage() {
   const [from, setFrom] = useState(formatDate(monthAgo));
   const [to, setTo] = useState(formatDate(today));
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [cancelling, setCancelling] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
     const params = new URLSearchParams({ from, to });
@@ -101,6 +102,23 @@ export default function SellerOrdersPage() {
 
   function toggleSelect(id: string) {
     setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+
+  async function handleCancel(orderId: string) {
+    if (!confirm("Cancel this order on Shopify?")) return;
+    setCancelling(orderId);
+    const res = await fetch("/api/seller/orders/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || "Failed to cancel order");
+    } else {
+      await fetchOrders();
+    }
+    setCancelling(null);
   }
 
   function toggleAll() {
@@ -246,8 +264,11 @@ export default function SellerOrdersPage() {
                           {new Date(order.createdAt).toLocaleDateString("en-IN")}
                         </td>
                         <td className="px-3 py-3">
-                          <button className="px-3 py-1.5 border border-red-200 text-red-500 hover:bg-red-50 text-xs font-semibold rounded-lg transition-colors">
-                            Cancel
+                          <button
+                            onClick={() => handleCancel(order.id)}
+                            disabled={cancelling === order.id || order.status === "CANCELLED"}
+                            className="px-3 py-1.5 border border-red-200 text-red-500 hover:bg-red-50 text-xs font-semibold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                            {cancelling === order.id ? "..." : "Cancel"}
                           </button>
                         </td>
                       </tr>
