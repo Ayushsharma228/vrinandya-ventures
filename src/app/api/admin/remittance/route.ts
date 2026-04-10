@@ -17,13 +17,11 @@ export async function GET(req: NextRequest) {
   const mode = searchParams.get("mode");
 
   if (mode === "history") {
-    // All wallet transactions for this seller, with their linked orders
     const transactions = await prisma.walletTransaction.findMany({
       where: { sellerId },
       orderBy: { createdAt: "desc" },
     });
 
-    // For each transaction, fetch orders that were remitted with it
     const history = await Promise.all(
       transactions.map(async (tx) => {
         const orders = await prisma.order.findMany({
@@ -65,7 +63,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ orders });
 }
 
-// POST: save charges + create remittance wallet transaction
+// POST: create remittance (upcoming — not yet paid)
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -83,7 +81,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No orders selected" }, { status: 400 });
   }
 
-  // Calculate totals first
   let totalRemittance = 0;
   const now = new Date();
 
@@ -99,10 +96,10 @@ export async function POST(req: NextRequest) {
     totalRemittance += net;
   }
 
-  // Create wallet transaction first to get its ID
   const txType = totalRemittance >= 0 ? "CREDIT" : "DEBIT";
   const txNote = note || `Remittance for ${includedOrders.length} order(s)`;
 
+  // Create transaction with NO bankTxId — marks it as upcoming/unpaid
   const tx = await prisma.walletTransaction.create({
     data: {
       sellerId,
@@ -110,23 +107,18 @@ export async function POST(req: NextRequest) {
       amount: Math.abs(totalRemittance),
       note: txNote,
       remittanceDate: remittanceDate ? new Date(remittanceDate) : null,
+      bankTxId: null,
     },
   });
 
-  // Save charges + link orders to this transaction
   for (const o of includedOrders) {
-    const productCost = parseFloat(o.productCost) || 0;
-    const shippingCharge = parseFloat(o.shippingCharge) || 0;
-    const packingCharge = parseFloat(o.packingCharge) || 0;
-    const rtoCharge = parseFloat(o.rtoCharge) || 0;
-
     await prisma.order.update({
       where: { id: o.id },
       data: {
-        productCost,
-        shippingCharge,
-        packingCharge,
-        rtoCharge,
+        productCost: parseFloat(o.productCost) || 0,
+        shippingCharge: parseFloat(o.shippingCharge) || 0,
+        packingCharge: parseFloat(o.packingCharge) || 0,
+        rtoCharge: parseFloat(o.rtoCharge) || 0,
         remittedAt: now,
         remittanceTxId: tx.id,
       },
@@ -134,4 +126,24 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ success: true, transaction: tx, totalRemittance });
+}
+
+// PATCH: mark remittance as paid with bank transaction ID
+export async function PATCH(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { txId, bankTxId } = await req.json();
+  if (!txId || !bankTxId?.trim()) {
+    return NextResponse.json({ error: "txId and bankTxId required" }, { status: 400 });
+  }
+
+  const tx = await prisma.walletTransaction.update({
+    where: { id: txId },
+    data: { bankTxId: bankTxId.trim() },
+  });
+
+  return NextResponse.json({ success: true, transaction: tx });
 }

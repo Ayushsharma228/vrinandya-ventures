@@ -1,54 +1,35 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { IndianRupee, CheckSquare, Square, Calculator, Send, ChevronDown, ChevronRight, History } from "lucide-react";
+import {
+  IndianRupee, CheckSquare, Square, Calculator, Send,
+  ChevronDown, ChevronRight, History, Clock, CheckCircle2, BadgeCheck,
+} from "lucide-react";
 
 interface Seller { id: string; name: string | null; email: string; }
 
 interface Order {
-  id: string;
-  externalOrderId: string;
-  status: string;
-  courier: string | null;
-  customerName: string | null;
-  totalAmount: number;
-  productCost: number | null;
-  shippingCharge: number | null;
-  packingCharge: number | null;
-  rtoCharge: number | null;
-  createdAt: string;
-  items: { name: string; quantity: number }[];
+  id: string; externalOrderId: string; status: string; courier: string | null;
+  customerName: string | null; totalAmount: number; productCost: number | null;
+  shippingCharge: number | null; packingCharge: number | null; rtoCharge: number | null;
+  createdAt: string; items: { name: string; quantity: number }[];
 }
 
 interface ChargeRow {
-  orderId: string;
-  productCost: string;
-  shippingCharge: string;
-  packingCharge: string;
-  rtoCharge: string;
-  include: boolean;
+  orderId: string; productCost: string; shippingCharge: string;
+  packingCharge: string; rtoCharge: string; include: boolean;
 }
 
 interface HistoryOrder {
-  id: string;
-  externalOrderId: string;
-  customerName: string | null;
-  courier: string | null;
-  totalAmount: number;
-  productCost: number | null;
-  shippingCharge: number | null;
-  packingCharge: number | null;
-  rtoCharge: number | null;
+  id: string; externalOrderId: string; customerName: string | null; courier: string | null;
+  totalAmount: number; productCost: number | null; shippingCharge: number | null;
+  packingCharge: number | null; rtoCharge: number | null;
 }
 
 interface HistoryEntry {
   transaction: {
-    id: string;
-    type: string;
-    amount: number;
-    note: string | null;
-    remittanceDate: string | null;
-    createdAt: string;
+    id: string; type: string; amount: number; note: string | null;
+    remittanceDate: string | null; bankTxId: string | null; createdAt: string;
   };
   orders: HistoryOrder[];
 }
@@ -56,12 +37,65 @@ interface HistoryEntry {
 function fmt(n: number) { return `₹${n.toFixed(2)}`; }
 
 function netForHistoryOrder(o: HistoryOrder) {
-  const isRTO = o.courier?.includes("RTO") || false;
-  const pc = o.productCost ?? 0;
-  const sc = o.shippingCharge ?? 0;
-  const pac = o.packingCharge ?? 0;
-  const rtc = o.rtoCharge ?? 0;
-  return isRTO ? -(pc + rtc + pac) : o.totalAmount - pc - sc - pac;
+  const rto = o.courier?.includes("RTO") || false;
+  const pc = o.productCost ?? 0; const sc = o.shippingCharge ?? 0;
+  const pac = o.packingCharge ?? 0; const rtc = o.rtoCharge ?? 0;
+  return rto ? -(pc + rtc + pac) : o.totalAmount - pc - sc - pac;
+}
+
+function OrderBreakdownTable({ orders }: { orders: HistoryOrder[] }) {
+  return (
+    <div className="overflow-x-auto border-t border-gray-100">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="bg-gray-50/60">
+            <th className="px-4 py-2 text-left text-gray-500">Order #</th>
+            <th className="px-4 py-2 text-left text-gray-500">Type</th>
+            <th className="px-4 py-2 text-left text-gray-500">Customer</th>
+            <th className="px-4 py-2 text-right text-gray-500">Order Amt</th>
+            <th className="px-4 py-2 text-right text-purple-600">Product</th>
+            <th className="px-4 py-2 text-right text-blue-600">Shipping</th>
+            <th className="px-4 py-2 text-right text-orange-500">Packing</th>
+            <th className="px-4 py-2 text-right text-red-500">RTO</th>
+            <th className="px-4 py-2 text-right text-green-600 font-semibold">Net</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-50">
+          {orders.map((o) => {
+            const rto = o.courier?.includes("RTO") || false;
+            const net = netForHistoryOrder(o);
+            return (
+              <tr key={o.id} className="hover:bg-gray-50/40">
+                <td className="px-4 py-2 font-mono text-blue-600">{o.externalOrderId}</td>
+                <td className="px-4 py-2">
+                  <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${rto ? "bg-orange-50 text-orange-600" : "bg-green-50 text-green-600"}`}>
+                    {rto ? "RTO" : "Delivered"}
+                  </span>
+                </td>
+                <td className="px-4 py-2 text-gray-600">{o.customerName || "—"}</td>
+                <td className="px-4 py-2 text-right font-semibold text-gray-700">{rto ? "—" : fmt(o.totalAmount)}</td>
+                <td className="px-4 py-2 text-right text-purple-700">{o.productCost != null ? fmt(o.productCost) : "—"}</td>
+                <td className="px-4 py-2 text-right text-blue-700">{o.shippingCharge != null ? fmt(o.shippingCharge) : "—"}</td>
+                <td className="px-4 py-2 text-right text-orange-600">{o.packingCharge != null ? fmt(o.packingCharge) : "—"}</td>
+                <td className="px-4 py-2 text-right text-red-600">{o.rtoCharge != null ? fmt(o.rtoCharge) : "—"}</td>
+                <td className="px-4 py-2 text-right font-bold">
+                  <span className={net >= 0 ? "text-green-600" : "text-red-500"}>{fmt(net)}</span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr className="bg-gray-50 border-t border-gray-200">
+            <td colSpan={8} className="px-4 py-2 text-right font-semibold text-gray-600 text-xs">Total Net</td>
+            <td className="px-4 py-2 text-right font-bold text-sm">
+              {(() => { const t = orders.reduce((s, o) => s + netForHistoryOrder(o), 0); return <span className={t >= 0 ? "text-green-600" : "text-red-500"}>{fmt(t)}</span>; })()}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
 }
 
 export default function AdminRemittancePage() {
@@ -69,7 +103,7 @@ export default function AdminRemittancePage() {
   const [sellerId, setSellerId] = useState("");
   const [tab, setTab] = useState<"pending" | "history">("pending");
 
-  // Pending state
+  // Pending
   const [orders, setOrders] = useState<Order[]>([]);
   const [charges, setCharges] = useState<Record<string, ChargeRow>>({});
   const [loading, setLoading] = useState(false);
@@ -78,10 +112,14 @@ export default function AdminRemittancePage() {
   const [note, setNote] = useState("");
   const [success, setSuccess] = useState<{ total: number } | null>(null);
 
-  // History state
+  // History
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  // Mark as paid state
+  const [markingPaid, setMarkingPaid] = useState<string | null>(null);
+  const [bankTxInput, setBankTxInput] = useState<Record<string, string>>({});
+  const [savingPaid, setSavingPaid] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/sellers").then((r) => r.json()).then((d) => setSellers(d.sellers ?? []));
@@ -89,25 +127,16 @@ export default function AdminRemittancePage() {
 
   const fetchPending = useCallback(async () => {
     if (!sellerId) return;
-    setLoading(true);
-    setSuccess(null);
+    setLoading(true); setSuccess(null);
     const res = await fetch(`/api/admin/remittance?sellerId=${sellerId}`);
     const data = await res.json();
     const fetched: Order[] = data.orders ?? [];
     setOrders(fetched);
     const rows: Record<string, ChargeRow> = {};
     fetched.forEach((o) => {
-      rows[o.id] = {
-        orderId: o.id,
-        productCost: o.productCost?.toString() ?? "",
-        shippingCharge: o.shippingCharge?.toString() ?? "",
-        packingCharge: o.packingCharge?.toString() ?? "",
-        rtoCharge: o.rtoCharge?.toString() ?? "",
-        include: true,
-      };
+      rows[o.id] = { orderId: o.id, productCost: o.productCost?.toString() ?? "", shippingCharge: o.shippingCharge?.toString() ?? "", packingCharge: o.packingCharge?.toString() ?? "", rtoCharge: o.rtoCharge?.toString() ?? "", include: true };
     });
-    setCharges(rows);
-    setLoading(false);
+    setCharges(rows); setLoading(false);
   }, [sellerId]);
 
   const fetchHistory = useCallback(async () => {
@@ -115,30 +144,23 @@ export default function AdminRemittancePage() {
     setHistoryLoading(true);
     const res = await fetch(`/api/admin/remittance?sellerId=${sellerId}&mode=history`);
     const data = await res.json();
-    setHistory(data.history ?? []);
-    setHistoryLoading(false);
+    setHistory(data.history ?? []); setHistoryLoading(false);
   }, [sellerId]);
 
-  useEffect(() => {
-    if (!sellerId) return;
-    fetchPending();
-    fetchHistory();
-  }, [sellerId, fetchPending, fetchHistory]);
+  useEffect(() => { if (!sellerId) return; fetchPending(); fetchHistory(); }, [sellerId, fetchPending, fetchHistory]);
 
-  function isRTO(order: Order) { return order.courier?.includes("RTO") || false; }
+  function isRTO(o: Order) { return o.courier?.includes("RTO") || false; }
 
   function netForOrder(order: Order) {
     const row = charges[order.id];
     if (!row || !row.include) return null;
-    const pc = parseFloat(row.productCost) || 0;
-    const sc = parseFloat(row.shippingCharge) || 0;
-    const pac = parseFloat(row.packingCharge) || 0;
-    const rtc = parseFloat(row.rtoCharge) || 0;
+    const pc = parseFloat(row.productCost) || 0; const sc = parseFloat(row.shippingCharge) || 0;
+    const pac = parseFloat(row.packingCharge) || 0; const rtc = parseFloat(row.rtoCharge) || 0;
     return isRTO(order) ? -(pc + rtc + pac) : order.totalAmount - pc - sc - pac;
   }
 
   const selectedOrders = orders.filter((o) => charges[o.id]?.include);
-  const totalNet = selectedOrders.reduce((sum, o) => sum + (netForOrder(o) ?? 0), 0);
+  const totalNet = selectedOrders.reduce((s, o) => s + (netForOrder(o) ?? 0), 0);
   const totalOrderAmt = selectedOrders.filter((o) => !isRTO(o)).reduce((s, o) => s + o.totalAmount, 0);
   const totalProductCost = selectedOrders.reduce((s, o) => s + (parseFloat(charges[o.id]?.productCost) || 0), 0);
   const totalShipping = selectedOrders.filter((o) => !isRTO(o)).reduce((s, o) => s + (parseFloat(charges[o.id]?.shippingCharge) || 0), 0);
@@ -149,51 +171,98 @@ export default function AdminRemittancePage() {
   function setCharge(orderId: string, field: keyof ChargeRow, value: string | boolean) {
     setCharges((p) => ({ ...p, [orderId]: { ...p[orderId], [field]: value } }));
   }
-
   function toggleAll() {
-    setCharges((p) => {
-      const next = { ...p };
-      orders.forEach((o) => { next[o.id] = { ...next[o.id], include: !allSelected }; });
-      return next;
-    });
+    setCharges((p) => { const n = { ...p }; orders.forEach((o) => { n[o.id] = { ...n[o.id], include: !allSelected }; }); return n; });
   }
 
   async function handleSubmit() {
-    if (!sellerId || selectedOrders.length === 0) return;
-    if (!remittanceDate) return alert("Please set the remittance date");
+    if (!sellerId || selectedOrders.length === 0 || !remittanceDate) return alert("Set remittance date");
     setSubmitting(true);
-
     const payload = {
       sellerId, remittanceDate, note,
-      orders: orders.map((o) => ({
-        id: o.id,
-        orderAmount: o.totalAmount,
-        isRTO: isRTO(o),
-        include: charges[o.id]?.include ?? false,
-        productCost: charges[o.id]?.productCost ?? "0",
-        shippingCharge: charges[o.id]?.shippingCharge ?? "0",
-        packingCharge: charges[o.id]?.packingCharge ?? "0",
-        rtoCharge: charges[o.id]?.rtoCharge ?? "0",
-      })),
+      orders: orders.map((o) => ({ id: o.id, orderAmount: o.totalAmount, isRTO: isRTO(o), include: charges[o.id]?.include ?? false, productCost: charges[o.id]?.productCost ?? "0", shippingCharge: charges[o.id]?.shippingCharge ?? "0", packingCharge: charges[o.id]?.packingCharge ?? "0", rtoCharge: charges[o.id]?.rtoCharge ?? "0" })),
     };
-
-    const res = await fetch("/api/admin/remittance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
+    const res = await fetch("/api/admin/remittance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     const data = await res.json();
-    if (res.ok) {
-      setSuccess({ total: data.totalRemittance });
-      setNote("");
-      setRemittanceDate("");
-      await fetchPending();
-      await fetchHistory();
-    } else {
-      alert(data.error || "Failed to create remittance");
-    }
+    if (res.ok) { setSuccess({ total: data.totalRemittance }); setNote(""); setRemittanceDate(""); await fetchPending(); await fetchHistory(); }
+    else alert(data.error || "Failed");
     setSubmitting(false);
+  }
+
+  async function handleMarkPaid(txId: string) {
+    const bankTxId = bankTxInput[txId]?.trim();
+    if (!bankTxId) return alert("Enter bank/UPI transaction ID");
+    setSavingPaid(txId);
+    const res = await fetch("/api/admin/remittance", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ txId, bankTxId }) });
+    if (res.ok) { setMarkingPaid(null); setBankTxInput((p) => { const n = { ...p }; delete n[txId]; return n; }); await fetchHistory(); }
+    else alert("Failed to mark as paid");
+    setSavingPaid(null);
+  }
+
+  // Split history into upcoming and completed
+  const upcomingHistory = history.filter((e) => e.transaction.bankTxId === null && e.transaction.remittanceDate !== null);
+  const completedHistory = history.filter((e) => e.transaction.bankTxId !== null);
+  const otherHistory = history.filter((e) => e.transaction.bankTxId === null && e.transaction.remittanceDate === null);
+
+  function HistoryCard({ entry, showMarkPaid }: { entry: HistoryEntry; showMarkPaid: boolean }) {
+    const isOpen = expanded === entry.transaction.id;
+    const hasOrders = entry.orders.length > 0;
+    const net = entry.transaction.type === "CREDIT" ? entry.transaction.amount : -entry.transaction.amount;
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <button onClick={() => setExpanded(isOpen ? null : entry.transaction.id)}
+          className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left">
+          <div className="flex items-center gap-3">
+            {hasOrders ? (isOpen ? <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />) : <span className="w-4" />}
+            <div>
+              <p className="text-sm font-semibold text-gray-900">{entry.transaction.note || "Remittance"}</p>
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+                <span className="text-xs text-gray-400">Created: {new Date(entry.transaction.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                {entry.transaction.remittanceDate && (
+                  <span className="text-xs text-blue-500">Expected: {new Date(entry.transaction.remittanceDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                )}
+                {entry.transaction.bankTxId && (
+                  <span className="text-xs text-green-600 font-medium font-mono">Tx ID: {entry.transaction.bankTxId}</span>
+                )}
+                {hasOrders && <span className="text-xs text-gray-400">{entry.orders.length} order(s)</span>}
+              </div>
+            </div>
+          </div>
+          <p className={`text-lg font-bold flex-shrink-0 ml-4 ${net >= 0 ? "text-green-600" : "text-red-500"}`}>
+            {net >= 0 ? "+" : ""}{fmt(net)}
+          </p>
+        </button>
+
+        {/* Mark as paid inline */}
+        {showMarkPaid && (
+          <div className="border-t border-gray-100 px-5 py-3 bg-yellow-50/50">
+            {markingPaid === entry.transaction.id ? (
+              <div className="flex items-center gap-2">
+                <input type="text" placeholder="Enter bank / UPI transaction ID"
+                  value={bankTxInput[entry.transaction.id] ?? ""}
+                  onChange={(e) => setBankTxInput((p) => ({ ...p, [entry.transaction.id]: e.target.value }))}
+                  className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500 font-mono" />
+                <button onClick={() => handleMarkPaid(entry.transaction.id)} disabled={savingPaid === entry.transaction.id}
+                  className="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg disabled:opacity-50 flex items-center gap-1">
+                  <BadgeCheck className="w-3.5 h-3.5" /> {savingPaid === entry.transaction.id ? "Saving..." : "Confirm Paid"}
+                </button>
+                <button onClick={() => setMarkingPaid(null)} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700">Cancel</button>
+              </div>
+            ) : (
+              <button onClick={() => setMarkingPaid(entry.transaction.id)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-green-700 hover:text-green-900">
+                <CheckCircle2 className="w-4 h-4" /> Mark as Paid — attach bank/UPI transaction ID
+              </button>
+            )}
+          </div>
+        )}
+
+        {isOpen && hasOrders && <OrderBreakdownTable orders={entry.orders} />}
+        {isOpen && !hasOrders && (
+          <div className="border-t border-gray-100 px-5 py-3 text-xs text-gray-400">Manual wallet adjustment — no order breakdown available</div>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -203,7 +272,6 @@ export default function AdminRemittancePage() {
         <p className="text-sm text-gray-500 mt-0.5">Calculate and generate remittance for sellers</p>
       </div>
 
-      {/* Seller select */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4">
         <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Select Seller</label>
         <select value={sellerId} onChange={(e) => { setSellerId(e.target.value); setTab("pending"); }}
@@ -213,14 +281,10 @@ export default function AdminRemittancePage() {
         </select>
         {sellerId && (
           <div className="flex border border-gray-200 rounded-lg overflow-hidden text-sm">
-            <button onClick={() => setTab("pending")}
-              className={`px-4 py-2 transition-colors ${tab === "pending" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-50"}`}>
-              Pending
-            </button>
-            <button onClick={() => setTab("history")}
-              className={`px-4 py-2 border-l border-gray-200 flex items-center gap-1.5 transition-colors ${tab === "history" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-50"}`}>
-              <History className="w-3.5 h-3.5" />
-              History
+            <button onClick={() => setTab("pending")} className={`px-4 py-2 transition-colors ${tab === "pending" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-50"}`}>Pending</button>
+            <button onClick={() => setTab("history")} className={`px-4 py-2 border-l border-gray-200 flex items-center gap-1.5 transition-colors ${tab === "history" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-50"}`}>
+              <History className="w-3.5 h-3.5" /> History
+              {upcomingHistory.length > 0 && <span className="bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">{upcomingHistory.length}</span>}
             </button>
           </div>
         )}
@@ -228,142 +292,63 @@ export default function AdminRemittancePage() {
 
       {success && (
         <div className={`rounded-xl p-4 text-sm font-semibold border ${success.total >= 0 ? "bg-green-50 border-green-200 text-green-700" : "bg-red-50 border-red-200 text-red-700"}`}>
-          Remittance created! Net {fmt(Math.abs(success.total))} {success.total >= 0 ? "credited" : "debited"} to seller wallet.
+          Remittance scheduled! {fmt(Math.abs(success.total))} will be {success.total >= 0 ? "credited" : "debited"} once you mark it as paid.
         </div>
       )}
 
-      {/* ── HISTORY TAB ── */}
+      {/* HISTORY TAB */}
       {sellerId && tab === "history" && (
         historyLoading ? (
-          <div className="py-12 text-center text-gray-400 text-sm">Loading history...</div>
+          <div className="py-12 text-center text-gray-400 text-sm">Loading...</div>
         ) : history.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-xl p-12 text-center text-gray-400 text-sm">
-            No remittance history for this seller yet
-          </div>
+          <div className="bg-white border border-gray-200 rounded-xl p-12 text-center text-gray-400 text-sm">No remittance history yet</div>
         ) : (
-          <div className="space-y-3">
-            {history.map((entry) => {
-              const isOpen = expanded === entry.transaction.id;
-              const hasOrders = entry.orders.length > 0;
-              const entryNet = entry.transaction.type === "CREDIT" ? entry.transaction.amount : -entry.transaction.amount;
-              return (
-                <div key={entry.transaction.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                  {/* Header row */}
-                  <button
-                    onClick={() => setExpanded(isOpen ? null : entry.transaction.id)}
-                    className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-4">
-                      {hasOrders
-                        ? (isOpen ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />)
-                        : <span className="w-4" />}
-                      <div className="text-left">
-                        <p className="text-sm font-semibold text-gray-900">
-                          {entry.transaction.note || "Remittance"}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          Created: {new Date(entry.transaction.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                          {entry.transaction.remittanceDate && (
-                            <> · Remittance date: {new Date(entry.transaction.remittanceDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</>
-                          )}
-                        </p>
-                        {hasOrders && (
-                          <p className="text-xs text-gray-400">{entry.orders.length} order(s)</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className={`text-lg font-bold ${entryNet >= 0 ? "text-green-600" : "text-red-500"}`}>
-                        {entryNet >= 0 ? "+" : ""}{fmt(entryNet)}
-                      </p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${entry.transaction.type === "CREDIT" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}>
-                        {entry.transaction.type}
-                      </span>
-                    </div>
-                  </button>
-
-                  {/* Expanded order breakdown */}
-                  {isOpen && hasOrders && (
-                    <div className="border-t border-gray-100">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-xs">
-                          <thead>
-                            <tr className="bg-gray-50/60 border-b border-gray-100">
-                              <th className="px-4 py-2 text-left text-gray-500">Order #</th>
-                              <th className="px-4 py-2 text-left text-gray-500">Type</th>
-                              <th className="px-4 py-2 text-left text-gray-500">Customer</th>
-                              <th className="px-4 py-2 text-right text-gray-500">Order Amt</th>
-                              <th className="px-4 py-2 text-right text-purple-600">Product</th>
-                              <th className="px-4 py-2 text-right text-blue-600">Shipping</th>
-                              <th className="px-4 py-2 text-right text-orange-500">Packing</th>
-                              <th className="px-4 py-2 text-right text-red-500">RTO</th>
-                              <th className="px-4 py-2 text-right text-green-600">Net</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-50">
-                            {entry.orders.map((o) => {
-                              const rto = o.courier?.includes("RTO") || false;
-                              const net = netForHistoryOrder(o);
-                              return (
-                                <tr key={o.id} className="hover:bg-gray-50/50">
-                                  <td className="px-4 py-2 font-mono text-blue-600">{o.externalOrderId}</td>
-                                  <td className="px-4 py-2">
-                                    <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${rto ? "bg-orange-50 text-orange-600" : "bg-green-50 text-green-600"}`}>
-                                      {rto ? "RTO" : "Delivered"}
-                                    </span>
-                                  </td>
-                                  <td className="px-4 py-2 text-gray-600">{o.customerName || "—"}</td>
-                                  <td className="px-4 py-2 text-right font-semibold text-gray-700">
-                                    {rto ? <span className="text-gray-400">—</span> : fmt(o.totalAmount)}
-                                  </td>
-                                  <td className="px-4 py-2 text-right text-purple-700">{o.productCost != null ? fmt(o.productCost) : "—"}</td>
-                                  <td className="px-4 py-2 text-right text-blue-700">{o.shippingCharge != null ? fmt(o.shippingCharge) : "—"}</td>
-                                  <td className="px-4 py-2 text-right text-orange-600">{o.packingCharge != null ? fmt(o.packingCharge) : "—"}</td>
-                                  <td className="px-4 py-2 text-right text-red-600">{o.rtoCharge != null ? fmt(o.rtoCharge) : "—"}</td>
-                                  <td className="px-4 py-2 text-right font-bold">
-                                    <span className={net >= 0 ? "text-green-600" : "text-red-500"}>{fmt(net)}</span>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                          <tfoot>
-                            <tr className="bg-gray-50 border-t border-gray-200">
-                              <td colSpan={8} className="px-4 py-2 text-right font-semibold text-gray-600">Total Net</td>
-                              <td className="px-4 py-2 text-right font-bold text-sm">
-                                <span className={entryNet >= 0 ? "text-green-600" : "text-red-500"}>{fmt(entryNet)}</span>
-                              </td>
-                            </tr>
-                          </tfoot>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Manual transaction (no linked orders) */}
-                  {isOpen && !hasOrders && (
-                    <div className="border-t border-gray-100 px-5 py-3 text-xs text-gray-400">
-                      Manual wallet adjustment — no order breakdown available
-                    </div>
-                  )}
+          <div className="space-y-6">
+            {/* Upcoming */}
+            {upcomingHistory.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-yellow-500" />
+                  <h2 className="font-semibold text-gray-800">Upcoming Remittances ({upcomingHistory.length})</h2>
+                  <span className="text-xs text-gray-400">— scheduled but not yet paid</span>
                 </div>
-              );
-            })}
+                {upcomingHistory.map((e) => <HistoryCard key={e.transaction.id} entry={e} showMarkPaid={true} />)}
+              </div>
+            )}
+
+            {/* Completed */}
+            {completedHistory.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+                  <h2 className="font-semibold text-gray-800">Completed Remittances ({completedHistory.length})</h2>
+                  <span className="text-xs text-gray-400">— paid with transaction ID</span>
+                </div>
+                {completedHistory.map((e) => <HistoryCard key={e.transaction.id} entry={e} showMarkPaid={false} />)}
+              </div>
+            )}
+
+            {/* Old manual entries */}
+            {otherHistory.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <IndianRupee className="w-4 h-4 text-gray-400" />
+                  <h2 className="font-semibold text-gray-700">Manual Adjustments</h2>
+                </div>
+                {otherHistory.map((e) => <HistoryCard key={e.transaction.id} entry={e} showMarkPaid={false} />)}
+              </div>
+            )}
           </div>
         )
       )}
 
-      {/* ── PENDING TAB ── */}
+      {/* PENDING TAB */}
       {sellerId && tab === "pending" && (
-        <>
-          {loading ? (
-            <div className="py-12 text-center text-gray-400 text-sm">Loading orders...</div>
-          ) : orders.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded-xl p-12 text-center text-gray-400 text-sm">
-              No pending orders to remit for this seller
-            </div>
+        loading ? <div className="py-12 text-center text-gray-400 text-sm">Loading orders...</div>
+          : orders.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-xl p-12 text-center text-gray-400 text-sm">No pending orders to remit</div>
           ) : (
             <>
-              {/* Orders Table */}
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -375,7 +360,6 @@ export default function AdminRemittancePage() {
                     {allSelected ? "Deselect All" : "Select All"}
                   </button>
                 </div>
-
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -394,9 +378,7 @@ export default function AdminRemittancePage() {
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {orders.map((order) => {
-                        const row = charges[order.id];
-                        const rto = isRTO(order);
-                        const net = netForOrder(order);
+                        const row = charges[order.id]; const rto = isRTO(order); const net = netForOrder(order);
                         return (
                           <tr key={order.id} className={`hover:bg-gray-50/50 ${!row?.include ? "opacity-40" : ""}`}>
                             <td className="px-3 py-2 text-center">
@@ -406,39 +388,16 @@ export default function AdminRemittancePage() {
                             </td>
                             <td className="px-3 py-2 font-mono text-xs text-blue-600 whitespace-nowrap">{order.externalOrderId}</td>
                             <td className="px-3 py-2">
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${rto ? "bg-orange-50 text-orange-600" : "bg-green-50 text-green-600"}`}>
-                                {rto ? "RTO" : "Delivered"}
-                              </span>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${rto ? "bg-orange-50 text-orange-600" : "bg-green-50 text-green-600"}`}>{rto ? "RTO" : "Delivered"}</span>
                             </td>
                             <td className="px-3 py-2 text-xs text-gray-600 whitespace-nowrap">{order.customerName || "—"}</td>
-                            <td className="px-3 py-2 text-right font-semibold text-gray-800 whitespace-nowrap">
-                              {rto ? <span className="text-gray-400 text-xs">N/A</span> : fmt(order.totalAmount)}
-                            </td>
-                            <td className="px-3 py-2">
-                              <input type="number" min="0" placeholder="0" value={row?.productCost ?? ""}
-                                onChange={(e) => setCharge(order.id, "productCost", e.target.value)}
-                                className="w-20 text-right px-2 py-1 text-xs border border-purple-200 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-400" />
-                            </td>
-                            <td className="px-3 py-2">
-                              <input type="number" min="0" placeholder="0" value={row?.shippingCharge ?? ""}
-                                onChange={(e) => setCharge(order.id, "shippingCharge", e.target.value)}
-                                disabled={rto}
-                                className="w-20 text-right px-2 py-1 text-xs border border-blue-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:bg-gray-50 disabled:text-gray-400" />
-                            </td>
-                            <td className="px-3 py-2">
-                              <input type="number" min="0" placeholder="0" value={row?.packingCharge ?? ""}
-                                onChange={(e) => setCharge(order.id, "packingCharge", e.target.value)}
-                                className="w-20 text-right px-2 py-1 text-xs border border-orange-200 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-400" />
-                            </td>
-                            <td className="px-3 py-2">
-                              <input type="number" min="0" placeholder="0" value={row?.rtoCharge ?? ""}
-                                onChange={(e) => setCharge(order.id, "rtoCharge", e.target.value)}
-                                disabled={!rto}
-                                className="w-20 text-right px-2 py-1 text-xs border border-red-200 rounded-md focus:outline-none focus:ring-1 focus:ring-red-400 disabled:bg-gray-50 disabled:text-gray-400" />
-                            </td>
+                            <td className="px-3 py-2 text-right font-semibold text-gray-800 whitespace-nowrap">{rto ? <span className="text-gray-400 text-xs">N/A</span> : fmt(order.totalAmount)}</td>
+                            <td className="px-3 py-2"><input type="number" min="0" placeholder="0" value={row?.productCost ?? ""} onChange={(e) => setCharge(order.id, "productCost", e.target.value)} className="w-20 text-right px-2 py-1 text-xs border border-purple-200 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-400" /></td>
+                            <td className="px-3 py-2"><input type="number" min="0" placeholder="0" value={row?.shippingCharge ?? ""} onChange={(e) => setCharge(order.id, "shippingCharge", e.target.value)} disabled={rto} className="w-20 text-right px-2 py-1 text-xs border border-blue-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:bg-gray-50 disabled:text-gray-400" /></td>
+                            <td className="px-3 py-2"><input type="number" min="0" placeholder="0" value={row?.packingCharge ?? ""} onChange={(e) => setCharge(order.id, "packingCharge", e.target.value)} className="w-20 text-right px-2 py-1 text-xs border border-orange-200 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-400" /></td>
+                            <td className="px-3 py-2"><input type="number" min="0" placeholder="0" value={row?.rtoCharge ?? ""} onChange={(e) => setCharge(order.id, "rtoCharge", e.target.value)} disabled={!rto} className="w-20 text-right px-2 py-1 text-xs border border-red-200 rounded-md focus:outline-none focus:ring-1 focus:ring-red-400 disabled:bg-gray-50 disabled:text-gray-400" /></td>
                             <td className="px-3 py-2 text-right font-bold whitespace-nowrap">
-                              {net === null ? <span className="text-gray-300 text-xs">—</span>
-                                : <span className={net >= 0 ? "text-green-600" : "text-red-500"}>{fmt(net)}</span>}
+                              {net === null ? <span className="text-gray-300 text-xs">—</span> : <span className={net >= 0 ? "text-green-600" : "text-red-500"}>{fmt(net)}</span>}
                             </td>
                           </tr>
                         );
@@ -448,60 +407,27 @@ export default function AdminRemittancePage() {
                 </div>
               </div>
 
-              {/* Summary */}
               <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-                <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                  <IndianRupee className="w-4 h-4 text-gray-500" />
-                  Remittance Summary ({selectedOrders.length} orders selected)
-                </h2>
+                <h2 className="font-semibold text-gray-900 flex items-center gap-2"><IndianRupee className="w-4 h-4" />Remittance Summary ({selectedOrders.length} selected)</h2>
                 <div className="grid grid-cols-3 gap-3 text-sm">
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs text-gray-500">Total Order Amount</p>
-                    <p className="font-bold text-gray-800 mt-0.5">{fmt(totalOrderAmt)}</p>
-                  </div>
-                  <div className="bg-purple-50 rounded-lg p-3">
-                    <p className="text-xs text-purple-600">Total Product Cost</p>
-                    <p className="font-bold text-purple-700 mt-0.5">- {fmt(totalProductCost)}</p>
-                  </div>
-                  <div className="bg-blue-50 rounded-lg p-3">
-                    <p className="text-xs text-blue-600">Total Shipping</p>
-                    <p className="font-bold text-blue-700 mt-0.5">- {fmt(totalShipping)}</p>
-                  </div>
-                  <div className="bg-orange-50 rounded-lg p-3">
-                    <p className="text-xs text-orange-500">Total Packing</p>
-                    <p className="font-bold text-orange-600 mt-0.5">- {fmt(totalPacking)}</p>
-                  </div>
-                  <div className="bg-red-50 rounded-lg p-3">
-                    <p className="text-xs text-red-500">Total RTO Charges</p>
-                    <p className="font-bold text-red-600 mt-0.5">- {fmt(totalRTO)}</p>
-                  </div>
-                  <div className={`rounded-lg p-3 ${totalNet >= 0 ? "bg-green-50" : "bg-red-50"}`}>
-                    <p className={`text-xs font-semibold ${totalNet >= 0 ? "text-green-600" : "text-red-500"}`}>Net Remittance</p>
-                    <p className={`text-xl font-bold mt-0.5 ${totalNet >= 0 ? "text-green-700" : "text-red-600"}`}>{fmt(totalNet)}</p>
-                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-500">Order Amount</p><p className="font-bold text-gray-800 mt-0.5">{fmt(totalOrderAmt)}</p></div>
+                  <div className="bg-purple-50 rounded-lg p-3"><p className="text-xs text-purple-600">Product Cost</p><p className="font-bold text-purple-700 mt-0.5">- {fmt(totalProductCost)}</p></div>
+                  <div className="bg-blue-50 rounded-lg p-3"><p className="text-xs text-blue-600">Shipping</p><p className="font-bold text-blue-700 mt-0.5">- {fmt(totalShipping)}</p></div>
+                  <div className="bg-orange-50 rounded-lg p-3"><p className="text-xs text-orange-500">Packing</p><p className="font-bold text-orange-600 mt-0.5">- {fmt(totalPacking)}</p></div>
+                  <div className="bg-red-50 rounded-lg p-3"><p className="text-xs text-red-500">RTO Charges</p><p className="font-bold text-red-600 mt-0.5">- {fmt(totalRTO)}</p></div>
+                  <div className={`rounded-lg p-3 ${totalNet >= 0 ? "bg-green-50" : "bg-red-50"}`}><p className={`text-xs font-semibold ${totalNet >= 0 ? "text-green-600" : "text-red-500"}`}>Net Remittance</p><p className={`text-xl font-bold mt-0.5 ${totalNet >= 0 ? "text-green-700" : "text-red-600"}`}>{fmt(totalNet)}</p></div>
                 </div>
                 <div className="border-t border-gray-100 pt-4 grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Remittance Date *</label>
-                    <input type="date" value={remittanceDate} onChange={(e) => setRemittanceDate(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Note (optional)</label>
-                    <input type="text" placeholder="e.g. Week 1 remittance" value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                  </div>
+                  <div><label className="text-xs text-gray-500 mb-1 block">Expected Remittance Date *</label><input type="date" value={remittanceDate} onChange={(e) => setRemittanceDate(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" /></div>
+                  <div><label className="text-xs text-gray-500 mb-1 block">Note (optional)</label><input type="text" placeholder="e.g. Week 1 remittance" value={note} onChange={(e) => setNote(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" /></div>
                 </div>
                 <button onClick={handleSubmit} disabled={submitting || selectedOrders.length === 0 || !remittanceDate}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors">
-                  <Send className="w-4 h-4" />
-                  {submitting ? "Creating..." : `Generate Remittance — ${fmt(totalNet)}`}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50">
+                  <Send className="w-4 h-4" />{submitting ? "Scheduling..." : `Schedule Remittance — ${fmt(totalNet)}`}
                 </button>
               </div>
             </>
-          )}
-        </>
+          )
       )}
     </div>
   );

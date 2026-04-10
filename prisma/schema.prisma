@@ -97,6 +97,7 @@ model WalletTransaction {
   note            String?
   orderId         String?
   remittanceDate  DateTime?
+  bankTxId        String?
   createdAt       DateTime     @default(now())
 
   @@map("wallet_transactions")
