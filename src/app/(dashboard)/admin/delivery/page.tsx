@@ -27,7 +27,7 @@ const STATUS_COLOR: Record<string, string> = {
   CANCELLED: "bg-red-50 text-red-600",
 };
 
-const STATUSES = ["NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED"];
+const STATUSES = ["PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "RTO"];
 
 export default function AdminDeliveryPage() {
   const [orders, setOrders] = useState<Order[]>([]);

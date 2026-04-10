@@ -17,13 +17,15 @@ export async function POST(req: NextRequest) {
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
+  const isRTO = status === "RTO";
+
   await prisma.order.update({
     where: { id: orderId },
     data: {
       awbNumber: awb.trim(),
-      courier: "Delhivery",
+      courier: isRTO ? "Delhivery (RTO)" : "Delhivery",
       trackingUrl: `https://www.delhivery.com/track/package/${awb.trim()}`,
-      status: (status ?? "SHIPPED") as never,
+      status: (isRTO ? "SHIPPED" : (status ?? "SHIPPED")) as never,
     },
   });
 
