@@ -55,6 +55,11 @@ export async function POST() {
       ? `${so.customer.first_name ?? ""} ${so.customer.last_name ?? ""}`.trim() || null
       : null;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const addrJson = customerAddress as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rawJson = so as any;
+
     const order = await prisma.order.upsert({
       where: {
         externalOrderId_source: {
@@ -66,10 +71,10 @@ export async function POST() {
         status,
         customerName,
         customerEmail: so.email || so.customer?.email || null,
-        customerAddress,
+        customerAddress: addrJson,
         totalAmount: parseFloat(so.total_price),
         currency: so.currency,
-        rawData: so,
+        rawData: rawJson,
       },
       create: {
         sellerId: session.user.id,
@@ -78,10 +83,10 @@ export async function POST() {
         status,
         customerName,
         customerEmail: so.email || so.customer?.email || null,
-        customerAddress,
+        customerAddress: addrJson,
         totalAmount: parseFloat(so.total_price),
         currency: so.currency,
-        rawData: so,
+        rawData: rawJson,
       },
     });
 
