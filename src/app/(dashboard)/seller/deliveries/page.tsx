@@ -24,6 +24,23 @@ interface Delivery {
   courier: string | null;
 }
 
+function getDisplayStatus(d: Delivery) {
+  if (d.courier?.includes("RTO")) return "RTO";
+  return d.status;
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  SHIPPED: "Shipped", IN_TRANSIT: "In Transit", DELIVERED: "Delivered",
+  CANCELLED: "Cancelled", NEW: "New", PROCESSING: "Processing", RTO: "RTO",
+};
+
+const STATUS_COLOR: Record<string, string> = {
+  SHIPPED: "bg-blue-50 text-blue-600", IN_TRANSIT: "bg-yellow-50 text-yellow-600",
+  DELIVERED: "bg-green-50 text-green-600", CANCELLED: "bg-red-50 text-red-600",
+  NEW: "bg-gray-100 text-gray-600", PROCESSING: "bg-purple-50 text-purple-600",
+  RTO: "bg-orange-50 text-orange-600",
+};
+
 interface Stats {
   delivered: number;
   inTransit: number;
@@ -32,19 +49,6 @@ interface Stats {
   ndr: number;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  SHIPPED: "Shipped",
-  IN_TRANSIT: "In Transit",
-  DELIVERED: "Delivered",
-  CANCELLED: "Cancelled",
-};
-
-const STATUS_COLOR: Record<string, string> = {
-  SHIPPED: "bg-blue-50 text-blue-600",
-  IN_TRANSIT: "bg-yellow-50 text-yellow-600",
-  DELIVERED: "bg-green-50 text-green-600",
-  CANCELLED: "bg-red-50 text-red-600",
-};
 
 const STAT_CARDS = [
   {
@@ -257,9 +261,11 @@ export default function ManageDeliveryPage() {
                     {new Date(d.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                   </td>
                   <td className="px-5 py-3">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_COLOR[d.status] ?? "bg-gray-100 text-gray-600"}`}>
-                      {STATUS_LABEL[d.status] ?? d.status}
-                    </span>
+                    {(() => { const ds = getDisplayStatus(d); return (
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_COLOR[ds] ?? "bg-gray-100 text-gray-600"}`}>
+                        {STATUS_LABEL[ds] ?? ds}
+                      </span>
+                    ); })()}
                   </td>
                   <td className="px-5 py-3">
                     {d.awbNumber ? (

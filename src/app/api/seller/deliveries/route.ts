@@ -51,16 +51,16 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  const allDeliveries = await prisma.order.findMany({
+  const allWithCourier = await prisma.order.findMany({
     where: { sellerId, status: { in: deliveryStatuses } },
-    select: { status: true },
+    select: { status: true, courier: true },
   });
 
   const stats = {
-    delivered: allDeliveries.filter((o) => o.status === "DELIVERED").length,
-    inTransit: allDeliveries.filter((o) => o.status === "IN_TRANSIT").length,
-    rto: 0,
-    cancelled: allDeliveries.filter((o) => o.status === "CANCELLED").length,
+    delivered: allWithCourier.filter((o) => o.status === "DELIVERED" && !o.courier?.includes("RTO")).length,
+    inTransit: allWithCourier.filter((o) => o.status === "IN_TRANSIT" && !o.courier?.includes("RTO")).length,
+    rto: allWithCourier.filter((o) => o.courier?.includes("RTO")).length,
+    cancelled: allWithCourier.filter((o) => o.status === "CANCELLED" && !o.courier?.includes("RTO")).length,
     ndr: 0,
   };
 

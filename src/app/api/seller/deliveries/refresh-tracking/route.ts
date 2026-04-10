@@ -3,13 +3,18 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-function mapDelhiveryStatus(status: string): string {
+function mapDelhiveryStatus(status: string): { dbStatus: string; courier: string } {
   const s = status?.toLowerCase() ?? "";
-  if (s.includes("deliver")) return "DELIVERED";
-  if (s.includes("transit") || s.includes("out for")) return "IN_TRANSIT";
-  if (s.includes("dispatch") || s.includes("picked")) return "SHIPPED";
-  if (s.includes("cancel") || s.includes("rto")) return "CANCELLED";
-  return "SHIPPED";
+  const isRTO = s.includes("rto");
+
+  let dbStatus = "SHIPPED";
+  if (s.includes("delivered")) dbStatus = "DELIVERED";
+  else if (s.includes("transit") || s.includes("out for delivery")) dbStatus = "IN_TRANSIT";
+  else if (s.includes("dispatch") || s.includes("picked")) dbStatus = "SHIPPED";
+  else if (s.includes("cancel")) dbStatus = "CANCELLED";
+
+  const courier = isRTO ? "Delhivery (RTO)" : "Delhivery";
+  return { dbStatus, courier };
 }
 
 export async function POST() {
@@ -38,7 +43,12 @@ export async function POST() {
     try {
       const res = await fetch(
         `https://track.delhivery.com/api/v1/packages/json/?waybill=${order.awbNumber}&token=${token}`,
-        { headers: { Accept: "application/json" } }
+        {
+          headers: {
+            Authorization: `Token ${token}`,
+            Accept: "application/json",
+          },
+        }
       );
 
       if (!res.ok) continue;
@@ -48,16 +58,16 @@ export async function POST() {
       if (!shipment) continue;
 
       const statusStr = (shipment.Status as { Status?: string } | null)?.Status ?? "";
-      const status = mapDelhiveryStatus(statusStr);
+      const { dbStatus, courier } = mapDelhiveryStatus(statusStr);
 
       await prisma.order.update({
         where: { id: order.id },
-        data: { status: status as never },
+        data: { status: dbStatus as never, courier },
       });
 
       updated++;
     } catch {
-      // skip failed ones
+      // skip
     }
   }
 
