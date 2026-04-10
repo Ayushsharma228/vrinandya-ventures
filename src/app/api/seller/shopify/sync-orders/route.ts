@@ -49,7 +49,7 @@ export async function POST() {
           pincode: so.shipping_address.zip,
           phone: so.shipping_address.phone || so.customer?.phone || null,
         }
-      : null;
+      : undefined;
 
     const customerName = so.customer
       ? `${so.customer.first_name ?? ""} ${so.customer.last_name ?? ""}`.trim() || null
