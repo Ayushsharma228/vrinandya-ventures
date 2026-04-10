@@ -20,6 +20,8 @@ interface Delivery {
   createdAt: string;
   customerName: string | null;
   customerEmail: string | null;
+  customerAddress: { phone?: string } | null;
+  courier: string | null;
 }
 
 interface Stats {
@@ -90,6 +92,8 @@ export default function ManageDeliveryPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState("");
 
   const fetchDeliveries = useCallback(
     async (showRefreshing = false) => {
@@ -111,9 +115,25 @@ export default function ManageDeliveryPage() {
     [search, statusFilter]
   );
 
-  useEffect(() => {
-    fetchDeliveries();
-  }, [fetchDeliveries]);
+  useEffect(() => { fetchDeliveries(); }, [fetchDeliveries]);
+
+  async function handleSyncAWB() {
+    setSyncing(true); setSyncMsg("");
+    const res = await fetch("/api/seller/deliveries/sync-awb", { method: "POST" });
+    const data = await res.json();
+    setSyncMsg(`Synced ${data.synced ?? 0} AWB(s) from Delhivery`);
+    await fetchDeliveries();
+    setSyncing(false);
+  }
+
+  async function handleRefreshTracking() {
+    setRefreshing(true); setSyncMsg("");
+    const res = await fetch("/api/seller/deliveries/refresh-tracking", { method: "POST" });
+    const data = await res.json();
+    setSyncMsg(`Updated ${data.updated ?? 0} order status(es)`);
+    await fetchDeliveries(false);
+    setRefreshing(false);
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -127,21 +147,22 @@ export default function ManageDeliveryPage() {
             Track and manage order deliveries from your connected stores
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {syncMsg && <span className="text-xs text-green-600">{syncMsg}</span>}
           <button
-            onClick={() => fetchDeliveries(true)}
+            onClick={handleSyncAWB}
+            disabled={syncing}
+            className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-200 rounded-lg bg-white hover:bg-gray-50 text-gray-700 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+            Sync AWB
+          </button>
+          <button
+            onClick={handleRefreshTracking}
             disabled={refreshing}
             className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-200 rounded-lg bg-white hover:bg-gray-50 text-gray-700 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
-          <button
-            onClick={() => fetchDeliveries(true)}
-            disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-200 rounded-lg bg-white hover:bg-gray-50 text-gray-700 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className="w-4 h-4" />
             Refresh Tracking
           </button>
         </div>
@@ -218,61 +239,40 @@ export default function ManageDeliveryPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="text-left px-5 py-3 text-xs font-medium text-blue-500">
-                  Order ID
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-blue-500">
-                  Date
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-blue-500">
-                  Status
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-blue-500">
-                  Tracking
-                </th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-blue-500">Order ID</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-blue-500">Customer</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-blue-500">Phone</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-blue-500">Date</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-blue-500">Status</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-blue-500">AWB / Tracking</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {deliveries.map((d) => (
                 <tr key={d.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-5 py-3 font-medium text-gray-900">
-                    #{d.externalOrderId}
-                  </td>
-                  <td className="px-5 py-3 text-gray-500">
-                    {new Date(d.createdAt).toLocaleDateString("en-IN", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                  <td className="px-5 py-3 font-mono text-xs text-blue-600">{d.externalOrderId}</td>
+                  <td className="px-5 py-3 text-sm text-gray-700">{d.customerName || "—"}</td>
+                  <td className="px-5 py-3 text-xs text-gray-500">{d.customerAddress?.phone || "—"}</td>
+                  <td className="px-5 py-3 text-xs text-gray-500">
+                    {new Date(d.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                   </td>
                   <td className="px-5 py-3">
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                        STATUS_COLOR[d.status] ?? "bg-gray-100 text-gray-600"
-                      }`}
-                    >
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_COLOR[d.status] ?? "bg-gray-100 text-gray-600"}`}>
                       {STATUS_LABEL[d.status] ?? d.status}
                     </span>
                   </td>
                   <td className="px-5 py-3">
                     {d.awbNumber ? (
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-gray-700 font-mono text-xs">
-                          {d.awbNumber}
-                        </span>
+                        <span className="text-gray-700 font-mono text-xs">{d.awbNumber}</span>
                         {d.trackingUrl && (
-                          <a
-                            href={d.trackingUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-500 hover:underline text-xs"
-                          >
-                            Track
+                          <a href={d.trackingUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs">
+                            Track on Delhivery
                           </a>
                         )}
                       </div>
                     ) : (
-                      <span className="text-gray-400 text-xs">—</span>
+                      <span className="text-gray-400 text-xs">No AWB</span>
                     )}
                   </td>
                 </tr>

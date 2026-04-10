@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
   const sellerId = session.user.id;
 
-  const deliveryStatuses: OrderStatus[] = ["SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED"];
+  const deliveryStatuses: OrderStatus[] = ["NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED"];
   const statusFilter: OrderStatus[] =
     status && status !== "ALL" ? [status as OrderStatus] : deliveryStatuses;
 
@@ -46,6 +46,8 @@ export async function GET(req: NextRequest) {
       createdAt: true,
       customerName: true,
       customerEmail: true,
+      customerAddress: true,
+      courier: true,
     },
   });
 
