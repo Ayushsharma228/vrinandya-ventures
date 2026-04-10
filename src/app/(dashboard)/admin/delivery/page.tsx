@@ -36,6 +36,7 @@ export default function AdminDeliveryPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [awbInputs, setAwbInputs] = useState<Record<string, string>>({});
   const [statusInputs, setStatusInputs] = useState<Record<string, string>>({});
+  const [awbInitialized, setAwbInitialized] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -45,7 +46,17 @@ export default function AdminDeliveryPage() {
     if (statusFilter) params.set("status", statusFilter);
     const res = await fetch(`/api/admin/orders?${params}`);
     const data = await res.json();
-    setOrders(data.orders ?? []);
+    const fetched: Order[] = data.orders ?? [];
+    setOrders(fetched);
+    // Pre-fill AWB inputs with existing AWB values (only on first load)
+    setAwbInputs((prev) => {
+      const next = { ...prev };
+      fetched.forEach((o) => {
+        if (o.awbNumber && next[o.id] === undefined) next[o.id] = o.awbNumber;
+      });
+      return next;
+    });
+    setAwbInitialized(true);
     setLoading(false);
   }, [search, statusFilter]);
 
@@ -59,7 +70,7 @@ export default function AdminDeliveryPage() {
   }
 
   async function handleSaveAwb(order: Order) {
-    const awb = awbInputs[order.id]?.trim() || order.awbNumber || "";
+    const awb = (awbInputs[order.id] ?? "").trim() || order.awbNumber || "";
     const status = statusInputs[order.id] || order.status;
     if (!awb) return alert("Enter AWB number");
     setSaving(order.id);
@@ -69,7 +80,6 @@ export default function AdminDeliveryPage() {
       body: JSON.stringify({ orderId: order.id, awb, status }),
     });
     if (res.ok) {
-      setAwbInputs((p) => ({ ...p, [order.id]: "" }));
       await fetchOrders();
     } else {
       const d = await res.json();
@@ -152,22 +162,18 @@ export default function AdminDeliveryPage() {
                         </select>
                       </td>
                       <td className="px-4 py-3">
-                        {order.awbNumber ? (
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-mono text-xs text-gray-700">{order.awbNumber}</span>
-                            {order.trackingUrl && (
-                              <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="text-blue-500 text-xs hover:underline">Track</a>
-                            )}
-                          </div>
-                        ) : (
+                        <div className="flex flex-col gap-0.5">
                           <input
                             type="text"
                             placeholder="Enter AWB"
                             value={awbInputs[order.id] ?? ""}
                             onChange={(e) => setAwbInputs((p) => ({ ...p, [order.id]: e.target.value }))}
-                            className="w-32 px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="w-32 px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
                           />
-                        )}
+                          {order.trackingUrl && (
+                            <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="text-blue-500 text-xs hover:underline">Track</a>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <button

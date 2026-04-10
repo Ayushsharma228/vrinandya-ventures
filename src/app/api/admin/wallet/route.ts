@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { sellerId, type, amount, note, orderId } = await req.json();
+  const { sellerId, type, amount, note, orderId, remittanceDate } = await req.json();
   if (!sellerId || !type || !amount) {
     return NextResponse.json({ error: "sellerId, type and amount are required" }, { status: 400 });
   }
@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
       amount: parseFloat(amount),
       note: note || null,
       orderId: orderId || null,
+      remittanceDate: remittanceDate ? new Date(remittanceDate) : null,
     },
   });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { IndianRupee, TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
+import { IndianRupee, TrendingUp, TrendingDown, RefreshCw, Copy } from "lucide-react";
 
 interface Transaction {
   id: string;
@@ -9,6 +9,7 @@ interface Transaction {
   amount: number;
   note: string | null;
   orderId: string | null;
+  remittanceDate: string | null;
   createdAt: string;
 }
 
@@ -23,6 +24,7 @@ export default function SellerWalletPage() {
   const [data, setData] = useState<WalletData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
 
   async function fetchWallet(showRefreshing = false) {
     if (showRefreshing) setRefreshing(true);
@@ -35,6 +37,12 @@ export default function SellerWalletPage() {
   }
 
   useEffect(() => { fetchWallet(); }, []);
+
+  function copyTxId(id: string) {
+    navigator.clipboard.writeText(id);
+    setCopied(id);
+    setTimeout(() => setCopied(null), 1500);
+  }
 
   if (loading) {
     return <div className="p-6 text-center text-gray-400 text-sm">Loading...</div>;
@@ -93,20 +101,33 @@ export default function SellerWalletPage() {
         ) : (
           <div className="divide-y divide-gray-50">
             {data.transactions.map((t) => (
-              <div key={t.id} className="flex items-center justify-between px-5 py-3 hover:bg-gray-50">
-                <div className="flex items-center gap-3">
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${t.type === "CREDIT" ? "bg-green-500" : "bg-red-500"}`} />
-                  <div>
-                    <p className="text-sm text-gray-800">{t.note || (t.type === "CREDIT" ? "Credit" : "Debit")}</p>
-                    {t.orderId && <p className="text-xs text-gray-400">Order: {t.orderId}</p>}
-                    <p className="text-xs text-gray-400">
-                      {new Date(t.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                    </p>
+              <div key={t.id} className="px-5 py-3 hover:bg-gray-50">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <span className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${t.type === "CREDIT" ? "bg-green-500" : "bg-red-500"}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-800">{t.note || (t.type === "CREDIT" ? "Credit" : "Debit")}</p>
+                      {t.orderId && <p className="text-xs text-gray-400">Order: {t.orderId}</p>}
+                      <p className="text-xs text-gray-400">
+                        {new Date(t.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                      </p>
+                      {t.remittanceDate && (
+                        <p className="text-xs text-blue-500 mt-0.5">
+                          Expected remittance: {new Date(t.remittanceDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                        </p>
+                      )}
+                      <button onClick={() => copyTxId(t.id)}
+                        className="flex items-center gap-1 mt-1 text-xs text-gray-400 hover:text-gray-600 transition-colors font-mono">
+                        <span>Tx: {t.id.slice(0, 12)}…</span>
+                        <Copy className="w-3 h-3" />
+                        {copied === t.id && <span className="text-green-500 font-sans font-medium">Copied!</span>}
+                      </button>
+                    </div>
                   </div>
+                  <span className={`font-bold text-sm flex-shrink-0 ${t.type === "CREDIT" ? "text-green-600" : "text-red-500"}`}>
+                    {t.type === "CREDIT" ? "+" : "-"}₹{t.amount.toFixed(2)}
+                  </span>
                 </div>
-                <span className={`font-bold text-sm ${t.type === "CREDIT" ? "text-green-600" : "text-red-500"}`}>
-                  {t.type === "CREDIT" ? "+" : "-"}₹{t.amount.toFixed(2)}
-                </span>
               </div>
             ))}
           </div>

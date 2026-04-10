@@ -89,14 +89,15 @@ enum WalletTxType {
 }
 
 model WalletTransaction {
-  id          String       @id @default(cuid())
-  sellerId    String
-  seller      User         @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  type        WalletTxType
-  amount      Float
-  note        String?
-  orderId     String?
-  createdAt   DateTime     @default(now())
+  id              String       @id @default(cuid())
+  sellerId        String
+  seller          User         @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  type            WalletTxType
+  amount          Float
+  note            String?
+  orderId         String?
+  remittanceDate  DateTime?
+  createdAt       DateTime     @default(now())
 
   @@map("wallet_transactions")
 }
