@@ -46,7 +46,10 @@ export default function AdminDeliveryPage() {
     if (statusFilter) params.set("status", statusFilter);
     const res = await fetch(`/api/admin/orders?${params}`);
     const data = await res.json();
-    const fetched: Order[] = data.orders ?? [];
+    // Exclude cancelled orders that were never shipped (no AWB) — nothing to manage delivery-wise
+    const fetched: Order[] = (data.orders ?? []).filter(
+      (o: Order) => o.status !== "CANCELLED" || o.awbNumber
+    );
     setOrders(fetched);
     // Pre-fill AWB inputs with existing AWB values (only on first load)
     setAwbInputs((prev) => {
