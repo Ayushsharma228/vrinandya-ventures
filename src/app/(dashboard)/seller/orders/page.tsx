@@ -21,6 +21,7 @@ interface Order {
   customerAddress: { phone?: string; address?: string; city?: string; state?: string; pincode?: string } | null;
   totalAmount: number;
   awbNumber: string | null;
+  trackingUrl: string | null;
   createdAt: string;
   items: OrderItem[];
 }
@@ -50,6 +51,7 @@ export default function SellerOrdersPage() {
   const [to, setTo] = useState(formatDate(today));
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [shipping, setShipping] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
     const params = new URLSearchParams({ from, to });
@@ -102,6 +104,24 @@ export default function SellerOrdersPage() {
 
   function toggleSelect(id: string) {
     setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+
+  async function handleShip(orderId: string) {
+    if (!confirm("Create Delhivery shipment for this order?")) return;
+    setShipping(orderId);
+    const res = await fetch("/api/seller/orders/ship", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || "Failed to create shipment");
+    } else {
+      alert(`Shipment created! AWB: ${data.awbNumber}`);
+      await fetchOrders();
+    }
+    setShipping(null);
   }
 
   async function handleCancel(orderId: string) {
@@ -223,7 +243,7 @@ export default function SellerOrdersPage() {
                     <input type="checkbox" checked={selected.size === orders.length && orders.length > 0}
                       onChange={toggleAll} className="w-4 h-4 rounded accent-blue-600" />
                   </th>
-                  {["Order #", "Name", "Phone Number", "Products", "Shipping Address", "Quantities", "Amount", "Date", "Cancel"].map((h) => (
+                  {["Order #", "Name", "Phone Number", "Products", "Shipping Address", "Quantities", "Amount", "Date", "AWB", "Ship", "Cancel"].map((h) => (
                     <th key={h} className="px-3 py-3 text-left text-xs font-semibold text-gray-500 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -262,6 +282,20 @@ export default function SellerOrdersPage() {
                         <td className="px-3 py-3 font-semibold text-gray-800 whitespace-nowrap">₹{order.totalAmount.toLocaleString()}</td>
                         <td className="px-3 py-3 text-xs text-gray-400 whitespace-nowrap">
                           {new Date(order.createdAt).toLocaleDateString("en-IN")}
+                        </td>
+                        <td className="px-3 py-3 text-xs font-mono">
+                          {order.awbNumber ? (
+                            <a href={order.trackingUrl || "#"} target="_blank" rel="noreferrer"
+                              className="text-blue-600 hover:underline">{order.awbNumber}</a>
+                          ) : "—"}
+                        </td>
+                        <td className="px-3 py-3">
+                          <button
+                            onClick={() => handleShip(order.id)}
+                            disabled={shipping === order.id || !!order.awbNumber || order.status === "CANCELLED"}
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
+                            {shipping === order.id ? "..." : order.awbNumber ? "Shipped" : "Ship"}
+                          </button>
                         </td>
                         <td className="px-3 py-3">
                           <button
