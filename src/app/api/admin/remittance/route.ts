@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET: unremitted delivered/RTO orders for a seller
+// GET: unremitted orders OR history
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -14,6 +14,40 @@ export async function GET(req: NextRequest) {
   const sellerId = searchParams.get("sellerId");
   if (!sellerId) return NextResponse.json({ error: "sellerId required" }, { status: 400 });
 
+  const mode = searchParams.get("mode");
+
+  if (mode === "history") {
+    // All wallet transactions for this seller, with their linked orders
+    const transactions = await prisma.walletTransaction.findMany({
+      where: { sellerId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // For each transaction, fetch orders that were remitted with it
+    const history = await Promise.all(
+      transactions.map(async (tx) => {
+        const orders = await prisma.order.findMany({
+          where: { sellerId, remittanceTxId: tx.id },
+          select: {
+            id: true,
+            externalOrderId: true,
+            customerName: true,
+            courier: true,
+            totalAmount: true,
+            productCost: true,
+            shippingCharge: true,
+            packingCharge: true,
+            rtoCharge: true,
+          },
+        });
+        return { transaction: tx, orders };
+      })
+    );
+
+    return NextResponse.json({ history });
+  }
+
+  // Default: pending unremitted orders
   const orders = await prisma.order.findMany({
     where: {
       sellerId,
@@ -39,7 +73,6 @@ export async function POST(req: NextRequest) {
   }
 
   const { sellerId, orders, remittanceDate, note } = await req.json();
-  // orders: Array<{ id, productCost, shippingCharge, packingCharge, rtoCharge, include }>
 
   if (!sellerId || !orders?.length) {
     return NextResponse.json({ error: "sellerId and orders required" }, { status: 400 });
@@ -50,9 +83,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No orders selected" }, { status: 400 });
   }
 
-  // Save charges + mark remitted for each included order
+  // Calculate totals first
   let totalRemittance = 0;
-  const orderIds: string[] = [];
   const now = new Date();
 
   for (const o of includedOrders) {
@@ -61,30 +93,13 @@ export async function POST(req: NextRequest) {
     const shippingCharge = parseFloat(o.shippingCharge) || 0;
     const packingCharge = parseFloat(o.packingCharge) || 0;
     const rtoCharge = parseFloat(o.rtoCharge) || 0;
-
-    let net: number;
-    if (isRTO) {
-      net = -(productCost + rtoCharge + packingCharge);
-    } else {
-      net = o.orderAmount - productCost - shippingCharge - packingCharge;
-    }
+    const net = isRTO
+      ? -(productCost + rtoCharge + packingCharge)
+      : o.orderAmount - productCost - shippingCharge - packingCharge;
     totalRemittance += net;
-
-    await prisma.order.update({
-      where: { id: o.id },
-      data: {
-        productCost,
-        shippingCharge,
-        packingCharge,
-        rtoCharge,
-        remittedAt: now,
-      },
-    });
-
-    orderIds.push(o.id);
   }
 
-  // Create wallet transaction
+  // Create wallet transaction first to get its ID
   const txType = totalRemittance >= 0 ? "CREDIT" : "DEBIT";
   const txNote = note || `Remittance for ${includedOrders.length} order(s)`;
 
@@ -97,6 +112,26 @@ export async function POST(req: NextRequest) {
       remittanceDate: remittanceDate ? new Date(remittanceDate) : null,
     },
   });
+
+  // Save charges + link orders to this transaction
+  for (const o of includedOrders) {
+    const productCost = parseFloat(o.productCost) || 0;
+    const shippingCharge = parseFloat(o.shippingCharge) || 0;
+    const packingCharge = parseFloat(o.packingCharge) || 0;
+    const rtoCharge = parseFloat(o.rtoCharge) || 0;
+
+    await prisma.order.update({
+      where: { id: o.id },
+      data: {
+        productCost,
+        shippingCharge,
+        packingCharge,
+        rtoCharge,
+        remittedAt: now,
+        remittanceTxId: tx.id,
+      },
+    });
+  }
 
   return NextResponse.json({ success: true, transaction: tx, totalRemittance });
 }

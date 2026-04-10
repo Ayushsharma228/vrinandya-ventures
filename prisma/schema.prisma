@@ -188,6 +188,7 @@ model Order {
   packingCharge   Float?
   rtoCharge       Float?
   remittedAt      DateTime?
+  remittanceTxId  String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
