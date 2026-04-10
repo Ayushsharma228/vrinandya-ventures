@@ -16,6 +16,7 @@ import {
   Store,
   ListChecks,
   CheckSquare,
+  Wallet,
 } from "lucide-react";
 
 interface NavItem {
@@ -30,6 +31,7 @@ const adminNav: NavItem[] = [
   { label: "Listing Requests", href: "/admin/listings", icon: ListChecks },
   { label: "Orders", href: "/admin/orders", icon: ShoppingCart },
   { label: "Delivery", href: "/admin/delivery", icon: Truck },
+  { label: "Wallet", href: "/admin/wallet", icon: Wallet },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Notifications", href: "/admin/notifications", icon: Bell },
 ];
@@ -40,6 +42,7 @@ const sellerNav: NavItem[] = [
   { label: "My Listings", href: "/seller/listings", icon: ListChecks },
   { label: "Orders", href: "/seller/orders", icon: ShoppingCart },
   { label: "Delivery", href: "/seller/delivery", icon: Truck },
+  { label: "Wallet", href: "/seller/wallet", icon: Wallet },
   { label: "Shopify Store", href: "/seller/shopify", icon: Store },
   { label: "Notifications", href: "/seller/notifications", icon: Bell },
   { label: "Settings", href: "/seller/settings", icon: Settings },
