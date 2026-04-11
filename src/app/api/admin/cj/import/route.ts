@@ -10,8 +10,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { productIds } = await req.json();
-  if (!productIds?.length) {
+  const { products } = await req.json();
+  if (!products?.length) {
     return NextResponse.json({ error: "No products selected" }, { status: 400 });
   }
 
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   let skipped = 0;
   const errors: string[] = [];
 
-  for (const pid of productIds) {
+  for (const { pid, inrPrice } of products) {
     try {
       // Fetch full product details from CJ
       const data = await cjFetch("/product/query", { pid });
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
           supplierId: cjSupplier!.id,
           name: p.productNameEn || p.productName,
           description: p.productIntroductionEn || p.productIntroduction || p.productNameEn || "",
-          price: parseFloat(p.sellPrice || p.productPrice || "0"),
+          price: typeof inrPrice === "number" ? inrPrice : parseFloat(String(inrPrice)),
           sku,
           category: p.categoryName || null,
           images: images.slice(0, 5),
