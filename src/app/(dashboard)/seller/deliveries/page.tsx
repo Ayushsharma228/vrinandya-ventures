@@ -211,7 +211,6 @@ export default function ManageDeliveryPage() {
           <option value="SHIPPED">Shipped</option>
           <option value="IN_TRANSIT">In Transit</option>
           <option value="DELIVERED">Delivered</option>
-          <option value="CANCELLED">Cancelled</option>
         </select>
       </div>
 

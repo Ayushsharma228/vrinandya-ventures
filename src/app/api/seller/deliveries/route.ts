@@ -16,9 +16,12 @@ export async function GET(req: NextRequest) {
 
   const sellerId = session.user.id;
 
-  const deliveryStatuses: OrderStatus[] = ["NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED"];
+  // Never show CANCELLED orders in the delivery section
+  const deliveryStatuses: OrderStatus[] = ["NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED"];
   const statusFilter: OrderStatus[] =
-    status && status !== "ALL" ? [status as OrderStatus] : deliveryStatuses;
+    status && status !== "ALL" && status !== "CANCELLED"
+      ? [status as OrderStatus]
+      : deliveryStatuses;
 
   const where: Record<string, unknown> = {
     sellerId,
