@@ -39,7 +39,7 @@ function formatDate(d: Date) {
 
 export default function SellerOrdersPage() {
   const today = new Date();
-  const monthAgo = new Date(today); monthAgo.setDate(today.getDate() - 30);
+  const yearAgo = new Date(today); yearAgo.setFullYear(today.getFullYear() - 1);
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<Stats>({ totalOrders: 0, totalRevenue: 0, totalItems: 0, topProduct: null });
@@ -47,7 +47,7 @@ export default function SellerOrdersPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [productFilter, setProductFilter] = useState("");
-  const [from, setFrom] = useState(formatDate(monthAgo));
+  const [from, setFrom] = useState(formatDate(yearAgo));
   const [to, setTo] = useState(formatDate(today));
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [cancelling, setCancelling] = useState<string | null>(null);
