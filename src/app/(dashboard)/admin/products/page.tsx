@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircle, XCircle, Clock, Package, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle, XCircle, Package, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 
 interface Product {
   id: string;
@@ -23,6 +23,7 @@ export default function AdminProductsPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [actionNote, setActionNote] = useState<Record<string, string>>({});
   const [processing, setProcessing] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   async function fetchProducts() {
     setLoading(true);
@@ -33,6 +34,24 @@ export default function AdminProductsPage() {
   }
 
   useEffect(() => { fetchProducts(); }, [filter]);
+
+  async function handleDelete(productId: string) {
+    setProcessing(productId);
+    const res = await fetch("/api/admin/products", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId }),
+    });
+    if (res.ok) {
+      fetchProducts();
+      setExpanded(null);
+    } else {
+      const data = await res.json();
+      alert(data.error || "Failed to delete product");
+    }
+    setProcessing(null);
+    setConfirmDelete(null);
+  }
 
   async function handleAction(productId: string, status: "APPROVED" | "REJECTED") {
     setProcessing(productId);
@@ -166,6 +185,36 @@ export default function AdminProductsPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Delete — available on all statuses */}
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    {confirmDelete === product.id ? (
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-red-600 font-medium">Remove this product permanently?</span>
+                        <button
+                          onClick={() => handleDelete(product.id)}
+                          disabled={processing === product.id}
+                          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg disabled:opacity-50"
+                        >
+                          {processing === product.id ? "Deleting..." : "Yes, Delete"}
+                        </button>
+                        <button
+                          onClick={() => setConfirmDelete(null)}
+                          className="px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDelete(product.id)}
+                        className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 font-medium"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Delete Product
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

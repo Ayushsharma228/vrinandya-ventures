@@ -4,6 +4,24 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ProductStatus } from "@prisma/client";
 
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { productId } = await req.json();
+    if (!productId) return NextResponse.json({ error: "Missing productId" }, { status: 400 });
+
+    await prisma.product.delete({ where: { id: productId } });
+    return NextResponse.json({ message: "Product deleted" });
+  } catch (error) {
+    console.error("Delete product error:", error);
+    return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
