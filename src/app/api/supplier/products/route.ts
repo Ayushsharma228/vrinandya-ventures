@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,9 +34,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "SKU already exists" }, { status: 409 });
     }
 
-    // TODO: Upload images to Cloudinary when API keys are configured
-    // For now, store placeholder
+    // Upload images to Cloudinary
+    const imageFiles = formData.getAll("images") as File[];
     const imageUrls: string[] = [];
+    for (const file of imageFiles) {
+      if (file && file.size > 0) {
+        const url = await uploadImageToCloudinary(file);
+        imageUrls.push(url);
+      }
+    }
 
     const product = await prisma.product.create({
       data: {
