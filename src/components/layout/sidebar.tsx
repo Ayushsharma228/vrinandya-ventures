@@ -18,6 +18,7 @@ import {
   CheckSquare,
   Wallet,
   BadgeIndianRupee,
+  ShoppingBag,
 } from "lucide-react";
 
 interface NavItem {
@@ -33,6 +34,7 @@ const adminNav: NavItem[] = [
   { label: "Orders", href: "/admin/orders", icon: ShoppingCart },
   { label: "Delivery", href: "/admin/delivery", icon: Truck },
   { label: "Remittance", href: "/admin/remittance", icon: BadgeIndianRupee },
+  { label: "CJ Catalog", href: "/admin/cj-catalog", icon: ShoppingBag },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Notifications", href: "/admin/notifications", icon: Bell },
 ];
