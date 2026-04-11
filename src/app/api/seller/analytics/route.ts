@@ -38,7 +38,7 @@ export async function GET() {
   const delivered  = orders.filter((o) => o.status === "DELIVERED");
   const rto        = orders.filter((o) => o.courier?.includes("RTO"));
   const cancelled  = orders.filter((o) => o.status === "CANCELLED" && !o.courier?.includes("RTO"));
-  const inTransit  = orders.filter((o) => o.status === "IN_TRANSIT" || o.status === "SHIPPED");
+  const inTransit  = orders.filter((o) => (o.status === "IN_TRANSIT" || o.status === "SHIPPED") && !o.courier?.includes("RTO"));
 
   const pct = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0;
 
@@ -48,9 +48,10 @@ export async function GET() {
     const day = o.createdAt.toISOString().slice(0, 10);
     const cur = trendMap.get(day) ?? { delivered: 0, rto: 0, cancelled: 0, total: 0 };
     cur.total++;
+    const isRTO = o.courier?.includes("RTO") || false;
     if (o.status === "DELIVERED") cur.delivered++;
-    if (o.courier?.includes("RTO")) cur.rto++;
-    if (o.status === "CANCELLED" && !o.courier?.includes("RTO")) cur.cancelled++;
+    if (isRTO) cur.rto++;
+    if (o.status === "CANCELLED" && !isRTO) cur.cancelled++;
     trendMap.set(day, cur);
   }
   const trend = Array.from(trendMap.entries()).map(([date, v]) => ({ date, ...v }));
