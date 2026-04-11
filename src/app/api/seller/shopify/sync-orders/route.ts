@@ -62,7 +62,8 @@ export async function POST() {
 
     const order = await prisma.order.upsert({
       where: {
-        externalOrderId_source: {
+        sellerId_externalOrderId_source: {
+          sellerId: session.user.id,
           externalOrderId: so.name ?? String(so.id),
           source: "SHOPIFY",
         },

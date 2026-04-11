@@ -19,15 +19,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/seller/shopify?error=invalid_state", req.url));
   }
 
+  // Use per-seller credentials if available, fall back to env vars
+  const store = await prisma.shopifyStore.findUnique({ where: { sellerId } });
+  const clientId = store?.clientId || process.env.SHOPIFY_API_KEY!;
+  const clientSecret = store?.clientSecret || process.env.SHOPIFY_API_SECRET!;
+
   // Exchange code for access token
   const tokenRes = await fetch(`https://${shop}/admin/oauth/access_token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      client_id: process.env.SHOPIFY_API_KEY,
-      client_secret: process.env.SHOPIFY_API_SECRET,
-      code,
-    }),
+    body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code }),
   });
 
   if (!tokenRes.ok) {
