@@ -30,6 +30,7 @@ interface Wallet {
   balance: number;
   upcomingAmount: number;
   totalCredit: number;
+  totalDebit: number;
   upcoming: { id: string; remittanceDate: string; amount: number }[];
 }
 
