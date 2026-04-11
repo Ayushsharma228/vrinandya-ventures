@@ -36,7 +36,6 @@ export default function AdminDeliveryPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [awbInputs, setAwbInputs] = useState<Record<string, string>>({});
   const [statusInputs, setStatusInputs] = useState<Record<string, string>>({});
-  const [awbInitialized, setAwbInitialized] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -59,7 +58,6 @@ export default function AdminDeliveryPage() {
       });
       return next;
     });
-    setAwbInitialized(true);
     setLoading(false);
   }, [search, statusFilter]);
 
@@ -73,9 +71,9 @@ export default function AdminDeliveryPage() {
   }
 
   async function handleSaveAwb(order: Order) {
-    const awb = (awbInputs[order.id] ?? "").trim() || order.awbNumber || "";
     const status = statusInputs[order.id] || order.status;
-    if (!awb) return alert("Enter AWB number");
+    const awb = (awbInputs[order.id] ?? "").trim() || order.awbNumber || "";
+    if (status !== "CANCELLED" && !awb) return alert("Enter AWB number");
     setSaving(order.id);
     const res = await fetch("/api/admin/orders/set-awb", {
       method: "POST",
@@ -146,6 +144,8 @@ export default function AdminDeliveryPage() {
                   <tr><td colSpan={9} className="py-12 text-center text-gray-400 text-sm">No orders found</td></tr>
                 ) : orders.map((order) => {
                   const ds = displayStatus(order);
+                  const selectedStatus = statusInputs[order.id] ?? order.status;
+                  const isCancelled = selectedStatus === "CANCELLED";
                   return (
                     <tr key={order.id} className="hover:bg-gray-50/50">
                       <td className="px-4 py-3 font-mono text-xs text-blue-600">{order.externalOrderId}</td>
@@ -165,18 +165,22 @@ export default function AdminDeliveryPage() {
                         </select>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-col gap-0.5">
-                          <input
-                            type="text"
-                            placeholder="Enter AWB"
-                            value={awbInputs[order.id] ?? ""}
-                            onChange={(e) => setAwbInputs((p) => ({ ...p, [order.id]: e.target.value }))}
-                            className="w-32 px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
-                          />
-                          {order.trackingUrl && (
-                            <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="text-blue-500 text-xs hover:underline">Track</a>
-                          )}
-                        </div>
+                        {isCancelled ? (
+                          <span className="text-xs text-gray-300">—</span>
+                        ) : (
+                          <div className="flex flex-col gap-0.5">
+                            <input
+                              type="text"
+                              placeholder="Enter AWB"
+                              value={awbInputs[order.id] ?? ""}
+                              onChange={(e) => setAwbInputs((p) => ({ ...p, [order.id]: e.target.value }))}
+                              className="w-32 px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                            />
+                            {order.trackingUrl && (
+                              <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="text-blue-500 text-xs hover:underline">Track</a>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <button
