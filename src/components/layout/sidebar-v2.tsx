@@ -76,7 +76,7 @@ const sellerGroups: NavGroup[] = [
     label: "Orders",
     items: [
       { label: "Orders",            href: "/seller/orders",     icon: ShoppingCart },
-      { label: "Delivery",          href: "/seller/delivery",   icon: Truck },
+      { label: "Delivery",          href: "/seller/deliveries", icon: Truck },
     ],
   },
   {
