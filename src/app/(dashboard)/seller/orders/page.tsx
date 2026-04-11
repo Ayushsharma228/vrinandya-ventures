@@ -223,7 +223,7 @@ export default function SellerOrdersPage() {
             <option value="">All Products</option>
             {allProducts.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
-          <button onClick={() => { setSearch(""); setProductFilter(""); setFrom(formatDate(monthAgo)); setTo(formatDate(today)); }}
+          <button onClick={() => { setSearch(""); setProductFilter(""); setFrom(formatDate(yearAgo)); setTo(formatDate(today)); }}
             className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50">
             <Filter className="w-4 h-4" /> Clear Filters
           </button>
