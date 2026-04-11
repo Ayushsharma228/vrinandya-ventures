@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { ShoppingBag, Globe, Search, Package, Loader2, Check } from "lucide-react";
+import { ShoppingBag, Globe, Package, Loader2, Check, Tag } from "lucide-react";
+import { PageHero } from "@/components/layout/page-hero";
 
 interface Product {
   id: string;
@@ -16,6 +17,10 @@ interface Product {
 }
 
 const MARKETPLACES = ["AMAZON", "EBAY", "ETSY", "WALMART"];
+
+function fmt(n: number) {
+  return new Intl.NumberFormat("en-IN").format(n);
+}
 
 export default function SellerCatalogPage() {
   const { data: session } = useSession();
@@ -68,143 +73,158 @@ export default function SellerCatalogPage() {
   );
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Product Catalog</h1>
-        <p className="text-sm text-gray-400 mt-0.5">
-          Browse approved products and {isMarketplace ? "list on marketplaces" : "push to your Shopify store"}
-        </p>
-      </div>
+    <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
+      <PageHero
+        title="Product Catalog"
+        subtitle={`${products.length} approved products available`}
+        searchValue={search}
+        searchPlaceholder="Search by name or SKU..."
+        onSearchChange={setSearch}
+      />
 
-      {/* Search */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search products by name or SKU..."
-          className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-        />
-      </div>
-
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 animate-pulse">
-              <div className="w-full h-40 bg-gray-100 rounded-lg mb-3" />
-              <div className="h-4 bg-gray-100 rounded w-3/4 mb-2" />
-              <div className="h-3 bg-gray-100 rounded w-1/2" />
-            </div>
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-16 text-center">
-          <Package className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No approved products available</p>
-          <p className="text-gray-400 text-sm mt-1">Products will appear here once approved by admin</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((product) => (
-            <div key={product.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-              {/* Image */}
-              <div className="w-full h-44 bg-gray-50 flex items-center justify-center">
-                {product.images?.[0] ? (
-                  <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
-                ) : (
-                  <Package className="w-12 h-12 text-gray-200" />
-                )}
-              </div>
-
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-1">
-                  <h3 className="font-semibold text-gray-800 text-sm leading-tight">{product.name}</h3>
-                  <span className="text-sm font-bold text-gray-800 ml-2 flex-shrink-0">₹{product.price.toLocaleString()}</span>
+      <div className="px-8 py-6">
+        {loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="card animate-pulse overflow-hidden">
+                <div className="w-full bg-gray-100" style={{ height: 240 }} />
+                <div className="p-4 space-y-2">
+                  <div className="h-4 bg-gray-100 rounded w-3/4" />
+                  <div className="h-3 bg-gray-100 rounded w-1/2" />
+                  <div className="h-8 bg-gray-100 rounded mt-3" />
                 </div>
-                <p className="text-xs text-gray-400 mb-1">by {product.supplier.name}</p>
-                {product.category && (
-                  <span className="inline-block text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full mb-3">
-                    {product.category}
-                  </span>
-                )}
-                <p className="text-xs text-gray-500 line-clamp-2 mb-4">{product.description}</p>
-
-                {/* Action Button */}
-                {isMarketplace ? (
-                  <button
-                    onClick={() => { setMarketplaceModal(product.id); setSelectedMarketplace(""); }}
-                    disabled={processing === product.id}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    <Globe className="w-4 h-4" />
-                    List on Marketplace
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handlePushShopify(product.id)}
-                    disabled={processing === product.id || done[product.id]}
-                    className={`w-full flex items-center justify-center gap-2 py-2.5 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 ${
-                      done[product.id] ? "bg-green-600" : "bg-blue-600 hover:bg-blue-700"
-                    }`}
-                  >
-                    {processing === product.id ? (
-                      <><Loader2 className="w-4 h-4 animate-spin" /> Pushing...</>
-                    ) : done[product.id] ? (
-                      <><Check className="w-4 h-4" /> Pushed to Shopify</>
-                    ) : (
-                      <><ShoppingBag className="w-4 h-4" /> Push to Shopify</>
-                    )}
-                  </button>
-                )}
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="card py-20 flex flex-col items-center gap-3 text-center">
+            <Package className="w-14 h-14" style={{ color: "var(--border)" }} />
+            <p className="font-semibold" style={{ color: "var(--text-600)" }}>
+              {search ? "No products match your search" : "No approved products available"}
+            </p>
+            <p className="text-sm" style={{ color: "var(--text-400)" }}>
+              Products approved by admin will appear here
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+            {filtered.map((product) => {
+              const isPushed = done[product.id];
+              const isProcessing = processing === product.id;
+              return (
+                <div key={product.id} className="card overflow-hidden flex flex-col group hover:shadow-md transition-shadow">
+                  {/* Portrait image — taller */}
+                  <div className="relative w-full overflow-hidden bg-gray-50" style={{ height: 260 }}>
+                    {product.images?.[0] ? (
+                      <img
+                        src={product.images[0]}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="w-12 h-12" style={{ color: "var(--border)" }} />
+                      </div>
+                    )}
+                    {/* Pushed badge */}
+                    {isPushed && (
+                      <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold text-white"
+                        style={{ background: "var(--green-500)" }}>
+                        <Check className="w-3 h-3" /> Pushed
+                      </div>
+                    )}
+                    {/* Category tag */}
+                    {product.category && (
+                      <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                        style={{ background: "rgba(0,0,0,0.55)", color: "rgba(255,255,255,0.9)" }}>
+                        <Tag className="w-2.5 h-2.5" />
+                        {product.category.split(">").pop()?.trim() ?? product.category}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-3.5 flex flex-col flex-1">
+                    <p className="text-sm font-semibold leading-snug line-clamp-2 mb-1" style={{ color: "var(--text-900)" }}>
+                      {product.name}
+                    </p>
+                    <p className="text-xs mb-3" style={{ color: "var(--text-400)" }}>
+                      by {product.supplier.name}
+                    </p>
+                    <div className="mt-auto flex items-center justify-between">
+                      <span className="text-base font-bold" style={{ color: "var(--text-900)" }}>
+                        ₹{fmt(product.price)}
+                      </span>
+                    </div>
+
+                    {/* Action button */}
+                    {isMarketplace ? (
+                      <button
+                        onClick={() => { setMarketplaceModal(product.id); setSelectedMarketplace(""); }}
+                        disabled={isProcessing}
+                        className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50"
+                        style={{ background: "#7C3AED" }}
+                      >
+                        <Globe className="w-4 h-4" />
+                        List on Marketplace
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handlePushShopify(product.id)}
+                        disabled={isProcessing || isPushed}
+                        className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50"
+                        style={{ background: isPushed ? "var(--green-500)" : "var(--bg-sidebar)" }}
+                      >
+                        {isProcessing ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : isPushed ? (
+                          <><Check className="w-4 h-4" /> Pushed to Shopify</>
+                        ) : (
+                          <><ShoppingBag className="w-4 h-4" /> Push to Shopify</>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Marketplace Modal */}
       {marketplaceModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
-            <h3 className="text-lg font-bold text-gray-800 mb-1">List on Marketplace</h3>
-            <p className="text-sm text-gray-400 mb-5">Select which marketplace to list this product on</p>
-
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 className="text-base font-bold mb-1" style={{ color: "var(--text-900)" }}>List on Marketplace</h3>
+            <p className="text-sm mb-5" style={{ color: "var(--text-400)" }}>Select which marketplace to list this product on</p>
             <div className="grid grid-cols-2 gap-2 mb-5">
               {MARKETPLACES.map((m) => {
                 const alreadyDone = done[`${marketplaceModal}-${m}`];
                 return (
-                  <button
-                    key={m}
-                    onClick={() => !alreadyDone && setSelectedMarketplace(m)}
-                    disabled={alreadyDone}
-                    className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
-                      alreadyDone
-                        ? "border-green-200 bg-green-50 text-green-600 cursor-default"
-                        : selectedMarketplace === m
-                        ? "border-purple-500 bg-purple-50 text-purple-700"
-                        : "border-gray-200 text-gray-600 hover:border-gray-300"
-                    }`}
-                  >
+                  <button key={m} onClick={() => !alreadyDone && setSelectedMarketplace(m)} disabled={alreadyDone}
+                    className="py-3 rounded-xl border-2 text-sm font-semibold transition-all"
+                    style={{
+                      borderColor: alreadyDone ? "#D1FAE5" : selectedMarketplace === m ? "#7C3AED" : "var(--border)",
+                      background: alreadyDone ? "#F0FDF4" : selectedMarketplace === m ? "#F5F3FF" : "white",
+                      color: alreadyDone ? "#00C67A" : selectedMarketplace === m ? "#7C3AED" : "var(--text-600)",
+                    }}>
                     {alreadyDone ? `✓ ${m}` : m}
                   </button>
                 );
               })}
             </div>
-
             <div className="flex gap-3">
-              <button
-                onClick={() => { setMarketplaceModal(null); setSelectedMarketplace(""); }}
-                className="flex-1 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50"
-              >
+              <button onClick={() => { setMarketplaceModal(null); setSelectedMarketplace(""); }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium border transition-colors"
+                style={{ borderColor: "var(--border)", color: "var(--text-600)" }}>
                 Cancel
               </button>
-              <button
-                onClick={() => handleListMarketplace(marketplaceModal)}
+              <button onClick={() => handleListMarketplace(marketplaceModal)}
                 disabled={!selectedMarketplace || processing === marketplaceModal}
-                className="flex-1 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
-              >
-                {processing === marketplaceModal ? "Requesting..." : "Send Request"}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50"
+                style={{ background: "#7C3AED" }}>
+                {processing === marketplaceModal ? "Sending..." : "Send Request"}
               </button>
             </div>
           </div>

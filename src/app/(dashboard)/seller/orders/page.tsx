@@ -1,41 +1,34 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Download, Search, Filter, Calendar, Package, ShoppingCart, IndianRupee, Star } from "lucide-react";
+import { RefreshCw, Download, ShoppingCart, IndianRupee, Package, Star, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { PageHero } from "@/components/layout/page-hero";
 
-interface OrderItem {
-  id: string;
-  name: string;
-  sku: string | null;
-  quantity: number;
-  price: number;
-}
-
+interface OrderItem { id: string; name: string; sku: string | null; quantity: number; price: number; }
 interface Order {
-  id: string;
-  externalOrderId: string;
-  source: string;
-  status: string;
-  customerName: string | null;
-  customerEmail: string | null;
+  id: string; externalOrderId: string; source: string; status: string;
+  customerName: string | null; customerEmail: string | null;
   customerAddress: { phone?: string; address?: string; city?: string; state?: string; pincode?: string } | null;
-  totalAmount: number;
-  awbNumber: string | null;
-  trackingUrl: string | null;
-  createdAt: string;
-  items: OrderItem[];
+  totalAmount: number; awbNumber: string | null; createdAt: string; items: OrderItem[];
 }
+interface Stats { totalOrders: number; totalRevenue: number; totalItems: number; topProduct: string | null; }
 
-interface Stats {
-  totalOrders: number;
-  totalRevenue: number;
-  totalItems: number;
-  topProduct: string | null;
-}
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  NEW:        { label: "New",        color: "#3B82F6", bg: "#EFF6FF" },
+  PROCESSING: { label: "Processing", color: "#F59E0B", bg: "#FFF7ED" },
+  SHIPPED:    { label: "Shipped",    color: "#7C3AED", bg: "#F5F3FF" },
+  IN_TRANSIT: { label: "In Transit", color: "#025864", bg: "#ECFDF5" },
+  DELIVERED:  { label: "Delivered",  color: "#00C67A", bg: "#F0FDF4" },
+  RTO:        { label: "RTO",        color: "#EF4444", bg: "#FEF2F2" },
+  CANCELLED:  { label: "Cancelled",  color: "#6B7280", bg: "#F9FAFB" },
+};
+
+const STATUS_FILTERS = ["ALL", "NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "RTO", "CANCELLED"];
 
 function formatDate(d: Date) {
   return d.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
 }
+function fmt(n: number) { return new Intl.NumberFormat("en-IN").format(n); }
 
 export default function SellerOrdersPage() {
   const today = new Date();
@@ -46,24 +39,21 @@ export default function SellerOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
-  const [productFilter, setProductFilter] = useState("");
-  const [from, setFrom] = useState(formatDate(yearAgo));
-  const [to, setTo] = useState(formatDate(today));
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [from] = useState(formatDate(yearAgo));
+  const [to] = useState(formatDate(today));
+  const [confirming, setConfirming] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
-  const [shipping, setShipping] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
     const params = new URLSearchParams({ from, to });
     if (search) params.set("search", search);
-    if (productFilter) params.set("product", productFilter);
-
     const res = await fetch(`/api/seller/orders?${params}`);
     const data = await res.json();
     setOrders(data.orders || []);
     setStats(data.stats || { totalOrders: 0, totalRevenue: 0, totalItems: 0, topProduct: null });
     setLoading(false);
-  }, [from, to, search, productFilter]);
+  }, [from, to, search]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
@@ -74,245 +64,214 @@ export default function SellerOrdersPage() {
     setRefreshing(false);
   }
 
-  function handleToday() {
-    const f = formatDate(today);
-    setFrom(f); setTo(f);
+  async function handleConfirm(orderId: string) {
+    setConfirming(orderId);
+    await fetch("/api/seller/orders/ship", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId }),
+    });
+    await fetchOrders();
+    setConfirming(null);
+  }
+
+  async function handleCancel(orderId: string) {
+    setCancelling(orderId);
+    await fetch("/api/seller/orders/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId }),
+    });
+    await fetchOrders();
+    setCancelling(null);
   }
 
   function handleExport() {
     const csv = [
-      ["Order #", "Name", "Email", "Phone", "Products", "Shipping Address", "Qty", "Amount", "Status", "Date"].join(","),
+      ["Order #", "Name", "Phone", "Products", "Address", "Qty", "Amount", "Status", "Date"].join(","),
       ...orders.map((o) => [
-        o.externalOrderId,
-        o.customerName || "",
-        o.customerEmail || "",
-        o.customerAddress?.phone || "",
+        o.externalOrderId, o.customerName || "", o.customerAddress?.phone || "",
         o.items.map((i) => `${i.name} x${i.quantity}`).join("; "),
         [o.customerAddress?.address, o.customerAddress?.city, o.customerAddress?.state, o.customerAddress?.pincode].filter(Boolean).join(", "),
-        o.items.reduce((s, i) => s + i.quantity, 0),
-        o.totalAmount,
-        o.status,
+        o.items.reduce((s, i) => s + i.quantity, 0), o.totalAmount, o.status,
         new Date(o.createdAt).toLocaleDateString("en-IN"),
       ].map((v) => `"${v}"`).join(","))
     ].join("\n");
-
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    a.download = "orders.csv";
-    a.click();
+    a.download = "orders.csv"; a.click();
   }
 
-  function toggleSelect(id: string) {
-    setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  }
+  const displayed = orders.filter((o) =>
+    statusFilter === "ALL" || o.status === statusFilter
+  );
 
-  async function handleShip(orderId: string) {
-    if (!confirm("Create Delhivery shipment for this order?")) return;
-    setShipping(orderId);
-    const res = await fetch("/api/seller/orders/ship", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      alert(data.error || "Failed to create shipment");
-    } else {
-      alert(`Shipment created! AWB: ${data.awbNumber}`);
-      await fetchOrders();
-    }
-    setShipping(null);
-  }
-
-  async function handleCancel(orderId: string) {
-    if (!confirm("Cancel this order on Shopify?")) return;
-    setCancelling(orderId);
-    const res = await fetch("/api/seller/orders/cancel", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      alert(data.error || "Failed to cancel order");
-    } else {
-      await fetchOrders();
-    }
-    setCancelling(null);
-  }
-
-  function toggleAll() {
-    setSelected(selected.size === orders.length ? new Set() : new Set(orders.map((o) => o.id)));
-  }
-
-  // Unique products for filter dropdown
-  const allProducts = [...new Set(orders.flatMap((o) => o.items.map((i) => i.name)))];
-
-  const STATUS_COLOR: Record<string, string> = {
-    NEW: "text-blue-600", PROCESSING: "text-yellow-600", SHIPPED: "text-indigo-600",
-    IN_TRANSIT: "text-purple-600", DELIVERED: "text-green-600", CANCELLED: "text-red-500",
-  };
+  const statCards = [
+    { label: "Total Orders", value: fmt(stats.totalOrders), icon: ShoppingCart, color: "#3B82F6", bg: "#EFF6FF" },
+    { label: "Total Revenue", value: `₹${fmt(stats.totalRevenue)}`, icon: IndianRupee, color: "#00C67A", bg: "#F0FDF4" },
+    { label: "Total Items", value: fmt(stats.totalItems), icon: Package, color: "#7C3AED", bg: "#F5F3FF" },
+    { label: "Top Product", value: stats.topProduct ? stats.topProduct.slice(0, 22) + (stats.topProduct.length > 22 ? "…" : "") : "—", icon: Star, color: "#F59E0B", bg: "#FFF7ED" },
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-5">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Store Orders</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Manage orders from your connected stores</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={handleRefresh} disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 bg-white disabled:opacity-50">
-            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} /> Refresh Orders
-          </button>
-          <button onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 bg-white">
-            <Download className="w-4 h-4" /> Export
-          </button>
-        </div>
-      </div>
-
-      {/* Date Range */}
-      <div className="flex items-center gap-2 justify-end mb-5">
-        <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 bg-white text-sm text-gray-600">
-          <Calendar className="w-4 h-4 text-gray-400" />
-          <input type="date" value={from.split("-").reverse().join("-")}
-            onChange={(e) => setFrom(formatDate(new Date(e.target.value)))}
-            className="outline-none text-sm bg-transparent" />
-        </div>
-        <span className="text-gray-400">-</span>
-        <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 bg-white text-sm text-gray-600">
-          <Calendar className="w-4 h-4 text-gray-400" />
-          <input type="date" value={to.split("-").reverse().join("-")}
-            onChange={(e) => setTo(formatDate(new Date(e.target.value)))}
-            className="outline-none text-sm bg-transparent" />
-        </div>
-        <button onClick={handleToday}
-          className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 bg-white">
-          Today
-        </button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-5">
-        {[
-          { label: "Total Orders",   value: stats.totalOrders,                           icon: ShoppingCart,  extra: null },
-          { label: "Total Revenue",  value: `₹${stats.totalRevenue.toFixed(2)}`,          icon: IndianRupee,   extra: null },
-          { label: "Total Items",    value: stats.totalItems,                             icon: Package,       extra: null },
-          { label: "Top Product",    value: stats.topProduct || "No products",            icon: Star,          extra: null },
-        ].map((s) => (
-          <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-5">
-            <p className="text-sm text-gray-400 mb-2">{s.label}</p>
-            <p className="text-2xl font-bold text-gray-900 leading-tight">{s.value}</p>
+    <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
+      <PageHero
+        title="Store Orders"
+        subtitle="Manage orders from your connected stores"
+        searchValue={search}
+        searchPlaceholder="Search orders, customer, phone..."
+        onSearchChange={setSearch}
+        onSearchSubmit={fetchOrders}
+        actions={
+          <div className="flex items-center gap-2">
+            <button onClick={handleRefresh} disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+              style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? "Syncing..." : "Refresh Orders"}
+            </button>
+            <button onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+              style={{ background: "var(--green-500)", color: "white" }}>
+              <Download className="w-4 h-4" /> Export
+            </button>
           </div>
-        ))}
-      </div>
+        }
+      />
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4">
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search orders..."
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
-          </div>
-          <select value={productFilter} onChange={(e) => setProductFilter(e.target.value)}
-            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
-            <option value="">All Products</option>
-            {allProducts.map((p) => <option key={p} value={p}>{p}</option>)}
-          </select>
-          <button onClick={() => { setSearch(""); setProductFilter(""); setFrom(formatDate(yearAgo)); setTo(formatDate(today)); }}
-            className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50">
-            <Filter className="w-4 h-4" /> Clear Filters
-          </button>
+      <div className="px-8 py-6 space-y-5">
+        {/* Stat cards */}
+        <div className="grid grid-cols-4 gap-4">
+          {statCards.map((s) => {
+            const Icon = s.icon;
+            return (
+              <div key={s.label} className="card px-5 py-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-400)" }}>{s.label}</p>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: s.bg }}>
+                    <Icon className="w-4 h-4" style={{ color: s.color }} />
+                  </div>
+                </div>
+                <p className="text-xl font-bold leading-tight" style={{ color: "var(--text-900)" }}>{s.value}</p>
+              </div>
+            );
+          })}
         </div>
-      </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center text-gray-400 text-sm">Loading orders...</div>
-        ) : (
-          <div className="overflow-x-auto">
+        {/* Status filter buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {STATUS_FILTERS.map((s) => {
+            const cfg = STATUS_CONFIG[s];
+            const isActive = statusFilter === s;
+            return (
+              <button key={s} onClick={() => setStatusFilter(s)}
+                className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
+                style={isActive
+                  ? { background: cfg ? cfg.color : "var(--bg-sidebar)", color: "white" }
+                  : { background: cfg ? cfg.bg : "#F3F4F6", color: cfg ? cfg.color : "var(--text-600)", border: `1px solid ${cfg ? cfg.bg : "#E5E7EB"}` }
+                }>
+                {s === "ALL" ? "All Orders" : cfg?.label ?? s}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Orders table */}
+        <div className="card overflow-hidden">
+          {loading ? (
+            <div className="p-8 text-center text-sm" style={{ color: "var(--text-400)" }}>
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" style={{ color: "var(--green-500)" }} />
+              Loading orders...
+            </div>
+          ) : displayed.length === 0 ? (
+            <div className="py-16 flex flex-col items-center gap-3">
+              <ShoppingCart className="w-10 h-10" style={{ color: "var(--border)" }} />
+              <p className="text-sm font-medium" style={{ color: "var(--text-400)" }}>No orders found</p>
+            </div>
+          ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/50">
-                  <th className="px-4 py-3 w-10">
-                    <input type="checkbox" checked={selected.size === orders.length && orders.length > 0}
-                      onChange={toggleAll} className="w-4 h-4 rounded accent-blue-600" />
-                  </th>
-                  {["Order #", "Name", "Phone Number", "Products", "Shipping Address", "Quantities", "Amount", "Date", "AWB", "Ship", "Cancel"].map((h) => (
-                    <th key={h} className="px-3 py-3 text-left text-xs font-semibold text-gray-500 whitespace-nowrap">{h}</th>
+                <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
+                  {["Order #", "Customer", "Products", "Address", "Qty", "Amount", "Status", "Date", "Actions"].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-400)" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
-                {orders.length === 0 ? (
-                  <tr>
-                    <td colSpan={13} className="px-4 py-12 text-center text-gray-400 text-sm">
-                      No orders match your filters
-                    </td>
-                  </tr>
-                ) : (
-                  orders.map((order) => {
-                    const addr = order.customerAddress;
-                    const shippingAddr = addr ? [addr.address, addr.city, addr.state, addr.pincode].filter(Boolean).join(", ") : "—";
-                    const totalQty = order.items.reduce((s, i) => s + i.quantity, 0);
-
-                    return (
-                      <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-4 py-3">
-                          <input type="checkbox" checked={selected.has(order.id)}
-                            onChange={() => toggleSelect(order.id)} className="w-4 h-4 rounded accent-blue-600" />
-                        </td>
-                        <td className="px-3 py-3 font-mono text-xs text-blue-600 whitespace-nowrap">{order.externalOrderId}</td>
-                        <td className="px-3 py-3 text-gray-700 whitespace-nowrap">{order.customerName || "—"}</td>
-                        <td className="px-3 py-3 text-gray-500 text-xs">{addr?.phone || "—"}</td>
-                        <td className="px-3 py-3 max-w-[140px]">
-                          {order.items.map((i, idx) => (
-                            <p key={idx} className="text-xs text-gray-600 truncate">{i.name}</p>
-                          ))}
-                        </td>
-                        <td className="px-3 py-3 text-xs text-gray-500 max-w-[140px]">
-                          <p className="truncate">{shippingAddr}</p>
-                        </td>
-                        <td className="px-3 py-3 text-center text-gray-700 font-medium">{totalQty}</td>
-                        <td className="px-3 py-3 font-semibold text-gray-800 whitespace-nowrap">₹{order.totalAmount.toLocaleString()}</td>
-                        <td className="px-3 py-3 text-xs text-gray-400 whitespace-nowrap">
-                          {new Date(order.createdAt).toLocaleDateString("en-IN")}
-                        </td>
-                        <td className="px-3 py-3 text-xs font-mono">
-                          {order.awbNumber ? (
-                            <a href={order.trackingUrl || "#"} target="_blank" rel="noreferrer"
-                              className="text-blue-600 hover:underline">{order.awbNumber}</a>
-                          ) : "—"}
-                        </td>
-                        <td className="px-3 py-3">
-                          <button
-                            onClick={() => handleShip(order.id)}
-                            disabled={shipping === order.id || !!order.awbNumber || order.status === "CANCELLED"}
-                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
-                            {shipping === order.id ? "..." : order.awbNumber ? "Shipped" : "Ship"}
-                          </button>
-                        </td>
-                        <td className="px-3 py-3">
-                          <button
-                            onClick={() => handleCancel(order.id)}
-                            disabled={cancelling === order.id || order.status === "CANCELLED"}
-                            className="px-3 py-1.5 border border-red-200 text-red-500 hover:bg-red-50 text-xs font-semibold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                            {cancelling === order.id ? "..." : "Cancel"}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
+              <tbody className="divide-y" style={{ borderColor: "var(--border)" }}>
+                {displayed.map((order) => {
+                  const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.NEW;
+                  const addr = order.customerAddress;
+                  const canConfirm = order.status === "NEW" || order.status === "PROCESSING";
+                  const canCancel = order.status !== "CANCELLED" && order.status !== "DELIVERED";
+                  return (
+                    <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-4 py-3 font-semibold" style={{ color: "var(--green-500)" }}>
+                        #{order.externalOrderId}
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-xs" style={{ color: "var(--text-900)" }}>{order.customerName || "—"}</p>
+                        <p className="text-xs" style={{ color: "var(--text-400)" }}>{addr?.phone || order.customerEmail || "—"}</p>
+                      </td>
+                      <td className="px-4 py-3 max-w-xs">
+                        <p className="text-xs line-clamp-2" style={{ color: "var(--text-600)" }}>
+                          {order.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-xs line-clamp-2" style={{ color: "var(--text-600)" }}>
+                          {[addr?.address, addr?.city, addr?.state, addr?.pincode].filter(Boolean).join(", ") || "—"}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 text-xs font-medium" style={{ color: "var(--text-600)" }}>
+                        {order.items.reduce((s, i) => s + i.quantity, 0)}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-xs" style={{ color: "var(--text-900)" }}>
+                        ₹{fmt(order.totalAmount)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold"
+                          style={{ background: cfg.bg, color: cfg.color }}>
+                          {cfg.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs" style={{ color: "var(--text-400)" }}>
+                        {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          {canConfirm && (
+                            <button
+                              onClick={() => handleConfirm(order.id)}
+                              disabled={confirming === order.id}
+                              title="Confirm Order"
+                              className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-40"
+                              style={{ background: "#F0FDF4", color: "#00C67A" }}>
+                              {confirming === order.id
+                                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                : <CheckCircle className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                          {canCancel && (
+                            <button
+                              onClick={() => handleCancel(order.id)}
+                              disabled={cancelling === order.id}
+                              title="Cancel Order"
+                              className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-40"
+                              style={{ background: "#FEF2F2", color: "#EF4444" }}>
+                              {cancelling === order.id
+                                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                : <XCircle className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Bell,
   Settings, LogOut, Truck, Store, ListChecks, CheckSquare,
-  Wallet, BadgeIndianRupee, ShoppingBag, ChevronRight,
+  Wallet, BadgeIndianRupee, ShoppingBag, ChevronRight, User,
 } from "lucide-react";
 
 interface NavItem {
@@ -90,7 +90,7 @@ const sellerGroups: NavGroup[] = [
     items: [
       { label: "Shopify Store",     href: "/seller/shopify",    icon: Store },
       { label: "Notifications",     href: "/seller/notifications", icon: Bell },
-      { label: "Settings",          href: "/seller/settings",   icon: Settings },
+      { label: "Profile",           href: "/seller/profile",    icon: User },
     ],
   },
 ];

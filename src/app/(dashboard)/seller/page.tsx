@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis,
-  Tooltip, ResponsiveContainer, CartesianGrid,
+  BarChart, Bar, XAxis, YAxis,
+  Tooltip, ResponsiveContainer, CartesianGrid, Cell,
 } from "recharts";
 import {
   ShoppingCart, TrendingUp, TrendingDown, AlertTriangle,
-  Wallet, Package, ArrowRight, RefreshCw, Store,
-  CheckCircle2, Clock, Truck, XCircle,
+  Wallet, Package, ArrowRight, Store,
+  CheckCircle2, Clock, Truck, XCircle, IndianRupee, Megaphone,
 } from "lucide-react";
 
 interface Analytics {
@@ -104,6 +104,8 @@ export default function SellerDashboard() {
     RTO: d.rto,
   })) ?? [];
 
+  const netProfit = (wallet?.totalCredit ?? 0) - (wallet?.totalDebit ?? 0);
+
   const stats = [
     {
       label: "Total Orders",
@@ -116,26 +118,26 @@ export default function SellerDashboard() {
     {
       label: "Total Revenue",
       value: `₹${fmt(analytics?.totalRevenue ?? 0)}`,
-      icon: TrendingUp,
+      icon: IndianRupee,
       iconBg: "#F0FDF4",
       iconColor: "#00C67A",
       sub: wallet ? `₹${fmt(wallet.totalCredit)} remitted` : "—",
     },
     {
-      label: "RTO Orders",
-      value: fmt(analytics?.rtoCount ?? 0),
-      icon: TrendingDown,
-      iconBg: "#FEF2F2",
-      iconColor: "#EF4444",
-      sub: `${analytics?.rtoRate ?? 0}% RTO rate`,
+      label: "Meta Ads Spent",
+      value: "₹0",
+      icon: Megaphone,
+      iconBg: "#F5F3FF",
+      iconColor: "#7C3AED",
+      sub: "Coming soon",
     },
     {
-      label: "Next Payout",
-      value: wallet?.upcomingAmount ? `₹${fmt(wallet.upcomingAmount)}` : "—",
-      icon: Wallet,
-      iconBg: "#FFF7ED",
-      iconColor: "#F59E0B",
-      sub: nextPayoutDate ? `Expected ${nextPayoutDate}` : "No upcoming payout",
+      label: "Net Profit",
+      value: `₹${fmt(Math.max(0, netProfit))}`,
+      icon: TrendingUp,
+      iconBg: netProfit >= 0 ? "#F0FDF4" : "#FEF2F2",
+      iconColor: netProfit >= 0 ? "#00C67A" : "#EF4444",
+      sub: `After deductions`,
     },
   ];
 
@@ -269,25 +271,15 @@ export default function SellerDashboard() {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#00C67A" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#00C67A" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.1} />
-                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
+                <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} barGap={2}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area type="monotone" dataKey="Orders" stroke="#3B82F6" strokeWidth={2} fill="url(#gradBlue)" dot={false} />
-                  <Area type="monotone" dataKey="Delivered" stroke="#00C67A" strokeWidth={2} fill="url(#gradGreen)" dot={false} />
-                  <Area type="monotone" dataKey="RTO" stroke="#EF4444" strokeWidth={1.5} fill="none" dot={false} strokeDasharray="4 2" />
-                </AreaChart>
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
+                  <Bar dataKey="Orders" fill="#3B82F6" radius={[4, 4, 0, 0]} maxBarSize={18} />
+                  <Bar dataKey="Delivered" fill="#00C67A" radius={[4, 4, 0, 0]} maxBarSize={18} />
+                  <Bar dataKey="RTO" fill="#EF4444" radius={[4, 4, 0, 0]} maxBarSize={18} />
+                </BarChart>
               </ResponsiveContainer>
             )}
           </div>
