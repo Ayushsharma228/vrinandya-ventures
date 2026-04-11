@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
           { externalOrderId: { contains: search, mode: "insensitive" } },
           { customerName: { contains: search, mode: "insensitive" } },
           { awbNumber: { contains: search, mode: "insensitive" } },
+          { items: { some: { name: { contains: search, mode: "insensitive" } } } },
         ],
       } : {}),
     },
