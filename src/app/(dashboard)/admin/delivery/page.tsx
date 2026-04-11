@@ -109,10 +109,9 @@ export default function AdminDeliveryPage() {
       <div className="bg-white border border-gray-200 rounded-xl p-4 flex gap-3">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" placeholder="Search order ID, customer, AWB..."
+          <input type="text" placeholder="Search by order #, customer name, product name, AWB..."
             value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Search by order #, customer name, product name, AWB..." />
+            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
           className="px-4 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 min-w-[160px]">
