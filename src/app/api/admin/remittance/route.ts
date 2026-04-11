@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { sellerId, orders, remittanceDate, note } = await req.json();
+  const { sellerId, orders, remittanceDate, note, bankTxId } = await req.json();
 
   if (!sellerId || !orders?.length) {
     return NextResponse.json({ error: "sellerId and orders required" }, { status: 400 });
@@ -99,7 +99,6 @@ export async function POST(req: NextRequest) {
   const txType = totalRemittance >= 0 ? "CREDIT" : "DEBIT";
   const txNote = note || `Remittance for ${includedOrders.length} order(s)`;
 
-  // Create transaction with NO bankTxId — marks it as upcoming/unpaid
   const tx = await prisma.walletTransaction.create({
     data: {
       sellerId,
@@ -107,7 +106,7 @@ export async function POST(req: NextRequest) {
       amount: Math.abs(totalRemittance),
       note: txNote,
       remittanceDate: remittanceDate ? new Date(remittanceDate) : null,
-      bankTxId: null,
+      bankTxId: bankTxId?.trim() || null,
     },
   });
 

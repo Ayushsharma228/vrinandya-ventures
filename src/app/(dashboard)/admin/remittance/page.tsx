@@ -110,7 +110,9 @@ export default function AdminRemittancePage() {
   const [submitting, setSubmitting] = useState(false);
   const [remittanceDate, setRemittanceDate] = useState("");
   const [note, setNote] = useState("");
-  const [success, setSuccess] = useState<{ total: number } | null>(null);
+  const [alreadyPaid, setAlreadyPaid] = useState(false);
+  const [paidBankTxId, setPaidBankTxId] = useState("");
+  const [success, setSuccess] = useState<{ total: number; paid: boolean } | null>(null);
 
   // History
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -176,16 +178,21 @@ export default function AdminRemittancePage() {
   }
 
   async function handleSubmit() {
-    if (!sellerId || selectedOrders.length === 0 || !remittanceDate) return alert("Set remittance date");
+    if (!sellerId || selectedOrders.length === 0 || !remittanceDate) return alert("Set payment date");
+    if (alreadyPaid && !paidBankTxId.trim()) return alert("Enter bank/UPI transaction ID");
     setSubmitting(true);
     const payload = {
       sellerId, remittanceDate, note,
+      bankTxId: alreadyPaid ? paidBankTxId.trim() : undefined,
       orders: orders.map((o) => ({ id: o.id, orderAmount: o.totalAmount, isRTO: isRTO(o), include: charges[o.id]?.include ?? false, productCost: charges[o.id]?.productCost ?? "0", shippingCharge: charges[o.id]?.shippingCharge ?? "0", packingCharge: charges[o.id]?.packingCharge ?? "0", rtoCharge: charges[o.id]?.rtoCharge ?? "0" })),
     };
     const res = await fetch("/api/admin/remittance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     const data = await res.json();
-    if (res.ok) { setSuccess({ total: data.totalRemittance }); setNote(""); setRemittanceDate(""); await fetchPending(); await fetchHistory(); }
-    else alert(data.error || "Failed");
+    if (res.ok) {
+      setSuccess({ total: data.totalRemittance, paid: alreadyPaid });
+      setNote(""); setRemittanceDate(""); setPaidBankTxId(""); setAlreadyPaid(false);
+      await fetchPending(); await fetchHistory();
+    } else alert(data.error || "Failed");
     setSubmitting(false);
   }
 
@@ -292,7 +299,9 @@ export default function AdminRemittancePage() {
 
       {success && (
         <div className={`rounded-xl p-4 text-sm font-semibold border ${success.total >= 0 ? "bg-green-50 border-green-200 text-green-700" : "bg-red-50 border-red-200 text-red-700"}`}>
-          Remittance scheduled! {fmt(Math.abs(success.total))} will be {success.total >= 0 ? "credited" : "debited"} once you mark it as paid.
+          {success.paid
+            ? `Remittance of ${fmt(Math.abs(success.total))} recorded as paid successfully!`
+            : `Remittance of ${fmt(Math.abs(success.total))} scheduled. Mark it as paid once transferred.`}
         </div>
       )}
 
@@ -417,13 +426,43 @@ export default function AdminRemittancePage() {
                   <div className="bg-red-50 rounded-lg p-3"><p className="text-xs text-red-500">RTO Charges</p><p className="font-bold text-red-600 mt-0.5">- {fmt(totalRTO)}</p></div>
                   <div className={`rounded-lg p-3 ${totalNet >= 0 ? "bg-green-50" : "bg-red-50"}`}><p className={`text-xs font-semibold ${totalNet >= 0 ? "text-green-600" : "text-red-500"}`}>Net Remittance</p><p className={`text-xl font-bold mt-0.5 ${totalNet >= 0 ? "text-green-700" : "text-red-600"}`}>{fmt(totalNet)}</p></div>
                 </div>
-                <div className="border-t border-gray-100 pt-4 grid grid-cols-2 gap-3">
-                  <div><label className="text-xs text-gray-500 mb-1 block">Expected Remittance Date *</label><input type="date" value={remittanceDate} onChange={(e) => setRemittanceDate(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" /></div>
-                  <div><label className="text-xs text-gray-500 mb-1 block">Note (optional)</label><input type="text" placeholder="e.g. Week 1 remittance" value={note} onChange={(e) => setNote(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" /></div>
+                <div className="border-t border-gray-100 pt-4 space-y-3">
+                  {/* Already Paid toggle */}
+                  <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <button onClick={() => setAlreadyPaid((p) => !p)} className="flex items-center gap-2 text-sm font-medium text-green-800">
+                      {alreadyPaid ? <CheckSquare className="w-5 h-5 text-green-600" /> : <Square className="w-5 h-5 text-green-600" />}
+                      Already Paid — record past remittance
+                    </button>
+                    <span className="text-xs text-green-600 ml-auto">For February or older payments</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">
+                        {alreadyPaid ? "Paid on Date *" : "Expected Payment Date *"}
+                      </label>
+                      <input type="date" value={remittanceDate} onChange={(e) => setRemittanceDate(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Note (optional)</label>
+                      <input type="text" placeholder="e.g. February remittance" value={note} onChange={(e) => setNote(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    </div>
+                  </div>
+
+                  {alreadyPaid && (
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Bank / UPI Transaction ID *</label>
+                      <input type="text" placeholder="UTR / UPI Ref No. / IMPS ID"
+                        value={paidBankTxId} onChange={(e) => setPaidBankTxId(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-green-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-500 font-mono bg-green-50" />
+                    </div>
+                  )}
                 </div>
-                <button onClick={handleSubmit} disabled={submitting || selectedOrders.length === 0 || !remittanceDate}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50">
-                  <Send className="w-4 h-4" />{submitting ? "Scheduling..." : `Schedule Remittance — ${fmt(totalNet)}`}
+
+                <button onClick={handleSubmit} disabled={submitting || selectedOrders.length === 0 || !remittanceDate || (alreadyPaid && !paidBankTxId.trim())}
+                  className={`flex items-center gap-2 px-6 py-2.5 text-white text-sm font-semibold rounded-lg disabled:opacity-50 ${alreadyPaid ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}`}>
+                  {alreadyPaid ? <BadgeCheck className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                  {submitting ? "Saving..." : alreadyPaid ? `Mark as Paid — ${fmt(totalNet)}` : `Schedule Remittance — ${fmt(totalNet)}`}
                 </button>
               </div>
             </>
