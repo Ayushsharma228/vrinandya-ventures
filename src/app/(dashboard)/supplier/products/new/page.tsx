@@ -291,7 +291,7 @@ export default function ListProductPage() {
               <Plus className="w-4 h-4" /> Choose Images
             </button>
             <p className="text-blue-500 text-xs">
-              Click to select images • PNG, JPG, GIF up to 10MB each
+              Click to select images • PNG, JPG, GIF, WEBP up to 10MB each
             </p>
             <p className="text-gray-400 text-xs mt-1">
               You can select multiple images at once • Drag & drop also supported. Minimum 2 images required.
@@ -305,7 +305,7 @@ export default function ListProductPage() {
           <input
             ref={imageInputRef}
             type="file"
-            accept="image/png,image/jpg,image/jpeg,image/gif"
+            accept="image/png,image/jpg,image/jpeg,image/gif,image/webp"
             multiple
             className="hidden"
             onChange={handleImages}
