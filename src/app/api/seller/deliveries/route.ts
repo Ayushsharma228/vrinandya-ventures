@@ -16,10 +16,9 @@ export async function GET(req: NextRequest) {
 
   const sellerId = session.user.id;
 
-  // Never show CANCELLED orders in the delivery section
-  const deliveryStatuses: OrderStatus[] = ["NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED"];
+  const deliveryStatuses: OrderStatus[] = ["NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED"];
   const statusFilter: OrderStatus[] =
-    status && status !== "ALL" && status !== "CANCELLED"
+    status && status !== "ALL"
       ? [status as OrderStatus]
       : deliveryStatuses;
 
@@ -60,11 +59,11 @@ export async function GET(req: NextRequest) {
   });
 
   const stats = {
+    pending: allWithCourier.filter((o) => o.status === "NEW" || o.status === "PROCESSING").length,
     delivered: allWithCourier.filter((o) => o.status === "DELIVERED" && !o.courier?.includes("RTO")).length,
-    inTransit: allWithCourier.filter((o) => o.status === "IN_TRANSIT" && !o.courier?.includes("RTO")).length,
+    inTransit: allWithCourier.filter((o) => (o.status === "IN_TRANSIT" || o.status === "SHIPPED") && !o.courier?.includes("RTO")).length,
     rto: allWithCourier.filter((o) => o.courier?.includes("RTO")).length,
     cancelled: allWithCourier.filter((o) => o.status === "CANCELLED" && !o.courier?.includes("RTO")).length,
-    ndr: 0,
   };
 
   return NextResponse.json({ orders, stats });

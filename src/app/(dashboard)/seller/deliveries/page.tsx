@@ -42,55 +42,29 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 interface Stats {
+  pending: number;
   delivered: number;
   inTransit: number;
   rto: number;
   cancelled: number;
-  ndr: number;
 }
 
-
 const STAT_CARDS = [
-  {
-    key: "delivered",
-    label: "Delivered",
-    icon: MapPin,
-    iconColor: "text-green-500",
-  },
-  {
-    key: "inTransit",
-    label: "In Transit",
-    icon: Truck,
-    iconColor: "text-blue-500",
-  },
-  {
-    key: "rto",
-    label: "RTO",
-    icon: Clock,
-    iconColor: "text-gray-500",
-  },
-  {
-    key: "cancelled",
-    label: "Cancelled",
-    icon: XCircle,
-    iconColor: "text-red-500",
-  },
-  {
-    key: "ndr",
-    label: "NDR",
-    icon: AlertTriangle,
-    iconColor: "text-orange-500",
-  },
+  { key: "pending",   label: "Pending",    icon: Clock,          iconColor: "text-purple-500" },
+  { key: "delivered", label: "Delivered",  icon: MapPin,         iconColor: "text-green-500"  },
+  { key: "inTransit", label: "In Transit", icon: Truck,          iconColor: "text-blue-500"   },
+  { key: "rto",       label: "RTO",        icon: AlertTriangle,  iconColor: "text-orange-500" },
+  { key: "cancelled", label: "Cancelled",  icon: XCircle,        iconColor: "text-red-500"    },
 ];
 
 export default function ManageDeliveryPage() {
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [stats, setStats] = useState<Stats>({
+    pending: 0,
     delivered: 0,
     inTransit: 0,
     rto: 0,
     cancelled: 0,
-    ndr: 0,
   });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -208,9 +182,13 @@ export default function ManageDeliveryPage() {
           className="px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-700 min-w-[160px]"
         >
           <option value="ALL">All Statuses</option>
+          <option value="NEW">Pending (New)</option>
+          <option value="PROCESSING">Processing</option>
           <option value="SHIPPED">Shipped</option>
           <option value="IN_TRANSIT">In Transit</option>
           <option value="DELIVERED">Delivered</option>
+          <option value="RTO">RTO</option>
+          <option value="CANCELLED">Cancelled</option>
         </select>
       </div>
 
