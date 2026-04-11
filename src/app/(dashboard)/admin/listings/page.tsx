@@ -12,6 +12,7 @@ import {
   Package,
   ExternalLink,
 } from "lucide-react";
+import { PageHero } from "@/components/layout/page-hero";
 
 interface ListingRequest {
   id: string;
@@ -119,80 +120,66 @@ export default function AdminListingsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Listing Requests</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Manage marketplace listing requests from sellers
-          </p>
-        </div>
-        <button
-          onClick={() => fetchListings(true)}
-          disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-200 rounded-lg bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
-      </div>
-
-      {/* Stat Cards */}
-      <div className="grid grid-cols-5 gap-4">
-        {[
-          { label: "Total", value: stats.total, icon: ListChecks, color: "text-purple-500" },
-          { label: "Pending", value: stats.pending, icon: Clock, color: "text-yellow-500" },
-          { label: "In Progress", value: stats.inProgress, icon: Loader2, color: "text-blue-500" },
-          { label: "Listed", value: stats.listed, icon: CheckCircle, color: "text-green-500" },
-          { label: "Failed", value: stats.failed, icon: XCircle, color: "text-red-500" },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3">
-            <Icon className={`w-6 h-6 ${color}`} />
-            <div>
-              <p className="text-xs text-gray-500">{label}</p>
-              <p className="text-2xl font-bold text-gray-900">{value}</p>
-            </div>
+    <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
+      <PageHero
+        title="Listing Requests"
+        subtitle="Manage marketplace listing requests from sellers"
+        searchValue={search}
+        searchPlaceholder="Search seller, product..."
+        onSearchChange={setSearch}
+        onSearchSubmit={() => fetchListings()}
+        actions={
+          <button onClick={() => fetchListings(true)} disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
+            style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        }
+        filters={
+          <div className="flex items-center gap-2">
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
+              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              {STATUSES.map((s) => <option key={s} value={s} className="text-gray-900 bg-white">{s === "ALL" ? "All Statuses" : STATUS_LABEL[s]}</option>)}
+            </select>
+            <select value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)}
+              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
+              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              {PLATFORMS.map((p) => <option key={p} value={p} className="text-gray-900 bg-white">{p === "ALL" ? "All Platforms" : p}</option>)}
+            </select>
           </div>
-        ))}
-      </div>
+        }
+        cards={
+          <div className="grid grid-cols-5 gap-4">
+            {[
+              { label: "Total",       value: stats.total,      icon: ListChecks,  color: "#7C3AED" },
+              { label: "Pending",     value: stats.pending,    icon: Clock,       color: "#F59E0B" },
+              { label: "In Progress", value: stats.inProgress, icon: Loader2,     color: "#3B82F6" },
+              { label: "Listed",      value: stats.listed,     icon: CheckCircle, color: "#00C67A" },
+              { label: "Failed",      value: stats.failed,     icon: XCircle,     color: "#EF4444" },
+            ].map(({ label, value, icon: Icon, color }) => (
+              <div key={label} className="rounded-2xl px-4 py-4 flex items-center gap-3"
+                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(255,255,255,0.1)" }}>
+                  <Icon className="w-4 h-4" style={{ color }} />
+                </div>
+                <div>
+                  <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
+                  <p className="text-xl font-bold text-white">{value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        }
+      />
 
-      {/* Filters */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap gap-3">
-        <div className="flex-1 min-w-[200px] relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search seller, product..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-          />
-        </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
-        >
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>{s === "ALL" ? "All Statuses" : STATUS_LABEL[s]}</option>
-          ))}
-        </select>
-        <select
-          value={platformFilter}
-          onChange={(e) => setPlatformFilter(e.target.value)}
-          className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
-        >
-          {PLATFORMS.map((p) => (
-            <option key={p} value={p}>{p === "ALL" ? "All Platforms" : p}</option>
-          ))}
-        </select>
-      </div>
-
+      <div className="px-8 py-6">
       {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-semibold text-gray-900">
+      <div className="card overflow-hidden">
+        <div className="px-5 py-3.5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
+          <h2 className="font-semibold text-sm" style={{ color: "var(--text-900)" }}>
             Listing Requests ({listings.length})
           </h2>
         </div>
@@ -376,6 +363,7 @@ export default function AdminListingsPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

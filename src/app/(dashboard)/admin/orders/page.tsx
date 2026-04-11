@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Search, ShoppingCart, Save } from "lucide-react";
+import { PageHero } from "@/components/layout/page-hero";
 
 interface Seller { id: string; name: string | null; email: string; }
 interface Order {
@@ -81,39 +82,40 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div className="p-6 space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold text-gray-900">Orders</h1>
-        <p className="text-sm text-gray-500 mt-0.5">View and manage all seller orders</p>
-      </div>
+    <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
+      <PageHero
+        title="Orders"
+        subtitle="View and manage all seller orders"
+        searchValue={search}
+        searchPlaceholder="Search order ID, customer..."
+        onSearchChange={setSearch}
+        onSearchSubmit={fetchOrders}
+        filters={
+          <div className="flex items-center gap-2">
+            <select value={sellerFilter} onChange={(e) => setSellerFilter(e.target.value)}
+              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
+              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              <option value="" className="text-gray-900 bg-white">All Sellers</option>
+              {sellers.map((s) => (
+                <option key={s.id} value={s.id} className="text-gray-900 bg-white">{s.name || s.email}</option>
+              ))}
+            </select>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
+              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              <option value="" className="text-gray-900 bg-white">All Statuses</option>
+              {STATUSES.map((s) => <option key={s} value={s} className="text-gray-900 bg-white">{s}</option>)}
+            </select>
+          </div>
+        }
+      />
 
-      {/* Filters */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 flex gap-3 flex-wrap">
-        <div className="flex-1 min-w-[200px] relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" placeholder="Search order ID, customer..."
-            value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        </div>
-        <select value={sellerFilter} onChange={(e) => setSellerFilter(e.target.value)}
-          className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 min-w-[180px]">
-          <option value="">All Sellers</option>
-          {sellers.map((s) => (
-            <option key={s.id} value={s.id}>{s.name || s.email}</option>
-          ))}
-        </select>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 min-w-[150px]">
-          <option value="">All Statuses</option>
-          {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </div>
-
+      <div className="px-8 py-6">
       {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
-          <ShoppingCart className="w-4 h-4 text-gray-400" />
-          <span className="font-semibold text-gray-900 text-sm">Orders ({orders.length})</span>
+      <div className="card overflow-hidden">
+        <div className="px-5 py-3.5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
+          <ShoppingCart className="w-4 h-4" style={{ color: "var(--text-400)" }} />
+          <span className="font-semibold text-sm" style={{ color: "var(--text-900)" }}>Orders ({orders.length})</span>
         </div>
 
         {loading ? (
@@ -172,6 +174,7 @@ export default function AdminOrdersPage() {
             </table>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

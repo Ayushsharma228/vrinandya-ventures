@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Search, RefreshCw, Truck } from "lucide-react";
+import { PageHero } from "@/components/layout/page-hero";
 
 interface Order {
   id: string;
@@ -92,39 +93,38 @@ export default function AdminDeliveryPage() {
   const displayStatus = (o: Order) => o.courier?.includes("RTO") ? "RTO" : o.status;
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">Delivery Management</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Manage AWB numbers and delivery status for all orders</p>
-        </div>
-        <button onClick={handleRefreshTracking} disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-200 rounded-lg bg-white hover:bg-gray-50 disabled:opacity-50">
-          <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-          Refresh Tracking
-        </button>
-      </div>
+    <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
+      <PageHero
+        title="Delivery Management"
+        subtitle="Manage AWB numbers and delivery status for all orders"
+        searchValue={search}
+        searchPlaceholder="Search by order #, customer, AWB..."
+        onSearchChange={setSearch}
+        onSearchSubmit={fetchOrders}
+        actions={
+          <button onClick={handleRefreshTracking} disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
+            style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh Tracking
+          </button>
+        }
+        filters={
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 text-sm rounded-xl text-white outline-none"
+            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+            <option value="" className="text-gray-900 bg-white">All Statuses</option>
+            {STATUSES.map((s) => <option key={s} value={s} className="text-gray-900 bg-white">{s}</option>)}
+          </select>
+        }
+      />
 
-      {/* Filters */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 flex gap-3">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" placeholder="Search by order #, customer name, product name, AWB..."
-            value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        </div>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 min-w-[160px]">
-          <option value="">All Statuses</option>
-          {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </div>
-
+      <div className="px-8 py-6">
       {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
-          <Truck className="w-4 h-4 text-gray-400" />
-          <span className="font-semibold text-gray-900 text-sm">Orders ({orders.length})</span>
+      <div className="card overflow-hidden">
+        <div className="px-5 py-3.5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
+          <Truck className="w-4 h-4" style={{ color: "var(--text-400)" }} />
+          <span className="font-semibold text-sm" style={{ color: "var(--text-900)" }}>Orders ({orders.length})</span>
         </div>
 
         {loading ? (
@@ -197,6 +197,7 @@ export default function AdminDeliveryPage() {
             </table>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

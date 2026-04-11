@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, Package, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { PageHero } from "@/components/layout/page-hero";
 
 interface Product {
   id: string;
@@ -70,40 +71,39 @@ export default function AdminProductsPage() {
   const tabs = ["PENDING", "APPROVED", "REJECTED"];
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Product Approvals</h1>
-        <p className="text-sm text-gray-400 mt-0.5">Review and approve supplier product submissions</p>
-      </div>
+    <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
+      <PageHero
+        title="Product Approvals"
+        subtitle="Review and approve supplier product submissions"
+        filters={
+          <div className="flex gap-1 p-1 rounded-xl" style={{ background: "rgba(255,255,255,0.1)" }}>
+            {tabs.map((tab) => (
+              <button key={tab} onClick={() => setFilter(tab)}
+                className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                style={filter === tab
+                  ? { background: "white", color: "var(--text-900)" }
+                  : { color: "rgba(255,255,255,0.6)" }}>
+                {tab}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit mb-6">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setFilter(tab)}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === tab ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
+      <div className="px-8 py-6">
       {loading ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-16 text-center">
-          <p className="text-gray-400">Loading...</p>
+        <div className="card p-16 text-center">
+          <p style={{ color: "var(--text-400)" }}>Loading...</p>
         </div>
       ) : products.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-16 text-center">
-          <Package className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No {filter.toLowerCase()} products</p>
+        <div className="card p-16 text-center">
+          <Package className="w-12 h-12 mx-auto mb-3" style={{ color: "var(--border)" }} />
+          <p className="font-medium" style={{ color: "var(--text-400)" }}>No {filter.toLowerCase()} products</p>
         </div>
       ) : (
         <div className="space-y-3">
           {products.map((product) => (
-            <div key={product.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div key={product.id} className="card overflow-hidden">
               <div
                 className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50/50"
                 onClick={() => setExpanded(expanded === product.id ? null : product.id)}
@@ -221,6 +221,7 @@ export default function AdminProductsPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

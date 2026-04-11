@@ -109,10 +109,9 @@ const supplierGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Settings",
+    label: "Account",
     items: [
-      { label: "Notifications",     href: "/supplier/notifications", icon: Bell },
-      { label: "Settings",          href: "/supplier/settings", icon: Settings },
+      { label: "Profile",           href: "/supplier/profile",  icon: User },
     ],
   },
 ];
