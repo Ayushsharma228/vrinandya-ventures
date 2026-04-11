@@ -75,11 +75,17 @@ function LoginContent() {
 
         {/* Main copy */}
         <div className="relative space-y-6 max-w-sm">
-          <h1 className="text-4xl font-bold text-white leading-tight">
-            Start managing your commerce with clarity and control.
+          <h1 className="text-4xl font-bold text-white leading-tight"
+            style={{ fontFamily: "var(--font-playfair), serif" }}>
+            Start managing your commerce with{" "}
+            <em className="not-italic" style={{ fontStyle: "italic", color: "#00C67A" }}>clarity</em>
+            {" "}and{" "}
+            <em style={{ fontStyle: "italic", color: "#00C67A" }}>control.</em>
           </h1>
-          <p className="text-base leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>
-            Built for growth, precision, and real-time insight. From product sourcing to order fulfilment — all in one place.
+          <p className="text-xs font-light leading-relaxed tracking-widest uppercase"
+            style={{ color: "rgba(255,255,255,0.4)" }}>
+            Built for growth, precision, and real-time insight.{" "}
+            From product sourcing to order fulfilment — all in one place.
           </p>
 
           {/* Feature list */}
@@ -89,7 +95,8 @@ function LoginContent() {
               "Real-time order & delivery tracking",
               "Automated remittance & wallet",
             ].map((f) => (
-              <li key={f} className="flex items-center gap-3 text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
+              <li key={f} className="flex items-center gap-3 text-xs font-light tracking-widest uppercase"
+                style={{ color: "rgba(255,255,255,0.55)" }}>
                 <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{ background: "rgba(0,198,122,0.2)", border: "1px solid rgba(0,198,122,0.4)" }}>
                   <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#00C67A" }} />
@@ -101,8 +108,8 @@ function LoginContent() {
         </div>
 
         {/* Bottom credit */}
-        <p className="relative text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
-          © 2025 Vrinandya Ventures. All rights reserved.
+        <p className="relative text-xs font-light" style={{ color: "rgba(255,255,255,0.25)" }}>
+          © 2025 All rights reserved by Vrinandya Ventures PVT. LTD.
         </p>
       </div>
 
