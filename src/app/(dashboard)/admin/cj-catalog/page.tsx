@@ -110,6 +110,7 @@ export default function CJCatalogPage() {
         products: importItems.map((i) => ({
           pid: i.pid,
           inrPrice: parseFloat(i.inrPrice),
+          image: i.image,
         })),
       }),
     });

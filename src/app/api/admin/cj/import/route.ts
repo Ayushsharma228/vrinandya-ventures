@@ -15,27 +15,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No products selected" }, { status: 400 });
   }
 
-  // Find or create a CJ Dropshipping system supplier account
-  let cjSupplier = await prisma.user.findFirst({
+  // Ensure the Vrinandya system supplier account exists (update name if it was set to old value)
+  const cjSupplier = await prisma.user.upsert({
     where: { email: "cj@vrinandya.system" },
+    update: { name: "Vrinandya Ventures" },
+    create: {
+      email: "cj@vrinandya.system",
+      name: "Vrinandya Ventures",
+      password: "system",
+      role: "SUPPLIER",
+    },
   });
-
-  if (!cjSupplier) {
-    cjSupplier = await prisma.user.create({
-      data: {
-        email: "cj@vrinandya.system",
-        name: "CJ Dropshipping",
-        password: "system",
-        role: "SUPPLIER",
-      },
-    });
-  }
 
   let imported = 0;
   let skipped = 0;
   const errors: string[] = [];
 
-  for (const { pid, inrPrice } of products) {
+  for (const { pid, inrPrice, image: catalogImage } of products) {
     try {
       // Fetch full product details from CJ
       const data = await cjFetch("/product/query", { pid });
@@ -48,7 +44,7 @@ export async function POST(req: NextRequest) {
       const existing = await prisma.product.findUnique({ where: { sku } });
       if (existing) { skipped++; continue; }
 
-      // Get first variant image or product images
+      // Build image list — use catalog image as first fallback so we always have at least one
       const images: string[] = [];
       if (p.productImage) images.push(p.productImage);
       if (p.productImages?.length) {
@@ -57,10 +53,12 @@ export async function POST(req: NextRequest) {
           if (url && !images.includes(url)) images.push(url);
         });
       }
+      // If CJ query returned no images, use the image we already had from the list view
+      if (images.length === 0 && catalogImage) images.push(catalogImage);
 
       await prisma.product.create({
         data: {
-          supplierId: cjSupplier!.id,
+          supplierId: cjSupplier.id,
           name: p.productNameEn || p.productName,
           description: p.productIntroductionEn || p.productIntroduction || p.productNameEn || "",
           price: typeof inrPrice === "number" ? inrPrice : parseFloat(String(inrPrice)),
