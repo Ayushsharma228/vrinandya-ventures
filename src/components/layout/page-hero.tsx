@@ -12,6 +12,7 @@ interface PageHeroProps {
   onSearchSubmit?: () => void;
   actions?: ReactNode;
   filters?: ReactNode;
+  cards?: ReactNode;
 }
 
 export function PageHero({
@@ -23,12 +24,14 @@ export function PageHero({
   onSearchSubmit,
   actions,
   filters,
+  cards,
 }: PageHeroProps) {
   return (
     <div
-      className="relative overflow-hidden px-8 pt-7 pb-8"
+      className="relative overflow-hidden px-8 pt-7"
       style={{
         background: "linear-gradient(135deg, #0D1117 0%, #0D2818 60%, #0a1f12 100%)",
+        paddingBottom: cards ? "0" : "2rem",
       }}
     >
       {/* BG decoration */}
@@ -85,6 +88,13 @@ export function PageHero({
           )}
           {filters && <div className="flex items-center gap-2">{filters}</div>}
         </div>
+
+        {/* Stat cards inside gradient */}
+        {cards && (
+          <div className="mt-6 pb-6">
+            {cards}
+          </div>
+        )}
       </div>
     </div>
   );

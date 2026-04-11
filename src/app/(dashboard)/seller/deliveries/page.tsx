@@ -90,24 +90,26 @@ export default function ManageDeliveryPage() {
             </button>
           </div>
         }
+        cards={
+          <div className="grid grid-cols-5 gap-4">
+            {STAT_CARDS.map(({ key, label, icon: Icon, color }) => (
+              <div key={key} className="rounded-2xl px-4 py-4 flex items-center gap-3"
+                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(255,255,255,0.1)" }}>
+                  <Icon className="w-5 h-5" style={{ color }} />
+                </div>
+                <div>
+                  <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
+                  <p className="text-2xl font-bold text-white">{stats[key as keyof Stats]}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        }
       />
 
       <div className="px-8 py-6 space-y-5">
-        {/* Stat cards */}
-        <div className="grid grid-cols-5 gap-4">
-          {STAT_CARDS.map(({ key, label, icon: Icon, color, bg }) => (
-            <div key={key} className="card px-5 py-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
-                <Icon className="w-5 h-5" style={{ color }} />
-              </div>
-              <div>
-                <p className="text-xs font-medium" style={{ color: "var(--text-400)" }}>{label}</p>
-                <p className="text-2xl font-bold" style={{ color: "var(--text-900)" }}>{stats[key as keyof Stats]}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
         {/* Status filter buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           {STATUS_FILTERS.map((s) => {

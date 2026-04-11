@@ -137,27 +137,28 @@ export default function SellerOrdersPage() {
             </button>
           </div>
         }
+        cards={
+          <div className="grid grid-cols-4 gap-4">
+            {statCards.map((s) => {
+              const Icon = s.icon;
+              return (
+                <div key={s.label} className="rounded-2xl px-5 py-4"
+                  style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.45)" }}>{s.label}</p>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)" }}>
+                      <Icon className="w-4 h-4" style={{ color: s.color }} />
+                    </div>
+                  </div>
+                  <p className="text-xl font-bold leading-tight text-white">{s.value}</p>
+                </div>
+              );
+            })}
+          </div>
+        }
       />
 
       <div className="px-8 py-6 space-y-5">
-        {/* Stat cards */}
-        <div className="grid grid-cols-4 gap-4">
-          {statCards.map((s) => {
-            const Icon = s.icon;
-            return (
-              <div key={s.label} className="card px-5 py-4">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-400)" }}>{s.label}</p>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: s.bg }}>
-                    <Icon className="w-4 h-4" style={{ color: s.color }} />
-                  </div>
-                </div>
-                <p className="text-xl font-bold leading-tight" style={{ color: "var(--text-900)" }}>{s.value}</p>
-              </div>
-            );
-          })}
-        </div>
-
         {/* Status filter buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           {STATUS_FILTERS.map((s) => {

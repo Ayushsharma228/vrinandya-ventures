@@ -45,72 +45,70 @@ export default function SellerWalletPage() {
       <PageHero
         title="Wallet & Payouts"
         subtitle="Your earnings and remittance history"
+        cards={
+          <div className="grid grid-cols-3 gap-5">
+            {/* Available Balance */}
+            <div className="rounded-2xl px-6 py-5" style={{ background: "rgba(0,198,122,0.12)", border: "1px solid rgba(0,198,122,0.2)" }}>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.5)" }}>
+                  Available Balance
+                </p>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(0,198,122,0.2)" }}>
+                  <Wallet style={{ color: "var(--green-500)", width: 18, height: 18 }} />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-white mb-1">
+                {loading ? "—" : `₹${fmt(data?.balance ?? 0)}`}
+              </p>
+              <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>Total remitted so far</p>
+              <div className="mt-4 pt-4 flex items-center gap-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                <TrendingUp style={{ color: "var(--green-500)", width: 14, height: 14 }} />
+                <span className="text-xs" style={{ color: "var(--green-500)" }}>
+                  ₹{fmt(data?.totalCredit ?? 0)} total credited
+                </span>
+              </div>
+            </div>
+
+            {/* Upcoming Payout */}
+            <div className="rounded-2xl px-6 py-5" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)" }}>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.5)" }}>
+                  Upcoming Payout
+                </p>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(245,158,11,0.15)" }}>
+                  <Clock style={{ color: "#F59E0B", width: 18, height: 18 }} />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-white mb-1">
+                {loading ? "—" : `₹${fmt(data?.upcomingAmount ?? 0)}`}
+              </p>
+              <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                {upcoming[0]?.remittanceDate
+                  ? `Expected ${new Date(upcoming[0].remittanceDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`
+                  : "No upcoming payout"}
+              </p>
+            </div>
+
+            {/* Deductions */}
+            <div className="rounded-2xl px-6 py-5" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.5)" }}>
+                  Total Deductions
+                </p>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(239,68,68,0.15)" }}>
+                  <TrendingDown style={{ color: "#EF4444", width: 18, height: 18 }} />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-white mb-1">
+                {loading ? "—" : `₹${fmt(data?.totalDebit ?? 0)}`}
+              </p>
+              <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>RTO charges & adjustments</p>
+            </div>
+          </div>
+        }
       />
 
       <div className="px-8 py-6 space-y-6">
-        {/* 3 Balance Cards */}
-        <div className="grid grid-cols-3 gap-5">
-          {/* Available Balance — dark card */}
-          <div className="card-dark rounded-2xl px-6 py-5">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.4)" }}>
-                Available Balance
-              </p>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ background: "rgba(0,198,122,0.15)" }}>
-                <Wallet style={{ color: "var(--green-500)", width: 18, height: 18 }} />
-              </div>
-            </div>
-            <p className="text-3xl font-bold text-white mb-1">
-              {loading ? "—" : `₹${fmt(data?.balance ?? 0)}`}
-            </p>
-            <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>Total remitted so far</p>
-            <div className="mt-4 pt-4 flex items-center gap-2"
-              style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-              <TrendingUp style={{ color: "var(--green-500)", width: 14, height: 14 }} />
-              <span className="text-xs" style={{ color: "var(--green-400)" }}>
-                ₹{fmt(data?.totalCredit ?? 0)} total credited
-              </span>
-            </div>
-          </div>
-
-          {/* Upcoming Payout */}
-          <div className="card rounded-2xl px-6 py-5">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-400)" }}>
-                Upcoming Payout
-              </p>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#FFF7ED" }}>
-                <Clock style={{ color: "#F59E0B", width: 18, height: 18 }} />
-              </div>
-            </div>
-            <p className="text-3xl font-bold mb-1" style={{ color: "var(--text-900)" }}>
-              {loading ? "—" : `₹${fmt(data?.upcomingAmount ?? 0)}`}
-            </p>
-            <p className="text-xs" style={{ color: "var(--text-400)" }}>
-              {upcoming[0]?.remittanceDate
-                ? `Expected ${new Date(upcoming[0].remittanceDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`
-                : "No upcoming payout"}
-            </p>
-          </div>
-
-          {/* Deductions */}
-          <div className="card rounded-2xl px-6 py-5">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-400)" }}>
-                Total Deductions
-              </p>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#FEF2F2" }}>
-                <TrendingDown style={{ color: "#EF4444", width: 18, height: 18 }} />
-              </div>
-            </div>
-            <p className="text-3xl font-bold mb-1" style={{ color: "var(--text-900)" }}>
-              {loading ? "—" : `₹${fmt(data?.totalDebit ?? 0)}`}
-            </p>
-            <p className="text-xs" style={{ color: "var(--text-400)" }}>RTO charges & adjustments</p>
-          </div>
-        </div>
-
         {/* Transaction history */}
         <div className="card overflow-hidden">
           <div className="px-5 py-3 flex items-center gap-1" style={{ borderBottom: "1px solid var(--border)" }}>
