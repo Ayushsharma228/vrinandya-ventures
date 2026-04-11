@@ -268,7 +268,9 @@ export default function ManageDeliveryPage() {
                     ); })()}
                   </td>
                   <td className="px-5 py-3">
-                    {d.awbNumber ? (
+                    {d.status === "CANCELLED" && !d.awbNumber ? (
+                      <span className="text-gray-300 text-xs">—</span>
+                    ) : d.awbNumber ? (
                       <div className="flex flex-col gap-0.5">
                         <span className="text-gray-700 font-mono text-xs">{d.awbNumber}</span>
                         {d.trackingUrl && (
