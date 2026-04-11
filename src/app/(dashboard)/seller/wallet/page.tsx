@@ -193,8 +193,8 @@ export default function SellerWalletPage() {
                     {orders.length > 0 ? (isOpen ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />) : <span className="w-4" />}
                     <div>
                       <p className="text-sm font-semibold text-gray-900">{t.note || "Remittance"}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {new Date(t.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                      <p className="text-xs text-green-600 font-medium mt-0.5">
+                        Paid on: {new Date(t.remittanceDate ?? t.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                       </p>
                       {t.bankTxId && (
                         <p className="text-xs text-green-700 font-mono font-semibold mt-0.5">Tx ID: {t.bankTxId}</p>

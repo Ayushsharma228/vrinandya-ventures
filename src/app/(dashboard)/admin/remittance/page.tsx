@@ -224,9 +224,13 @@ export default function AdminRemittancePage() {
             <div>
               <p className="text-sm font-semibold text-gray-900">{entry.transaction.note || "Remittance"}</p>
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
-                <span className="text-xs text-gray-400">Created: {new Date(entry.transaction.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>
-                {entry.transaction.remittanceDate && (
-                  <span className="text-xs text-blue-500">Expected: {new Date(entry.transaction.remittanceDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                {entry.transaction.remittanceDate ? (
+                  <span className={`text-xs font-medium ${entry.transaction.bankTxId ? "text-green-600" : "text-blue-500"}`}>
+                    {entry.transaction.bankTxId ? "Paid on: " : "Expected: "}
+                    {new Date(entry.transaction.remittanceDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-400">Created: {new Date(entry.transaction.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>
                 )}
                 {entry.transaction.bankTxId && (
                   <span className="text-xs text-green-600 font-medium font-mono">Tx ID: {entry.transaction.bankTxId}</span>
