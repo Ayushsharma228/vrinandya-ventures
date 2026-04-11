@@ -41,9 +41,12 @@ export async function POST() {
   // Get all existing orders for this seller in one query
   const existingOrders = await prisma.order.findMany({
     where: { sellerId: session.user.id, source: "SHOPIFY" },
-    select: { id: true, externalOrderId: true },
+    select: { id: true, externalOrderId: true, status: true, awbNumber: true, courier: true },
   });
-  const existingMap = new Map(existingOrders.map((o) => [o.externalOrderId, o.id]));
+  const existingMap = new Map(existingOrders.map((o) => [o.externalOrderId, o]));
+
+  // Statuses that have been manually set — don't overwrite from Shopify
+  const LOCKED_STATUSES: OrderStatus[] = ["SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED"];
 
   // Build data for new orders and updates
   type OrderCreateInput = {
@@ -78,11 +81,13 @@ export async function POST() {
       ? `${so.customer.first_name ?? ""} ${so.customer.last_name ?? ""}`.trim() || null
       : null;
 
-    const existingId = existingMap.get(externalId);
-    if (existingId) {
+    const existing = existingMap.get(externalId);
+    if (existing) {
+      // If order has AWB or is in a manually-set status, don't overwrite status from Shopify
+      const isLocked = existing.awbNumber || existing.courier || LOCKED_STATUSES.includes(existing.status);
       toUpdate.push({
-        id: existingId,
-        status,
+        id: existing.id,
+        status: isLocked ? existing.status : status,
         customerName,
         customerEmail: so.email || so.customer?.email || null,
         customerAddress,
