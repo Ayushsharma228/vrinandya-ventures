@@ -10,7 +10,12 @@ export async function POST(req: NextRequest) {
   }
 
   const { orderId, awb, status } = await req.json();
-  if (!orderId || !awb) {
+  if (!orderId) {
+    return NextResponse.json({ error: "Order ID required" }, { status: 400 });
+  }
+
+  const isCancelled = status === "CANCELLED";
+  if (!isCancelled && !awb) {
     return NextResponse.json({ error: "Order ID and AWB required" }, { status: 400 });
   }
 
@@ -21,12 +26,14 @@ export async function POST(req: NextRequest) {
 
   await prisma.order.update({
     where: { id: orderId },
-    data: {
-      awbNumber: awb.trim(),
-      courier: isRTO ? "Delhivery (RTO)" : "Delhivery",
-      trackingUrl: `https://www.delhivery.com/track/package/${awb.trim()}`,
-      status: (isRTO ? "SHIPPED" : (status ?? "SHIPPED")) as never,
-    },
+    data: isCancelled
+      ? { status: "CANCELLED" as never }
+      : {
+          awbNumber: awb.trim(),
+          courier: isRTO ? "Delhivery (RTO)" : "Delhivery",
+          trackingUrl: `https://www.delhivery.com/track/package/${awb.trim()}`,
+          status: (isRTO ? "SHIPPED" : (status ?? "SHIPPED")) as never,
+        },
   });
 
   return NextResponse.json({ success: true });
