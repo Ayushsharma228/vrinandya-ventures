@@ -69,7 +69,6 @@ const sellerGroups: NavGroup[] = [
     label: "Products",
     items: [
       { label: "Product Catalog",   href: "/seller/catalog",    icon: Package },
-      { label: "My Listings",       href: "/seller/listings",   icon: ListChecks },
     ],
   },
   {

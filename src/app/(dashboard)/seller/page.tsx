@@ -224,7 +224,7 @@ export default function SellerDashboard() {
           {[
             { label: "View Orders",    href: "/seller/orders",   icon: ShoppingCart, color: "#3B82F6" },
             { label: "Product Catalog", href: "/seller/catalog",  icon: Package,      color: "#00C67A" },
-            { label: "Deliveries",     href: "/seller/delivery", icon: Truck,        color: "#7C3AED" },
+            { label: "Deliveries",     href: "/seller/deliveries", icon: Truck,        color: "#7C3AED" },
             { label: "Wallet",         href: "/seller/wallet",   icon: Wallet,       color: "#F59E0B" },
             { label: "Shopify Store",  href: "/seller/shopify",  icon: Store,        color: "#EF4444" },
           ].map((a) => {
