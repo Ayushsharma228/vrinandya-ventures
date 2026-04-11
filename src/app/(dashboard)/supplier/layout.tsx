@@ -1,8 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { SupplierSidebar } from "@/components/layout/supplier-sidebar";
-import { SupplierTopbar } from "@/components/layout/supplier-topbar";
+import { SidebarV2 } from "@/components/layout/sidebar-v2";
 
 export default async function SupplierLayout({
   children,
@@ -15,15 +14,13 @@ export default async function SupplierLayout({
   if (session.user.role !== "SUPPLIER") redirect("/login");
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <SupplierSidebar
-        userName={session.user.name ?? "Supplier"}
+    <div className="flex min-h-screen" style={{ background: "var(--bg-page)" }}>
+      <SidebarV2
+        role="supplier"
+        userName={session.user.name ?? ""}
         userEmail={session.user.email ?? ""}
       />
-      <div className="flex-1 flex flex-col min-w-0">
-        <SupplierTopbar />
-        <main className="flex-1 p-6">{children}</main>
-      </div>
+      <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );
 }

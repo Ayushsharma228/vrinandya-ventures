@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { Sidebar } from "@/components/layout/sidebar";
+import { SidebarV2 } from "@/components/layout/sidebar-v2";
 
 export default async function AdminLayout({
   children,
@@ -14,8 +14,8 @@ export default async function AdminLayout({
   if (session.user.role !== "ADMIN") redirect("/login");
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar
+    <div className="flex min-h-screen" style={{ background: "var(--bg-page)" }}>
+      <SidebarV2
         role="admin"
         userName={session.user.name ?? ""}
         userEmail={session.user.email ?? ""}
