@@ -44,17 +44,16 @@ export async function POST(req: NextRequest) {
       const existing = await prisma.product.findUnique({ where: { sku } });
       if (existing) { skipped++; continue; }
 
-      // Build image list — use catalog image as first fallback so we always have at least one
+      // Build image list — start with the catalog image (known to be visible)
       const images: string[] = [];
-      if (p.productImage) images.push(p.productImage);
+      if (catalogImage) images.push(catalogImage);
+      if (p.productImage && !images.includes(p.productImage)) images.push(p.productImage);
       if (p.productImages?.length) {
         p.productImages.forEach((img: { imageUrl?: string; url?: string }) => {
           const url = img.imageUrl || img.url;
           if (url && !images.includes(url)) images.push(url);
         });
       }
-      // If CJ query returned no images, use the image we already had from the list view
-      if (images.length === 0 && catalogImage) images.push(catalogImage);
 
       await prisma.product.create({
         data: {
