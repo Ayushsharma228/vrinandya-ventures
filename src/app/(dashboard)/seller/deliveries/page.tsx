@@ -12,10 +12,6 @@ interface Delivery {
 }
 interface Stats { pending: number; delivered: number; inTransit: number; rto: number; cancelled: number; }
 
-function getDisplayStatus(d: Delivery) {
-  if (d.courier?.includes("RTO")) return "RTO";
-  return d.status;
-}
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   SHIPPED:    { label: "Shipped",    color: "#7C3AED", bg: "#F5F3FF" },
@@ -154,8 +150,7 @@ export default function ManageDeliveryPage() {
               </thead>
               <tbody className="divide-y" style={{ borderColor: "var(--border)" }}>
                 {deliveries.map((d) => {
-                  const ds = getDisplayStatus(d);
-                  const cfg = STATUS_CONFIG[ds] ?? STATUS_CONFIG.NEW;
+                  const cfg = STATUS_CONFIG[d.status] ?? STATUS_CONFIG.NEW;
                   return (
                     <tr key={d.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-5 py-3 font-semibold text-xs" style={{ color: "var(--green-500)" }}>#{d.externalOrderId}</td>

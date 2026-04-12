@@ -16,11 +16,11 @@ export async function GET(req: NextRequest) {
 
   const sellerId = session.user.id;
 
-  const deliveryStatuses: OrderStatus[] = ["NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED"];
+  const allDeliveryStatuses: OrderStatus[] = ["NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "RTO"];
   const statusFilter: OrderStatus[] =
     status && status !== "ALL"
       ? [status as OrderStatus]
-      : deliveryStatuses;
+      : allDeliveryStatuses;
 
   const where: Record<string, unknown> = {
     sellerId,
@@ -53,17 +53,17 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  const allWithCourier = await prisma.order.findMany({
-    where: { sellerId, status: { in: deliveryStatuses } },
-    select: { status: true, courier: true },
+  const allOrders = await prisma.order.findMany({
+    where: { sellerId, status: { in: allDeliveryStatuses } },
+    select: { status: true },
   });
 
   const stats = {
-    pending: allWithCourier.filter((o) => o.status === "NEW" || o.status === "PROCESSING").length,
-    delivered: allWithCourier.filter((o) => o.status === "DELIVERED" && !o.courier?.includes("RTO")).length,
-    inTransit: allWithCourier.filter((o) => (o.status === "IN_TRANSIT" || o.status === "SHIPPED") && !o.courier?.includes("RTO")).length,
-    rto: allWithCourier.filter((o) => o.courier?.includes("RTO")).length,
-    cancelled: allWithCourier.filter((o) => o.status === "CANCELLED" && !o.courier?.includes("RTO")).length,
+    pending:   allOrders.filter((o) => o.status === "NEW" || o.status === "PROCESSING").length,
+    inTransit: allOrders.filter((o) => o.status === "IN_TRANSIT" || o.status === "SHIPPED").length,
+    delivered: allOrders.filter((o) => o.status === "DELIVERED").length,
+    rto:       allOrders.filter((o) => o.status === "RTO").length,
+    cancelled: allOrders.filter((o) => o.status === "CANCELLED").length,
   };
 
   return NextResponse.json({ orders, stats });
