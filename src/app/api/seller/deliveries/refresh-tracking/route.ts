@@ -3,18 +3,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-function mapDelhiveryStatus(status: string): { dbStatus: string; courier: string } {
+function mapDelhiveryStatus(status: string): string {
   const s = status?.toLowerCase() ?? "";
-  const isRTO = s.includes("rto");
-
-  let dbStatus = "SHIPPED";
-  if (s.includes("delivered")) dbStatus = "DELIVERED";
-  else if (s.includes("transit") || s.includes("out for delivery")) dbStatus = "IN_TRANSIT";
-  else if (s.includes("dispatch") || s.includes("picked")) dbStatus = "SHIPPED";
-  else if (s.includes("cancel")) dbStatus = "CANCELLED";
-
-  const courier = isRTO ? "Delhivery (RTO)" : "Delhivery";
-  return { dbStatus, courier };
+  if (s.includes("rto")) return "RTO";
+  if (s.includes("delivered")) return "DELIVERED";
+  if (s.includes("transit") || s.includes("out for delivery")) return "IN_TRANSIT";
+  if (s.includes("cancel")) return "CANCELLED";
+  return "SHIPPED";
 }
 
 export async function POST() {
@@ -30,7 +25,7 @@ export async function POST() {
     where: {
       sellerId: session.user.id,
       awbNumber: { not: null },
-      status: { notIn: ["DELIVERED", "CANCELLED"] },
+      status: { notIn: ["DELIVERED", "CANCELLED", "RTO"] },
     },
     select: { id: true, awbNumber: true },
   });
@@ -58,11 +53,11 @@ export async function POST() {
       if (!shipment) continue;
 
       const statusStr = (shipment.Status as { Status?: string } | null)?.Status ?? "";
-      const { dbStatus, courier } = mapDelhiveryStatus(statusStr);
+      const dbStatus = mapDelhiveryStatus(statusStr);
 
       await prisma.order.update({
         where: { id: order.id },
-        data: { status: dbStatus as never, courier },
+        data: { status: dbStatus as never },
       });
 
       updated++;

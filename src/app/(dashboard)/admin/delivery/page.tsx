@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, RefreshCw, Truck } from "lucide-react";
+import { Search, RefreshCw, Truck, Save } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 interface Order {
@@ -39,6 +39,7 @@ export default function AdminDeliveryPage() {
   const [awbInputs, setAwbInputs] = useState<Record<string, string>>({});
   const [statusInputs, setStatusInputs] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [bulkSaving, setBulkSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchOrders = useCallback(async () => {
@@ -64,6 +65,26 @@ export default function AdminDeliveryPage() {
   }, [search, statusFilter]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
+
+  async function handleBulkSave() {
+    const dirtyOrders = orders.filter((o) => statusInputs[o.id] !== undefined && statusInputs[o.id] !== o.status);
+    if (dirtyOrders.length === 0) return;
+    setBulkSaving(true);
+    await Promise.all(dirtyOrders.map((order) =>
+      fetch("/api/admin/orders/set-awb", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: order.id,
+          awb: (awbInputs[order.id] ?? order.awbNumber ?? "").trim(),
+          status: statusInputs[order.id],
+        }),
+      })
+    ));
+    setStatusInputs({});
+    await fetchOrders();
+    setBulkSaving(false);
+  }
 
   async function handleRefreshTracking() {
     setRefreshing(true);
@@ -101,12 +122,22 @@ export default function AdminDeliveryPage() {
         onSearchChange={setSearch}
         onSearchSubmit={fetchOrders}
         actions={
-          <button onClick={handleRefreshTracking} disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
-            style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
-            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-            Refresh Tracking
-          </button>
+          <div className="flex items-center gap-2">
+            {Object.keys(statusInputs).some((id) => statusInputs[id] !== orders.find(o => o.id === id)?.status) && (
+              <button onClick={handleBulkSave} disabled={bulkSaving}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50"
+                style={{ background: "#00C67A", color: "white" }}>
+                <Save className="w-4 h-4" />
+                {bulkSaving ? "Saving..." : `Save All Changes`}
+              </button>
+            )}
+            <button onClick={handleRefreshTracking} disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
+              style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+              Refresh Tracking
+            </button>
+          </div>
         }
         filters={
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
