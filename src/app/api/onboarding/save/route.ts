@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { resend, FROM_EMAIL, ADMIN_EMAIL } from "@/lib/resend";
+import { getResend, FROM_EMAIL, ADMIN_EMAIL } from "@/lib/resend";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
           </div>
         `;
 
-        await resend.emails.send({
+        await getResend().emails.send({
           from: FROM_EMAIL,
           to: [user.email, ADMIN_EMAIL],
           subject: `[Vrinandya] New Seller Onboarding — ${user.name} (${serviceLabel} · ${user.planTier})`,
