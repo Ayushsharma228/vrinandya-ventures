@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Package, Users, ShoppingCart, ListChecks, Clock, CheckCircle, XCircle, ArrowRight } from "lucide-react";
+import { Package, Users, ShoppingCart, ListChecks, Clock, CheckCircle, XCircle, ArrowRight, Truck, RotateCcw, TrendingUp, AlertCircle } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 export default async function AdminDashboard() {
@@ -12,6 +12,7 @@ export default async function AdminDashboard() {
   const [
     totalProducts, pendingProducts, approvedProducts,
     totalSellers, totalSuppliers, totalOrders, pendingListings,
+    deliveredOrders, rtoOrders, activeOrders, cancelledOrders,
   ] = await Promise.all([
     prisma.product.count(),
     prisma.product.count({ where: { status: "PENDING" } }),
@@ -20,6 +21,10 @@ export default async function AdminDashboard() {
     prisma.user.count({ where: { role: "SUPPLIER" } }),
     prisma.order.count(),
     prisma.listingRequest.count({ where: { status: "PENDING" } }),
+    prisma.order.count({ where: { status: "DELIVERED" } }),
+    prisma.order.count({ where: { rtoCharge: { gt: 0 } } }),
+    prisma.order.count({ where: { status: { in: ["PROCESSING", "SHIPPED", "IN_TRANSIT"] } } }),
+    prisma.order.count({ where: { status: "CANCELLED" } }),
   ]);
 
   const recentProducts = await prisma.product.findMany({
@@ -69,6 +74,33 @@ export default async function AdminDashboard() {
           </div>
         }
       />
+
+      {/* ── Order Analytics ─────────────────────────────── */}
+      <div className="px-8 pt-6">
+        <div className="mb-3 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4" style={{ color: "var(--green-500)" }} />
+          <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Order Analytics</h2>
+        </div>
+        <div className="grid grid-cols-5 gap-4">
+          {[
+            { label: "Total Orders",    value: totalOrders,     icon: ShoppingCart, color: "#3B82F6", bg: "#EFF6FF", text: "#3B82F6" },
+            { label: "Delivered",       value: deliveredOrders, icon: CheckCircle,  color: "#00C67A", bg: "#F0FDF4", text: "#16A34A" },
+            { label: "Active / Transit",value: activeOrders,    icon: Truck,        color: "#7C3AED", bg: "#F5F3FF", text: "#7C3AED" },
+            { label: "RTOs",            value: rtoOrders,       icon: RotateCcw,    color: "#F59E0B", bg: "#FFFBEB", text: "#D97706" },
+            { label: "Cancelled",       value: cancelledOrders, icon: AlertCircle,  color: "#EF4444", bg: "#FEF2F2", text: "#DC2626" },
+          ].map(({ label, value, icon: Icon, bg, text }) => (
+            <div key={label} className="card flex items-center gap-4 px-5 py-4">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
+                <Icon className="w-5 h-5" style={{ color: text }} />
+              </div>
+              <div>
+                <p className="text-2xl font-bold" style={{ color: "var(--text-900)" }}>{value}</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>{label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="px-8 py-6 grid grid-cols-2 gap-5">
         {/* Recent Product Submissions */}

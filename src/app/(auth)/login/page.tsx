@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, ArrowLeft, Store, Package, ChevronRight } from "lucide-react";
@@ -31,9 +31,24 @@ function LoginContent() {
     }
     const res = await fetch("/api/auth/session");
     const session = await res.json();
-    if (session?.user?.role === "ADMIN") window.location.href = "/admin";
-    else if (session?.user?.role === "SUPPLIER") window.location.href = "/supplier";
-    else if (session?.user?.role === "SELLER") {
+    const role = session?.user?.role;
+
+    if (zone === "seller" && role !== "SELLER") {
+      await signOut({ redirect: false });
+      setError("These credentials don't belong to a Seller account.");
+      setLoading(false);
+      return;
+    }
+    if (zone === "supplier" && role !== "SUPPLIER") {
+      await signOut({ redirect: false });
+      setError("These credentials don't belong to a Supplier account.");
+      setLoading(false);
+      return;
+    }
+
+    if (role === "ADMIN") window.location.href = "/admin";
+    else if (role === "SUPPLIER") window.location.href = "/supplier";
+    else if (role === "SELLER") {
       window.location.href = session?.user?.plan ? "/seller" : "/onboarding";
     }
   }
