@@ -1,20 +1,27 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "SELLER") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const sellerId = session.user.id;
+  const { searchParams } = req.nextUrl;
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
 
-  // All orders — no date filter
+  const dateWhere = from && to ? {
+    createdAt: { gte: new Date(from), lte: new Date(to + "T23:59:59.999Z") },
+  } : {};
+
+  // Orders filtered by date range (or all-time if no range given)
   const [orders, store] = await Promise.all([
     prisma.order.findMany({
-      where: { sellerId },
+      where: { sellerId, ...dateWhere },
       select: {
         id: true,
         externalOrderId: true,
@@ -36,9 +43,9 @@ export async function GET() {
 
   // Correct status buckets
   const delivered  = orders.filter((o) => o.status === "DELIVERED");
-  const rto        = orders.filter((o) => o.courier?.includes("RTO"));
-  const cancelled  = orders.filter((o) => o.status === "CANCELLED" && !o.courier?.includes("RTO"));
-  const inTransit  = orders.filter((o) => (o.status === "IN_TRANSIT" || o.status === "SHIPPED") && !o.courier?.includes("RTO"));
+  const rto        = orders.filter((o) => o.status === "RTO");
+  const cancelled  = orders.filter((o) => o.status === "CANCELLED");
+  const inTransit  = orders.filter((o) => o.status === "IN_TRANSIT" || o.status === "SHIPPED");
 
   const pct = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0;
 
@@ -48,10 +55,9 @@ export async function GET() {
     const day = o.createdAt.toISOString().slice(0, 10);
     const cur = trendMap.get(day) ?? { delivered: 0, rto: 0, cancelled: 0, total: 0 };
     cur.total++;
-    const isRTO = o.courier?.includes("RTO") || false;
     if (o.status === "DELIVERED") cur.delivered++;
-    if (isRTO) cur.rto++;
-    if (o.status === "CANCELLED" && !isRTO) cur.cancelled++;
+    if (o.status === "RTO") cur.rto++;
+    if (o.status === "CANCELLED") cur.cancelled++;
     trendMap.set(day, cur);
   }
   const trend = Array.from(trendMap.entries()).map(([date, v]) => ({ date, ...v }));
@@ -65,7 +71,7 @@ export async function GET() {
       cur.orders++;
       cur.units += item.quantity;
       if (o.status === "DELIVERED") cur.delivered++;
-      if (o.courier?.includes("RTO")) cur.rto++;
+      if (o.status === "RTO") cur.rto++;
       productMap.set(item.name, cur);
       if (!skuMap.has(item.name) && item.sku) skuMap.set(item.name, item.sku);
     }

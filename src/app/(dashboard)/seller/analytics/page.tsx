@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, ShoppingCart, Truck, AlertTriangle, XCircle, TrendingUp } from "lucide-react";
+import { RefreshCw, ShoppingCart, Truck, AlertTriangle, XCircle, TrendingUp, Calendar } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell,
@@ -31,37 +31,95 @@ function fmt(d: string) {
   return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
 }
 
+function toISODate(d: Date) { return d.toISOString().split("T")[0]; }
+
+const PRESETS = [
+  { label: "7D",  days: 7 },
+  { label: "14D", days: 14 },
+  { label: "30D", days: 30 },
+  { label: "90D", days: 90 },
+  { label: "All", days: 0 },
+];
+
 export default function SellerAnalyticsPage() {
+  const today = toISODate(new Date());
+  const d30    = toISODate(new Date(Date.now() - 29 * 86400000));
+
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [from, setFrom] = useState(d30);
+  const [to, setTo]     = useState(today);
+  const [preset, setPreset] = useState<number>(30);
 
   const fetchData = useCallback(async (showRefreshing = false) => {
     if (showRefreshing) setRefreshing(true); else setLoading(true);
-    const res = await fetch("/api/seller/analytics");
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to)   params.set("to", to);
+    const res = await fetch(`/api/seller/analytics?${params}`);
     setData(await res.json());
     setLoading(false); setRefreshing(false);
-  }, []);
+  }, [from, to]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  function applyPreset(days: number) {
+    setPreset(days);
+    if (days === 0) {
+      setFrom("");
+      setTo("");
+    } else {
+      setFrom(toISODate(new Date(Date.now() - (days - 1) * 86400000)));
+      setTo(today);
+    }
+  }
 
   const storeName = data?.store?.storeName ?? data?.store?.storeUrl ?? "All Stores";
 
   return (
     <div className="p-6 space-y-5">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Store Analytics</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            All-time performance metrics for <span className="text-blue-500 font-medium">{storeName}</span>
+            Performance metrics for <span className="text-blue-500 font-medium">{storeName}</span>
           </p>
         </div>
-        <button onClick={() => fetchData(true)} disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50">
-          <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
+
+        {/* Date controls */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Preset buttons */}
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+            {PRESETS.map((p) => (
+              <button key={p.label} onClick={() => applyPreset(p.days)}
+                className="px-3 py-1 text-xs font-semibold rounded-md transition-all"
+                style={preset === p.days
+                  ? { background: "white", color: "#1D4ED8", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+                  : { color: "#6B7280" }}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom date inputs */}
+          <div className="flex items-center gap-1.5 text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white">
+            <Calendar className="w-3.5 h-3.5 text-gray-400" />
+            <input type="date" value={from} max={to || today}
+              onChange={(e) => { setFrom(e.target.value); setPreset(-1); }}
+              className="text-xs outline-none text-gray-700 w-28" />
+            <span className="text-gray-300">→</span>
+            <input type="date" value={to} min={from} max={today}
+              onChange={(e) => { setTo(e.target.value); setPreset(-1); }}
+              className="text-xs outline-none text-gray-700 w-28" />
+          </div>
+
+          <button onClick={() => fetchData(true)} disabled={refreshing}
+            className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50">
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
       {loading ? (

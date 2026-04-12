@@ -2,8 +2,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Package, Users, ShoppingCart, ListChecks, Clock, CheckCircle, XCircle, ArrowRight, Truck, RotateCcw, TrendingUp, AlertCircle } from "lucide-react";
+import { Package, Users, ShoppingCart, ListChecks, Clock, CheckCircle, ArrowRight, Truck, RotateCcw, TrendingUp, AlertCircle } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
+import { AdminOrderTrendChart } from "@/components/admin/order-trend-chart";
 
 export default async function AdminDashboard() {
   const session = await getServerSession(authOptions);
@@ -100,6 +101,11 @@ export default async function AdminDashboard() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* ── Order Trend Chart ─────────────────────────────── */}
+      <div className="px-8 pt-6">
+        <AdminOrderTrendChart />
       </div>
 
       <div className="px-8 py-6 grid grid-cols-2 gap-5">

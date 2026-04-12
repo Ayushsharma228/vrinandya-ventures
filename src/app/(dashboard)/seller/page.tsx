@@ -76,6 +76,7 @@ export default function SellerDashboard() {
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [recentOrders, setRecentOrders] = useState<{ id: string; externalOrderId: string; customerName: string; totalAmount: number; status: string; createdAt: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chartDays, setChartDays] = useState(14);
 
   const name = session?.user?.name?.split(" ")[0] || "Seller";
 
@@ -97,8 +98,7 @@ export default function SellerDashboard() {
     ? new Date(nextPayout.remittanceDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
     : null;
 
-  // Last 14 days of trend data
-  const chartData = analytics?.trend?.slice(-14).map(d => ({
+  const chartData = analytics?.trend?.slice(chartDays > 0 ? -chartDays : undefined).map(d => ({
     date: new Date(d.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
     Orders: d.total,
     Delivered: d.delivered,
@@ -249,21 +249,35 @@ export default function SellerDashboard() {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Order Trend</h2>
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>Last 14 days</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>Last {chartDays} days</p>
               </div>
-              <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-400)" }}>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#00C67A" }} />
-                  Delivered
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#3B82F6" }} />
-                  Orders
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#EF4444" }} />
-                  RTO
-                </span>
+              <div className="flex items-center gap-3">
+                {/* Days selector */}
+                <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-0.5">
+                  {[7, 14, 30, 60].map((d) => (
+                    <button key={d} onClick={() => setChartDays(d)}
+                      className="px-2.5 py-1 text-xs font-semibold rounded-md transition-all"
+                      style={chartDays === d
+                        ? { background: "white", color: "var(--text-900)", boxShadow: "0 1px 2px rgba(0,0,0,0.08)" }
+                        : { color: "var(--text-400)" }}>
+                      {d}d
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-400)" }}>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#00C67A" }} />
+                    Delivered
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#3B82F6" }} />
+                    Orders
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#EF4444" }} />
+                    RTO
+                  </span>
+                </div>
               </div>
             </div>
             {chartData.length === 0 ? (
