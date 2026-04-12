@@ -52,6 +52,7 @@ const adminGroups: NavGroup[] = [
   {
     label: "Settings",
     items: [
+      { label: "Sellers",           href: "/admin/sellers",     icon: Store },
       { label: "Users",             href: "/admin/users",       icon: Users },
       { label: "Notifications",     href: "/admin/notifications", icon: Bell },
     ],

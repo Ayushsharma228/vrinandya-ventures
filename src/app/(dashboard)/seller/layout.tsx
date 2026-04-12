@@ -8,7 +8,13 @@ export default async function SellerLayout({ children }: { children: React.React
 
   if (!session) redirect("/login");
   if (session.user.role !== "SELLER") redirect("/login");
-  if (!session.user.plan) redirect("/onboarding");
+
+  // New sellers must complete onboarding and wait for activation
+  const status = (session.user as { accountStatus?: string }).accountStatus;
+  if (status && status !== "ACTIVE") redirect("/onboarding");
+
+  // Legacy: existing sellers without plan (before signup flow) still work
+  if (!session.user.plan && status === undefined) redirect("/onboarding");
 
   return (
     <div className="flex min-h-screen" style={{ background: "var(--bg-page)" }}>

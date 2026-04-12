@@ -17,6 +17,19 @@ enum Plan {
   MARKETPLACE
 }
 
+enum AccountStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum KycStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
 enum ProductStatus {
   PENDING
   APPROVED
@@ -78,6 +91,30 @@ model User {
   bankAccount String?
   bankIfsc    String?
   bankName    String?
+
+  // Signup & onboarding
+  username             String?       @unique
+  accountStatus        AccountStatus @default(ACTIVE)
+  planTier             String?
+  onboardingDone       Boolean       @default(false)
+
+  // Business / invoice details
+  businessName         String?
+  businessAddress      String?
+  pincode              String?
+
+  // KYC
+  aadhaarNumber        String?
+  aadhaarDocUrl        String?
+  kycStatus            KycStatus     @default(NOT_SUBMITTED)
+
+  // Agreement
+  agreementAccepted    Boolean       @default(false)
+  agreementAcceptedAt  DateTime?
+
+  // Payment
+  paymentReference     String?
+  paymentConfirmed     Boolean       @default(false)
 
   shopifyStore        ShopifyStore?
   marketplaceAccounts MarketplaceAccount[]

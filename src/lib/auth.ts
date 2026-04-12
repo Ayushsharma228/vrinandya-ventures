@@ -2,7 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { Role, Plan } from "@prisma/client";
+import { Role, Plan, AccountStatus } from "@prisma/client";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -47,6 +47,8 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role,
           plan: user.plan,
+          accountStatus: user.accountStatus,
+          onboardingDone: user.onboardingDone,
         };
       },
     }),
@@ -57,9 +59,13 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role as Role;
         token.plan = user.plan as Plan | null;
         token.id = user.id;
+        token.accountStatus = user.accountStatus as AccountStatus;
+        token.onboardingDone = user.onboardingDone as boolean;
       }
-      if (trigger === "update" && session?.plan) {
-        token.plan = session.plan;
+      if (trigger === "update") {
+        if (session?.plan) token.plan = session.plan;
+        if (session?.accountStatus) token.accountStatus = session.accountStatus;
+        if (session?.onboardingDone !== undefined) token.onboardingDone = session.onboardingDone;
       }
       return token;
     },
@@ -68,6 +74,8 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.role = token.role as Role;
         session.user.plan = token.plan as Plan | null;
+        session.user.accountStatus = token.accountStatus as AccountStatus;
+        session.user.onboardingDone = token.onboardingDone as boolean;
       }
       return session;
     },
