@@ -71,6 +71,14 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  phone       String?
+  brandName   String?
+  gstNumber   String?
+  bankHolder  String?
+  bankAccount String?
+  bankIfsc    String?
+  bankName    String?
+
   shopifyStore        ShopifyStore?
   marketplaceAccounts MarketplaceAccount[]
   orders              Order[]

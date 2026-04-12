@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
             id: true,
             externalOrderId: true,
             customerName: true,
+            status: true,
             courier: true,
             totalAmount: true,
             productCost: true,
@@ -52,8 +53,7 @@ export async function GET(req: NextRequest) {
       remittedAt: null,
       OR: [
         { status: "DELIVERED" },
-        { status: "SHIPPED", courier: { contains: "RTO" } },
-        { status: "CANCELLED", courier: { contains: "RTO" } },
+        { status: "RTO" },
       ],
     },
     include: { items: { select: { name: true, quantity: true } } },

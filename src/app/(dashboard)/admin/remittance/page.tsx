@@ -5,11 +5,12 @@ import {
   IndianRupee, CheckSquare, Square, Calculator, Send,
   ChevronDown, ChevronRight, History, Clock, CheckCircle2, BadgeCheck,
 } from "lucide-react";
+import { PageHero } from "@/components/layout/page-hero";
 
 interface Seller { id: string; name: string | null; email: string; }
 
 interface Order {
-  id: string; externalOrderId: string; status: string; courier: string | null;
+  id: string; externalOrderId: string; status: string; courier?: string | null;
   customerName: string | null; totalAmount: number; productCost: number | null;
   shippingCharge: number | null; packingCharge: number | null; rtoCharge: number | null;
   createdAt: string; items: { name: string; quantity: number }[];
@@ -21,7 +22,7 @@ interface ChargeRow {
 }
 
 interface HistoryOrder {
-  id: string; externalOrderId: string; customerName: string | null; courier: string | null;
+  id: string; externalOrderId: string; customerName: string | null; status: string; courier?: string | null;
   totalAmount: number; productCost: number | null; shippingCharge: number | null;
   packingCharge: number | null; rtoCharge: number | null;
 }
@@ -37,7 +38,7 @@ interface HistoryEntry {
 function fmt(n: number) { return `₹${n.toFixed(2)}`; }
 
 function netForHistoryOrder(o: HistoryOrder) {
-  const rto = o.courier?.includes("RTO") || false;
+  const rto = o.status === "RTO";
   const pc = o.productCost ?? 0; const sc = o.shippingCharge ?? 0;
   const pac = o.packingCharge ?? 0; const rtc = o.rtoCharge ?? 0;
   return rto ? -(pc + rtc + pac) : o.totalAmount - pc - sc - pac;
@@ -62,7 +63,7 @@ function OrderBreakdownTable({ orders }: { orders: HistoryOrder[] }) {
         </thead>
         <tbody className="divide-y divide-gray-50">
           {orders.map((o) => {
-            const rto = o.courier?.includes("RTO") || false;
+            const rto = o.status === "RTO";
             const net = netForHistoryOrder(o);
             return (
               <tr key={o.id} className="hover:bg-gray-50/40">
@@ -151,7 +152,7 @@ export default function AdminRemittancePage() {
 
   useEffect(() => { if (!sellerId) return; fetchPending(); fetchHistory(); }, [sellerId, fetchPending, fetchHistory]);
 
-  function isRTO(o: Order) { return o.courier?.includes("RTO") || false; }
+  function isRTO(o: Order) { return o.status === "RTO"; }
 
   function netForOrder(order: Order) {
     const row = charges[order.id];
@@ -277,13 +278,11 @@ export default function AdminRemittancePage() {
   }
 
   return (
-    <div className="p-6 space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold text-gray-900">Remittance</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Calculate and generate remittance for sellers</p>
-      </div>
+    <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
+      <PageHero title="Remittance" subtitle="Calculate and generate remittance for sellers" />
 
-      <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4">
+      <div className="px-8 py-6 space-y-5">
+      <div className="card p-4 flex items-center gap-4">
         <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Select Seller</label>
         <select value={sellerId} onChange={(e) => { setSellerId(e.target.value); setTab("pending"); }}
           className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -472,6 +471,7 @@ export default function AdminRemittancePage() {
             </>
           )
       )}
+      </div>
     </div>
   );
 }

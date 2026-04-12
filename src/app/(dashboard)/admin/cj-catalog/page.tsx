@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Search, Download, CheckSquare, Square, Loader2, RefreshCw, Package, X, IndianRupee } from "lucide-react";
+import { PageHero } from "@/components/layout/page-hero";
 
 interface CJProduct {
   pid: string;
@@ -128,26 +129,30 @@ export default function CJCatalogPage() {
   const totalPages = Math.ceil(total / 20);
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">CJ Dropshipping Catalog</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Browse CJ catalog, set your INR selling price, then import</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {selected.size > 0 && (
-            <button onClick={openImportModal}
-              className="flex items-center gap-2 px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg">
-              <Download className="w-4 h-4" />
-              Import {selected.size} product{selected.size > 1 ? "s" : ""} →
+    <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
+      <PageHero
+        title="CJ Dropshipping Catalog"
+        subtitle="Browse CJ catalog, set your INR selling price, then import"
+        actions={
+          <div className="flex items-center gap-2">
+            {selected.size > 0 && (
+              <button onClick={openImportModal}
+                className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white"
+                style={{ background: "#F97316" }}>
+                <Download className="w-4 h-4" />
+                Import {selected.size} product{selected.size > 1 ? "s" : ""} →
+              </button>
+            )}
+            <button onClick={fetchProducts} disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
+              style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             </button>
-          )}
-          <button onClick={fetchProducts} disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-200 rounded-lg bg-white hover:bg-gray-50 disabled:opacity-50">
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          </button>
-        </div>
-      </div>
+          </div>
+        }
+      />
+
+      <div className="px-8 py-6 space-y-5">
 
       {result && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-700 font-medium">
@@ -157,7 +162,7 @@ export default function CJCatalogPage() {
       )}
 
       {/* Search */}
-      <form onSubmit={handleSearch} className="bg-white border border-gray-200 rounded-xl p-4 flex gap-3">
+      <form onSubmit={handleSearch} className="card p-4 flex gap-3">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
@@ -170,7 +175,7 @@ export default function CJCatalogPage() {
       </form>
 
       {/* Grid */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="card overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={toggleAll} className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800">
@@ -321,6 +326,7 @@ export default function CJCatalogPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

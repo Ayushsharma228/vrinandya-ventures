@@ -12,7 +12,7 @@ const TABS = [
   { id: "password", label: "Password",         icon: Lock },
 ];
 
-export default function SellerProfilePage() {
+export default function SupplierProfilePage() {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("personal");
   const [saving, setSaving] = useState(false);
@@ -25,7 +25,7 @@ export default function SellerProfilePage() {
   const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
 
   useEffect(() => {
-    fetch("/api/seller/profile").then((r) => r.json()).then((d) => {
+    fetch("/api/supplier/profile").then((r) => r.json()).then((d) => {
       if (d.user) {
         setPersonal({ name: d.user.name ?? "", email: d.user.email ?? "", phone: d.user.phone ?? "" });
         setBusiness({ brandName: d.user.brandName ?? "", gst: d.user.gstNumber ?? "" });
@@ -42,7 +42,7 @@ export default function SellerProfilePage() {
     else if (activeTab === "bank") body = { type: "bank", ...bank };
     else if (activeTab === "password") body = { type: "password", ...passwords };
 
-    const res = await fetch("/api/seller/profile", {
+    const res = await fetch("/api/supplier/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -76,7 +76,7 @@ export default function SellerProfilePage() {
               <p className="font-semibold text-sm" style={{ color: "var(--text-900)" }}>{session?.user?.name}</p>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>{session?.user?.email}</p>
               <span className="mt-2 px-3 py-1 rounded-full text-xs font-semibold"
-                style={{ background: "#F0FDF4", color: "var(--green-500)" }}>Seller</span>
+                style={{ background: "#F0FDF4", color: "var(--green-500)" }}>Supplier</span>
             </div>
 
             <div className="card overflow-hidden">
@@ -131,7 +131,7 @@ export default function SellerProfilePage() {
             {activeTab === "bank" && (
               <div className="space-y-5">
                 <h2 className="text-base font-semibold" style={{ color: "var(--text-900)" }}>Bank Details</h2>
-                <p className="text-xs" style={{ color: "var(--text-400)" }}>Used for remittance payouts</p>
+                <p className="text-xs" style={{ color: "var(--text-400)" }}>Your bank details for remittances from Vrinandya Ventures</p>
                 <div className="grid grid-cols-2 gap-4">
                   <Field icon={User} label="Account Holder Name" value={bank.accountHolder} onChange={v => setBank(p => ({ ...p, accountHolder: v }))} />
                   <Field icon={CreditCard} label="Account Number" value={bank.accountNumber} onChange={v => setBank(p => ({ ...p, accountNumber: v }))} />
