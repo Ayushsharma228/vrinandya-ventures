@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const orders = await prisma.order.findMany({
       where: {
         sellerId: session.user.id,
-        ...(from && to ? { createdAt: { gte: new Date(from), lte: new Date(to) } } : {}),
+        ...(from && to ? { createdAt: { gte: new Date(from), lte: new Date(to + "T23:59:59.999Z") } } : {}),
         ...(search ? {
           OR: [
             { externalOrderId: { contains: search, mode: "insensitive" } },

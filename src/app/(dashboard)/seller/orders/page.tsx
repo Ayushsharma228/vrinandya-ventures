@@ -26,7 +26,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
 const STATUS_FILTERS = ["ALL", "NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "RTO", "CANCELLED"];
 
 function formatDate(d: Date) {
-  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
+  return d.toISOString().split("T")[0]; // YYYY-MM-DD for API params
 }
 function fmt(n: number) { return new Intl.NumberFormat("en-IN").format(n); }
 
