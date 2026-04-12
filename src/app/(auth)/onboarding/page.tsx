@@ -222,9 +222,17 @@ export default function OnboardingPage() {
       const clean = aadhaar.replace(/\s/g, "");
       if (clean.length !== 12) { setError("Enter valid 12-digit Aadhaar number"); setLoading(false); return; }
       let url = kycUrl;
-      if (kycFile && !kycUrl) url = await uploadKyc();
-      if (!url) { setError("Please upload your Aadhaar document"); setLoading(false); return; }
-      await save({ step: "kyc", aadhaarNumber: aadhaar, aadhaarDocUrl: url });
+      if (kycFile && !kycUrl) {
+        try {
+          url = await uploadKyc();
+        } catch (uploadErr) {
+          // Upload failed — still allow proceeding, admin will collect doc manually
+          console.warn("KYC upload failed, proceeding without doc URL:", uploadErr);
+          setError("");
+        }
+      }
+      // url is optional — admin can collect Aadhaar doc via email if upload fails
+      await save({ step: "kyc", aadhaarNumber: aadhaar, aadhaarDocUrl: url || "" });
       setStep(3);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error");
@@ -392,7 +400,10 @@ export default function OnboardingPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: "rgba(255,255,255,0.6)" }}>Aadhaar Document (Front) *</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.6)" }}>Aadhaar Document (Front)</label>
+                  <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Optional — can submit later</span>
+                </div>
                 <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) { setKycFile(f); setKycUrl(""); } }} />
 

@@ -28,6 +28,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: blob.url });
   } catch (err) {
     console.error("KYC upload error:", err);
-    return NextResponse.json({ error: "Upload failed. Please try again." }, { status: 500 });
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    if (msg.includes("BLOB_READ_WRITE_TOKEN") || msg.includes("token")) {
+      return NextResponse.json({ error: "File storage not configured. Please contact support or skip this step." }, { status: 500 });
+    }
+    return NextResponse.json({ error: `Upload failed: ${msg}` }, { status: 500 });
   }
 }
