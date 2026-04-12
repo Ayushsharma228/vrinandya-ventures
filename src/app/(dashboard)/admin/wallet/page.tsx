@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { IndianRupee, Plus, Trash2, Copy } from "lucide-react";
+import { PageHero } from "@/components/layout/page-hero";
 
 interface Seller { id: string; name: string | null; email: string; balance: number; }
 interface Transaction {
@@ -71,16 +72,14 @@ export default function AdminWalletPage() {
   }
 
   return (
-    <div className="p-6 space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold text-gray-900">Wallet Management</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Manage seller balances and transactions</p>
-      </div>
+    <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
+      <PageHero title="Wallet Management" subtitle="Manage seller balances and wallet transactions" />
 
+      <div className="px-8 py-6">
       <div className="grid grid-cols-3 gap-5">
         {/* Sellers List */}
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden col-span-1">
-          <div className="px-4 py-3 border-b border-gray-100 font-semibold text-sm text-gray-700">Sellers</div>
+        <div className="card overflow-hidden col-span-1">
+          <div className="px-4 py-3 font-semibold text-sm" style={{ borderBottom: "1px solid var(--border)", color: "var(--text-900)" }}>Sellers</div>
           {sellers.length === 0 ? (
             <p className="p-4 text-sm text-gray-400">No sellers found</p>
           ) : (
@@ -102,13 +101,13 @@ export default function AdminWalletPage() {
         {/* Transactions */}
         <div className="col-span-2 space-y-4">
           {!selected ? (
-            <div className="bg-white border border-gray-200 rounded-xl p-12 text-center text-gray-400 text-sm">
+            <div className="card p-12 text-center text-sm" style={{ color: "var(--text-400)" }}>
               Select a seller to manage their wallet
             </div>
           ) : (
             <>
               {/* Balance + Add Form */}
-              <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+              <div className="card p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-500">Balance — {selected.name || selected.email}</p>
@@ -152,8 +151,8 @@ export default function AdminWalletPage() {
               </div>
 
               {/* Transaction History */}
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-100 font-semibold text-sm text-gray-700">
+              <div className="card overflow-hidden">
+                <div className="px-4 py-3 font-semibold text-sm" style={{ borderBottom: "1px solid var(--border)", color: "var(--text-900)" }}>
                   Transaction History ({transactions.length})
                 </div>
                 {transactions.length === 0 ? (
@@ -202,6 +201,7 @@ export default function AdminWalletPage() {
             </>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
