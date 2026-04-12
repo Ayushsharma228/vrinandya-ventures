@@ -59,8 +59,8 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role as Role;
         token.plan = user.plan as Plan | null;
         token.id = user.id;
-        token.accountStatus = user.accountStatus as AccountStatus;
-        token.onboardingDone = user.onboardingDone as boolean;
+        token.accountStatus = user.accountStatus;
+        token.onboardingDone = user.onboardingDone;
       }
       if (trigger === "update") {
         if (session?.plan) token.plan = session.plan;
