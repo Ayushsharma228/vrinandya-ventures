@@ -37,6 +37,7 @@ enum OrderStatus {
   IN_TRANSIT
   DELIVERED
   CANCELLED
+  RTO
 }
 
 enum OrderSource {

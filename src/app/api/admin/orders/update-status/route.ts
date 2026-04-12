@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+const VALID_STATUSES = ["NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "RTO"];
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -13,15 +15,13 @@ export async function POST(req: NextRequest) {
   if (!orderId || !status) {
     return NextResponse.json({ error: "orderId and status required" }, { status: 400 });
   }
-
-  const isRTO = status === "RTO";
+  if (!VALID_STATUSES.includes(status)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
 
   await prisma.order.update({
     where: { id: orderId },
-    data: {
-      status: (isRTO ? "SHIPPED" : status) as never,
-      ...(isRTO ? { courier: "Delhivery (RTO)" } : {}),
-    },
+    data: { status: status as never },
   });
 
   return NextResponse.json({ success: true });

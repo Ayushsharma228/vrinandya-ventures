@@ -59,12 +59,8 @@ export default function AdminOrdersPage() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  function getDisplayStatus(order: Order) {
-    return order.courier?.includes("RTO") ? "RTO" : order.status;
-  }
-
   async function handleSaveStatus(order: Order) {
-    const status = statusInputs[order.id] ?? getDisplayStatus(order);
+    const status = statusInputs[order.id] ?? order.status;
     setSaving(order.id);
     const res = await fetch("/api/admin/orders/update-status", {
       method: "POST",
@@ -134,9 +130,8 @@ export default function AdminOrdersPage() {
                 {orders.length === 0 ? (
                   <tr><td colSpan={9} className="py-12 text-center text-gray-400 text-sm">No orders found</td></tr>
                 ) : orders.map((order) => {
-                  const ds = getDisplayStatus(order);
-                  const currentStatus = statusInputs[order.id] ?? ds;
-                  const isDirty = statusInputs[order.id] !== undefined && statusInputs[order.id] !== ds;
+                  const currentStatus = statusInputs[order.id] ?? order.status;
+                  const isDirty = statusInputs[order.id] !== undefined && statusInputs[order.id] !== order.status;
                   return (
                     <tr key={order.id} className="hover:bg-gray-50/50">
                       <td className="px-4 py-3 font-mono text-xs text-blue-600 whitespace-nowrap">{order.externalOrderId}</td>

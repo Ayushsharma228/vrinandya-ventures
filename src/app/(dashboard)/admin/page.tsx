@@ -22,7 +22,7 @@ export default async function AdminDashboard() {
     prisma.order.count(),
     prisma.listingRequest.count({ where: { status: "PENDING" } }),
     prisma.order.count({ where: { status: "DELIVERED" } }),
-    prisma.order.count({ where: { rtoCharge: { gt: 0 } } }),
+    prisma.order.count({ where: { status: "RTO" } }),
     prisma.order.count({ where: { status: { in: ["PROCESSING", "SHIPPED", "IN_TRANSIT"] } } }),
     prisma.order.count({ where: { status: "CANCELLED" } }),
   ]);
