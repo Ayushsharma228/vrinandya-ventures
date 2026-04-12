@@ -176,12 +176,28 @@ function LoginContent() {
                 </button>
               </div>
 
-              <p className="text-center text-xs mt-8" style={{ color: "var(--text-400)" }}>
-                Admin?{" "}
-                <Link href="/admin/login" className="font-semibold hover:underline" style={{ color: "var(--green-500)" }}>
-                  Admin Login →
-                </Link>
-              </p>
+              <div className="mt-8 space-y-3">
+                {/* Sign up CTA */}
+                <div className="rounded-2xl p-4 flex items-center justify-between"
+                  style={{ background: "#F0FDF4", border: "1px solid #D1FAE5" }}>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: "#065F46" }}>New seller?</p>
+                    <p className="text-xs" style={{ color: "#6EE7B7" }}>Create your account in 2 minutes</p>
+                  </div>
+                  <Link href="/signup"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-opacity hover:opacity-90"
+                    style={{ background: "var(--green-500)" }}>
+                    Sign Up <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+
+                <p className="text-center text-xs" style={{ color: "var(--text-400)" }}>
+                  Admin?{" "}
+                  <Link href="/admin/login" className="font-semibold hover:underline" style={{ color: "var(--green-500)" }}>
+                    Admin Login →
+                  </Link>
+                </p>
+              </div>
             </>
           )}
 
@@ -268,15 +284,25 @@ function LoginContent() {
                 </button>
               </form>
 
-              <p className="text-center text-xs mt-6" style={{ color: "var(--text-400)" }}>
-                {zone === "seller" ? "Are you a supplier? " : "Are you a seller? "}
-                <button
-                  onClick={() => { setZone(zone === "seller" ? "supplier" : "seller"); setError(""); }}
-                  className="font-semibold hover:underline"
-                  style={{ color: zone === "seller" ? "var(--green-500)" : "#3B82F6" }}>
-                  {zone === "seller" ? "Supplier login →" : "Seller login →"}
-                </button>
-              </p>
+              <div className="mt-6 space-y-2 text-center">
+                {zone === "seller" && (
+                  <p className="text-xs" style={{ color: "var(--text-400)" }}>
+                    New seller?{" "}
+                    <Link href="/signup" className="font-semibold hover:underline" style={{ color: "var(--green-500)" }}>
+                      Create an account →
+                    </Link>
+                  </p>
+                )}
+                <p className="text-xs" style={{ color: "var(--text-400)" }}>
+                  {zone === "seller" ? "Are you a supplier? " : "Are you a seller? "}
+                  <button
+                    onClick={() => { setZone(zone === "seller" ? "supplier" : "seller"); setError(""); }}
+                    className="font-semibold hover:underline"
+                    style={{ color: zone === "seller" ? "var(--green-500)" : "#3B82F6" }}>
+                    {zone === "seller" ? "Supplier login →" : "Seller login →"}
+                  </button>
+                </p>
+              </div>
             </>
           )}
         </div>
