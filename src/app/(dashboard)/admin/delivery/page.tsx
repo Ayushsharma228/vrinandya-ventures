@@ -26,6 +26,7 @@ const STATUS_COLOR: Record<string, string> = {
   IN_TRANSIT: "bg-yellow-50 text-yellow-600",
   DELIVERED: "bg-green-50 text-green-600",
   CANCELLED: "bg-red-50 text-red-600",
+  RTO: "bg-orange-50 text-orange-600",
 };
 
 const STATUSES = ["PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "RTO"];
@@ -90,8 +91,6 @@ export default function AdminDeliveryPage() {
     setSaving(null);
   }
 
-  const displayStatus = (o: Order) => o.courier?.includes("RTO") ? "RTO" : o.status;
-
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
       <PageHero
@@ -143,7 +142,6 @@ export default function AdminDeliveryPage() {
                 {orders.length === 0 ? (
                   <tr><td colSpan={9} className="py-12 text-center text-gray-400 text-sm">No orders found</td></tr>
                 ) : orders.map((order) => {
-                  const ds = displayStatus(order);
                   const selectedStatus = statusInputs[order.id] ?? order.status;
                   const isCancelled = selectedStatus === "CANCELLED";
                   return (
@@ -158,9 +156,9 @@ export default function AdminDeliveryPage() {
                       <td className="px-4 py-3 text-sm font-semibold text-gray-800">₹{order.totalAmount.toLocaleString()}</td>
                       <td className="px-4 py-3">
                         <select
-                          value={statusInputs[order.id] ?? order.status}
+                          value={selectedStatus}
                           onChange={(e) => setStatusInputs((p) => ({ ...p, [order.id]: e.target.value }))}
-                          className={`text-xs px-2 py-1 rounded-full font-medium border-0 outline-none cursor-pointer ${STATUS_COLOR[ds] ?? "bg-gray-100 text-gray-600"}`}>
+                          className={`text-xs px-2 py-1 rounded-full font-medium border-0 outline-none cursor-pointer ${STATUS_COLOR[selectedStatus] ?? "bg-gray-100 text-gray-600"}`}>
                           {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </td>
