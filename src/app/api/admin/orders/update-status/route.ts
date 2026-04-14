@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { orderId, status } = await req.json();
+  const { orderId, status, orderDate } = await req.json();
   if (!orderId || !status) {
     return NextResponse.json({ error: "orderId and status required" }, { status: 400 });
   }
@@ -21,7 +21,10 @@ export async function POST(req: NextRequest) {
 
   await prisma.order.update({
     where: { id: orderId },
-    data: { status: status as never },
+    data: {
+      status: status as never,
+      ...(orderDate ? { createdAt: new Date(orderDate) } : {}),
+    },
   });
 
   return NextResponse.json({ success: true });

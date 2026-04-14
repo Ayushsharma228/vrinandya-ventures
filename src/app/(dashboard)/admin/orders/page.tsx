@@ -201,6 +201,7 @@ export default function AdminOrdersPage() {
   const [sellerFilter, setSellerFilter]   = useState("");
   const [statusFilter, setStatusFilter]   = useState("");
   const [statusInputs, setStatusInputs]   = useState<Record<string, string>>({});
+  const [dateInputs, setDateInputs]       = useState<Record<string, string>>({});
   const [saving, setSaving]               = useState<string | null>(null);
   const [selected, setSelected]           = useState<Set<string>>(new Set());
   const [deleting, setDeleting]           = useState(false);
@@ -225,15 +226,20 @@ export default function AdminOrdersPage() {
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
   async function handleSaveStatus(order: Order) {
-    const status = statusInputs[order.id] ?? order.status;
+    const status    = statusInputs[order.id] ?? order.status;
+    const orderDate = dateInputs[order.id] ?? null;
     setSaving(order.id);
     const res = await fetch("/api/admin/orders/update-status", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId: order.id, status }),
+      body: JSON.stringify({ orderId: order.id, status, orderDate }),
     });
     if (!res.ok) { const d = await res.json(); alert(d.error || "Failed"); }
-    else { setStatusInputs((p) => { const n = { ...p }; delete n[order.id]; return n; }); await fetchOrders(); }
+    else {
+      setStatusInputs((p) => { const n = { ...p }; delete n[order.id]; return n; });
+      setDateInputs((p)   => { const n = { ...p }; delete n[order.id]; return n; });
+      await fetchOrders();
+    }
     setSaving(null);
   }
 
@@ -334,7 +340,9 @@ export default function AdminOrdersPage() {
                     <tr><td colSpan={10} className="py-12 text-center text-gray-400 text-sm">No orders found</td></tr>
                   ) : orders.map((order) => {
                     const currentStatus = statusInputs[order.id] ?? order.status;
-                    const isDirty = statusInputs[order.id] !== undefined && statusInputs[order.id] !== order.status;
+                    const currentDate   = dateInputs[order.id] ?? order.createdAt.slice(0, 10);
+                    const isDirty = (statusInputs[order.id] !== undefined && statusInputs[order.id] !== order.status)
+                                 || (dateInputs[order.id] !== undefined && dateInputs[order.id] !== order.createdAt.slice(0, 10));
                     const isSelected = selected.has(order.id);
                     return (
                       <tr key={order.id} className={`hover:bg-gray-50/50 ${isSelected ? "bg-red-50/30" : ""}`}>
@@ -356,8 +364,15 @@ export default function AdminOrdersPage() {
                             {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                           </select>
                         </td>
-                        <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
-                          {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <input
+                            type="date"
+                            value={currentDate}
+                            max={new Date().toISOString().split("T")[0]}
+                            onChange={(e) => setDateInputs((p) => ({ ...p, [order.id]: e.target.value }))}
+                            className="text-xs text-gray-600 border border-gray-200 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-400"
+                            style={{ width: "8rem" }}
+                          />
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
