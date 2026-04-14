@@ -38,23 +38,27 @@ export function AdminOrderTrendChart() {
   const [trend, setTrend] = useState<{ date: string; total: number; delivered: number; rto: number; cancelled: number }[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (fromDate: string, toDate: string) => {
     setLoading(true);
     const params = new URLSearchParams();
-    if (from) params.set("from", from);
-    if (to)   params.set("to", to);
+    if (fromDate) params.set("from", fromDate);
+    if (toDate)   params.set("to",   toDate);
     const res  = await fetch(`/api/admin/analytics?${params}`);
     const data = await res.json();
     setTrend(data.trend ?? []);
     setLoading(false);
-  }, [from, to]);
+  }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchData(d30, today); }, []);
 
   function applyPreset(days: number) {
+    const newFrom = toISODate(new Date(Date.now() - (days - 1) * 86400000));
+    const newTo   = today;
     setPreset(days);
-    setFrom(toISODate(new Date(Date.now() - (days - 1) * 86400000)));
-    setTo(today);
+    setFrom(newFrom);
+    setTo(newTo);
+    fetchData(newFrom, newTo);   // fetch immediately
   }
 
   const chartData = trend.map((d) => ({
@@ -90,19 +94,20 @@ export function AdminOrderTrendChart() {
             ))}
           </div>
 
-          {/* Custom date range */}
+          {/* Custom date range — change dates then click refresh to apply */}
           <div className="flex items-center gap-1.5 text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white">
-            <Calendar className="w-3.5 h-3.5 text-gray-400" />
+            <Calendar className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
             <input type="date" value={from} max={to || today}
               onChange={(e) => { setFrom(e.target.value); setPreset(-1); }}
-              className="text-xs outline-none text-gray-700 w-28" />
+              className="text-xs outline-none text-gray-700" style={{ width: "7.5rem" }} />
             <span className="text-gray-300">→</span>
             <input type="date" value={to} min={from} max={today}
               onChange={(e) => { setTo(e.target.value); setPreset(-1); }}
-              className="text-xs outline-none text-gray-700 w-28" />
+              className="text-xs outline-none text-gray-700" style={{ width: "7.5rem" }} />
           </div>
 
-          <button onClick={fetchData} disabled={loading}
+          <button onClick={() => fetchData(from, to)} disabled={loading}
+            title="Apply / Refresh"
             className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
             <RefreshCw className={`w-3.5 h-3.5 text-gray-500 ${loading ? "animate-spin" : ""}`} />
           </button>

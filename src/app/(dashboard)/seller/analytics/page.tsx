@@ -52,27 +52,28 @@ export default function SellerAnalyticsPage() {
   const [to, setTo]     = useState(today);
   const [preset, setPreset] = useState<number>(30);
 
-  const fetchData = useCallback(async (showRefreshing = false) => {
+  // fetchData takes explicit dates so changing the inputs doesn't auto-fire requests
+  const fetchData = useCallback(async (fromDate: string, toDate: string, showRefreshing = false) => {
     if (showRefreshing) setRefreshing(true); else setLoading(true);
     const params = new URLSearchParams();
-    if (from) params.set("from", from);
-    if (to)   params.set("to", to);
+    if (fromDate) params.set("from", fromDate);
+    if (toDate)   params.set("to",   toDate);
     const res = await fetch(`/api/seller/analytics?${params}`);
-    setData(await res.json());
+    const json = await res.json();
+    setData(json);
     setLoading(false); setRefreshing(false);
-  }, [from, to]);
+  }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchData(d30, today); }, []);
 
   function applyPreset(days: number) {
+    const newFrom = days === 0 ? "" : toISODate(new Date(Date.now() - (days - 1) * 86400000));
+    const newTo   = days === 0 ? "" : today;
     setPreset(days);
-    if (days === 0) {
-      setFrom("");
-      setTo("");
-    } else {
-      setFrom(toISODate(new Date(Date.now() - (days - 1) * 86400000)));
-      setTo(today);
-    }
+    setFrom(newFrom);
+    setTo(newTo);
+    fetchData(newFrom, newTo);   // fetch immediately on preset click
   }
 
   const storeName = data?.store?.storeName ?? data?.store?.storeUrl ?? "All Stores";
@@ -103,19 +104,20 @@ export default function SellerAnalyticsPage() {
             ))}
           </div>
 
-          {/* Custom date inputs */}
+          {/* Custom date inputs — change dates then click Apply */}
           <div className="flex items-center gap-1.5 text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white">
-            <Calendar className="w-3.5 h-3.5 text-gray-400" />
+            <Calendar className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
             <input type="date" value={from} max={to || today}
               onChange={(e) => { setFrom(e.target.value); setPreset(-1); }}
-              className="text-xs outline-none text-gray-700 w-28" />
+              className="text-xs outline-none text-gray-700" style={{ width: "7.5rem" }} />
             <span className="text-gray-300">→</span>
             <input type="date" value={to} min={from} max={today}
               onChange={(e) => { setTo(e.target.value); setPreset(-1); }}
-              className="text-xs outline-none text-gray-700 w-28" />
+              className="text-xs outline-none text-gray-700" style={{ width: "7.5rem" }} />
           </div>
 
-          <button onClick={() => fetchData(true)} disabled={refreshing}
+          <button onClick={() => fetchData(from, to, true)} disabled={refreshing}
+            title="Apply / Refresh"
             className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50">
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
           </button>
