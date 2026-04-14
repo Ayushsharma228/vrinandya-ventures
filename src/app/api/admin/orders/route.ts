@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -78,7 +79,9 @@ export async function POST(req: NextRequest) {
         customerName: customerName || null,
         customerAddress: customerPhone
           ? { phone: customerPhone, address: customerAddress || "" }
-          : customerAddress ? { address: customerAddress } : null,
+          : customerAddress
+            ? { address: customerAddress }
+            : Prisma.JsonNull,
         totalAmount: parseFloat(totalAmount),
         createdAt: orderDate ? new Date(orderDate) : new Date(),
         items: {
