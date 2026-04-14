@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ShoppingCart, Save, Trash2, Plus, X, Loader2 } from "lucide-react";
+import { ShoppingCart, Save, Trash2, Plus, X, Loader2, CalendarDays } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 interface Seller { id: string; name: string | null; email: string; }
@@ -206,6 +206,9 @@ export default function AdminOrdersPage() {
   const [selected, setSelected]           = useState<Set<string>>(new Set());
   const [deleting, setDeleting]           = useState(false);
   const [showAddModal, setShowAddModal]   = useState(false);
+  const [bulkDateModal, setBulkDateModal] = useState(false);
+  const [bulkDate, setBulkDate]           = useState("");
+  const [bulkSaving, setBulkSaving]       = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/sellers").then((r) => r.json()).then((d) => setSellers(d.sellers ?? []));
@@ -254,6 +257,21 @@ export default function AdminOrdersPage() {
     setSelected(new Set());
     await fetchOrders();
     setDeleting(false);
+  }
+
+  async function handleBulkDate() {
+    if (!bulkDate) return;
+    setBulkSaving(true);
+    await fetch("/api/admin/orders", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderIds: Array.from(selected), orderDate: bulkDate }),
+    });
+    setSelected(new Set());
+    setBulkDateModal(false);
+    setBulkDate("");
+    await fetchOrders();
+    setBulkSaving(false);
   }
 
   function toggleSelect(id: string) {
@@ -310,12 +328,21 @@ export default function AdminOrdersPage() {
               </span>
             </div>
             {selected.size > 0 && (
-              <button onClick={() => handleDelete(Array.from(selected))} disabled={deleting}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
-                style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
-                <Trash2 className="w-3.5 h-3.5" />
-                {deleting ? "Deleting..." : `Delete ${selected.size} selected`}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setBulkDate(""); setBulkDateModal(true); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                  style={{ background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}>
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  Set Date ({selected.size})
+                </button>
+                <button onClick={() => handleDelete(Array.from(selected))} disabled={deleting}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
+                  style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  {deleting ? "Deleting..." : `Delete ${selected.size}`}
+                </button>
+              </div>
             )}
           </div>
 
@@ -404,6 +431,44 @@ export default function AdminOrdersPage() {
           onClose={() => setShowAddModal(false)}
           onSaved={fetchOrders}
         />
+      )}
+
+      {/* Bulk Date Modal */}
+      {bulkDateModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-bold text-gray-900">Set Date for {selected.size} Orders</h3>
+                <p className="text-xs text-gray-400 mt-0.5">All selected orders will get this date</p>
+              </div>
+              <button onClick={() => setBulkDateModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Order Date</label>
+            <input
+              type="date"
+              value={bulkDate}
+              max={new Date().toISOString().split("T")[0]}
+              onChange={(e) => setBulkDate(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"
+            />
+
+            <div className="flex gap-2">
+              <button onClick={() => setBulkDateModal(false)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">
+                Cancel
+              </button>
+              <button onClick={handleBulkDate} disabled={bulkSaving || !bulkDate}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl disabled:opacity-50"
+                style={{ background: "#1D4ED8" }}>
+                {bulkSaving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : `Apply to ${selected.size} orders`}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -38,6 +38,24 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ orders });
 }
 
+// PATCH — bulk date update
+export async function PATCH(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { orderIds, orderDate } = await req.json() as { orderIds: string[]; orderDate: string };
+  if (!orderIds?.length) return NextResponse.json({ error: "No order IDs provided" }, { status: 400 });
+  if (!orderDate) return NextResponse.json({ error: "orderDate required" }, { status: 400 });
+
+  const { count } = await prisma.order.updateMany({
+    where: { id: { in: orderIds } },
+    data: { createdAt: new Date(orderDate) },
+  });
+  return NextResponse.json({ updated: count });
+}
+
 // DELETE — single or bulk
 export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions);
