@@ -16,10 +16,29 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get("search");
     const productFilter = searchParams.get("product");
 
+    const seller = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { dataStartDate: true },
+    });
+    const dataStart = seller?.dataStartDate ?? null;
+
+    // Effective lower bound: max(dataStartDate, from) so the hard floor always applies
+    const fromDate = from ? new Date(from) : null;
+    const gteDate = dataStart && fromDate
+      ? (dataStart > fromDate ? dataStart : fromDate)
+      : (dataStart ?? fromDate ?? null);
+    const lteDate = to ? new Date(to + "T23:59:59.999Z") : null;
+    const createdAtFilter = (gteDate || lteDate) ? {
+      createdAt: {
+        ...(gteDate ? { gte: gteDate } : {}),
+        ...(lteDate ? { lte: lteDate } : {}),
+      },
+    } : {};
+
     const orders = await prisma.order.findMany({
       where: {
         sellerId: session.user.id,
-        ...(from && to ? { createdAt: { gte: new Date(from), lte: new Date(to + "T23:59:59.999Z") } } : {}),
+        ...createdAtFilter,
         ...(search ? {
           OR: [
             { externalOrderId: { contains: search, mode: "insensitive" } },

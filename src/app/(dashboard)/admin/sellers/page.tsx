@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { PageHero } from "@/components/layout/page-hero";
 import {
   Users, CheckCircle2, XCircle, Clock, RefreshCw,
-  ExternalLink, ShoppingCart, Store, BadgeCheck, Ban,
+  ExternalLink, ShoppingCart, Store, BadgeCheck, Ban, Calendar, X,
 } from "lucide-react";
 
 interface Seller {
@@ -22,6 +22,7 @@ interface Seller {
   aadhaarDocUrl: string | null;
   phone: string | null;
   businessName: string | null;
+  dataStartDate: string | null;
   createdAt: string;
 }
 
@@ -45,6 +46,11 @@ export default function AdminSellersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
+  // Data start date modal
+  const [dateModalSeller, setDateModalSeller] = useState<Seller | null>(null);
+  const [dateInput, setDateInput] = useState("");
+  const [dateSaving, setDateSaving] = useState(false);
+
   const fetchSellers = useCallback(async () => {
     setLoading(true);
     const res = await fetch("/api/admin/sellers");
@@ -64,6 +70,24 @@ export default function AdminSellersPage() {
     });
     await fetchSellers();
     setActionLoading(null);
+  }
+
+  function openDateModal(seller: Seller) {
+    setDateModalSeller(seller);
+    setDateInput(seller.dataStartDate ? seller.dataStartDate.slice(0, 10) : "");
+  }
+
+  async function saveDateStartDate() {
+    if (!dateModalSeller) return;
+    setDateSaving(true);
+    await fetch("/api/admin/sellers", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sellerId: dateModalSeller.id, dataStartDate: dateInput || null }),
+    });
+    await fetchSellers();
+    setDateSaving(false);
+    setDateModalSeller(null);
   }
 
   const filtered = sellers.filter((s) => {
@@ -141,7 +165,7 @@ export default function AdminSellersPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
-                    {["Seller", "Service / Plan", "Payment Ref", "KYC", "Onboarding", "Status", "Joined", "Actions"].map((h) => (
+                    {["Seller", "Service / Plan", "Payment Ref", "KYC", "Onboarding", "Status", "Data From", "Joined", "Actions"].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap"
                         style={{ color: "var(--text-400)" }}>{h}</th>
                     ))}
@@ -149,7 +173,7 @@ export default function AdminSellersPage() {
                 </thead>
                 <tbody className="divide-y" style={{ borderColor: "var(--border)" }}>
                   {filtered.length === 0 ? (
-                    <tr><td colSpan={8} className="py-12 text-center text-sm" style={{ color: "var(--text-400)" }}>No sellers found</td></tr>
+                    <tr><td colSpan={9} className="py-12 text-center text-sm" style={{ color: "var(--text-400)" }}>No sellers found</td></tr>
                   ) : filtered.map((s) => {
                     const statusStyle = STATUS_STYLE[s.accountStatus] ?? STATUS_STYLE.PENDING;
                     const kycStyle = KYC_STYLE[s.kycStatus] ?? KYC_STYLE.NOT_SUBMITTED;
@@ -229,6 +253,27 @@ export default function AdminSellersPage() {
                           </span>
                         </td>
 
+                        {/* Data From */}
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col gap-1">
+                            {s.dataStartDate ? (
+                              <span className="text-xs font-mono px-2 py-0.5 rounded-md"
+                                style={{ background: "#EFF6FF", color: "#1D4ED8" }}>
+                                {new Date(s.dataStartDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                              </span>
+                            ) : (
+                              <span className="text-xs" style={{ color: "var(--text-400)" }}>All time</span>
+                            )}
+                            <button
+                              onClick={() => openDateModal(s)}
+                              className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-md w-fit"
+                              style={{ background: "#F3F4F6", color: "#6B7280", border: "1px solid #E5E7EB" }}>
+                              <Calendar className="w-3 h-3" />
+                              {s.dataStartDate ? "Change" : "Set"}
+                            </button>
+                          </div>
+                        </td>
+
                         {/* Joined */}
                         <td className="px-4 py-3 text-xs whitespace-nowrap" style={{ color: "var(--text-400)" }}>
                           {new Date(s.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
@@ -281,6 +326,53 @@ export default function AdminSellersPage() {
           )}
         </div>
       </div>
+
+      {/* Data Start Date Modal */}
+      {dateModalSeller && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
+          <div className="rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" style={{ background: "white" }}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-base" style={{ color: "var(--text-900)" }}>Set Data Start Date</h3>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>
+                  Orders before this date will be hidden from {dateModalSeller.name ?? dateModalSeller.email}&apos;s dashboard
+                </p>
+              </div>
+              <button onClick={() => setDateModalSeller(null)}
+                className="p-1.5 rounded-lg hover:bg-gray-100">
+                <X className="w-4 h-4" style={{ color: "var(--text-400)" }} />
+              </button>
+            </div>
+
+            <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-700)" }}>
+              Show orders from this date onwards
+            </label>
+            <input
+              type="date"
+              value={dateInput}
+              onChange={(e) => setDateInput(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-xl outline-none mb-1"
+              style={{ border: "1.5px solid var(--border)", color: "var(--text-900)" }}
+            />
+            <p className="text-xs mb-4" style={{ color: "var(--text-400)" }}>
+              Leave blank to show all orders (no restriction).
+            </p>
+
+            <div className="flex gap-2">
+              <button onClick={() => setDateModalSeller(null)}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-medium"
+                style={{ background: "#F3F4F6", color: "#374151" }}>
+                Cancel
+              </button>
+              <button onClick={saveDateStartDate} disabled={dateSaving}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50"
+                style={{ background: "var(--green-500)", color: "white" }}>
+                {dateSaving ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

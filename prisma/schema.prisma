@@ -116,6 +116,9 @@ model User {
   paymentReference     String?
   paymentConfirmed     Boolean       @default(false)
 
+  // Data visibility — orders before this date are hidden from seller dashboard
+  dataStartDate        DateTime?
+
   shopifyStore        ShopifyStore?
   marketplaceAccounts MarketplaceAccount[]
   orders              Order[]

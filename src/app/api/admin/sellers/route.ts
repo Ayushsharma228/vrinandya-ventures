@@ -17,6 +17,7 @@ export async function GET() {
       paymentReference: true, paymentConfirmed: true,
       onboardingDone: true, kycStatus: true,
       aadhaarDocUrl: true, phone: true, businessName: true,
+      dataStartDate: true,
       createdAt: true,
     },
     orderBy: { createdAt: "desc" },
@@ -59,4 +60,21 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+}
+
+export async function PATCH(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { sellerId, dataStartDate } = await req.json();
+  if (!sellerId) return NextResponse.json({ error: "sellerId required" }, { status: 400 });
+
+  await prisma.user.update({
+    where: { id: sellerId },
+    data: { dataStartDate: dataStartDate ? new Date(dataStartDate) : null },
+  });
+
+  return NextResponse.json({ success: true });
 }

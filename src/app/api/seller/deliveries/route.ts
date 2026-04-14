@@ -16,6 +16,12 @@ export async function GET(req: NextRequest) {
 
   const sellerId = session.user.id;
 
+  const sellerData = await prisma.user.findUnique({
+    where: { id: sellerId },
+    select: { dataStartDate: true },
+  });
+  const dataStart = sellerData?.dataStartDate ?? null;
+
   const allDeliveryStatuses: OrderStatus[] = ["NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "RTO"];
   const statusFilter: OrderStatus[] =
     status && status !== "ALL"
@@ -25,6 +31,7 @@ export async function GET(req: NextRequest) {
   const where: Record<string, unknown> = {
     sellerId,
     status: { in: statusFilter },
+    ...(dataStart ? { createdAt: { gte: dataStart } } : {}),
     ...(search
       ? {
           OR: [
@@ -54,7 +61,11 @@ export async function GET(req: NextRequest) {
   });
 
   const allOrders = await prisma.order.findMany({
-    where: { sellerId, status: { in: allDeliveryStatuses } },
+    where: {
+      sellerId,
+      status: { in: allDeliveryStatuses },
+      ...(dataStart ? { createdAt: { gte: dataStart } } : {}),
+    },
     select: { status: true },
   });
 
