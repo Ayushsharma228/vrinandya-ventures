@@ -3,13 +3,20 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+// Higher number = further along. Never let a sync move an order backwards.
+const STATUS_RANK: Record<string, number> = {
+  NEW: 0, PROCESSING: 1, SHIPPED: 2, IN_TRANSIT: 3,
+  DELIVERED: 4, RTO: 4, CANCELLED: 4,
+};
+
 function mapDelhiveryStatus(status: string): string {
   const s = status?.toLowerCase() ?? "";
-  if (s.includes("rto")) return "RTO";
-  if (s.includes("delivered")) return "DELIVERED";
+  if (s.includes("rto"))                              return "RTO";
+  if (s.includes("delivered"))                        return "DELIVERED";
   if (s.includes("transit") || s.includes("out for delivery")) return "IN_TRANSIT";
-  if (s.includes("cancel")) return "CANCELLED";
-  return "SHIPPED";
+  if (s.includes("dispatch") || s.includes("picked")) return "SHIPPED";
+  if (s.includes("cancel"))                           return "CANCELLED";
+  return "";   // unknown — do not change current status
 }
 
 export async function POST() {
@@ -27,7 +34,7 @@ export async function POST() {
       awbNumber: { not: null },
       status: { notIn: ["DELIVERED", "CANCELLED", "RTO"] },
     },
-    select: { id: true, awbNumber: true },
+    select: { id: true, awbNumber: true, status: true },
   });
 
   let updated = 0;
@@ -54,6 +61,14 @@ export async function POST() {
 
       const statusStr = (shipment.Status as { Status?: string } | null)?.Status ?? "";
       const dbStatus = mapDelhiveryStatus(statusStr);
+
+      // Skip unknown statuses entirely
+      if (!dbStatus) continue;
+
+      // Never downgrade — only move forward in lifecycle (RTO/CANCELLED always allowed)
+      const currentRank = STATUS_RANK[order.status] ?? 0;
+      const newRank     = STATUS_RANK[dbStatus] ?? 0;
+      if (dbStatus !== "RTO" && dbStatus !== "CANCELLED" && newRank <= currentRank) continue;
 
       await prisma.order.update({
         where: { id: order.id },

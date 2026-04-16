@@ -3,15 +3,22 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+const STATUS_RANK: Record<string, number> = {
+  NEW: 0, PROCESSING: 1, SHIPPED: 2, IN_TRANSIT: 3,
+  DELIVERED: 4, RTO: 4, CANCELLED: 4,
+};
+
 function mapDelhiveryStatus(status: string): { dbStatus: string; courier: string } {
   const s = status?.toLowerCase() ?? "";
   const isRTO = s.includes("rto");
 
-  let dbStatus = "SHIPPED";
-  if (s.includes("delivered")) dbStatus = "DELIVERED";
+  let dbStatus = "";  // empty = unknown, do not change current status
+  if (isRTO)                                             dbStatus = "RTO";
+  else if (s.includes("delivered"))                      dbStatus = "DELIVERED";
   else if (s.includes("transit") || s.includes("out for delivery")) dbStatus = "IN_TRANSIT";
   else if (s.includes("dispatch") || s.includes("picked")) dbStatus = "SHIPPED";
-  else if (s.includes("cancel")) dbStatus = "CANCELLED";
+  else if (s.includes("cancel"))                         dbStatus = "CANCELLED";
+  // "Manifested", "Pending", etc. → empty → skip
 
   const courier = isRTO ? "Delhivery (RTO)" : "Delhivery";
   return { dbStatus, courier };
@@ -28,6 +35,7 @@ export async function POST() {
 
   const orders = await prisma.order.findMany({
     where: { sellerId: session.user.id, awbNumber: null },
+    select: { id: true, externalOrderId: true, totalAmount: true, status: true, customerAddress: true },
   });
 
   let synced = 0;
@@ -99,11 +107,17 @@ export async function POST() {
       const statusStr = (shipment.Status as { Status?: string } | null)?.Status ?? "";
       const { dbStatus, courier } = mapDelhiveryStatus(statusStr);
 
+      // Determine the status to save — never downgrade
+      const currentRank = STATUS_RANK[order.status] ?? 0;
+      const newRank     = STATUS_RANK[dbStatus] ?? 0;
+      const canUpdate   = dbStatus && (dbStatus === "RTO" || dbStatus === "CANCELLED" || newRank > currentRank);
+      const finalStatus = canUpdate ? dbStatus : order.status;
+
       await prisma.order.update({
         where: { id: order.id },
         data: {
           awbNumber: awb,
-          status: dbStatus as never,
+          status: finalStatus as never,
           courier,
           trackingUrl: `https://www.delhivery.com/track/package/${awb}`,
         },
