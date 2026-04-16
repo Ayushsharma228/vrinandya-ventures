@@ -1,5 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
+
+function verifyHmac(searchParams: URLSearchParams, secret: string): boolean {
+  const hmac = searchParams.get("hmac");
+  if (!hmac) return false;
+
+  // Build the message: all params except hmac, sorted, joined as key=value pairs
+  const params: string[] = [];
+  searchParams.forEach((value, key) => {
+    if (key !== "hmac") params.push(`${key}=${value}`);
+  });
+  params.sort();
+  const message = params.join("&");
+
+  const digest = crypto.createHmac("sha256", secret).update(message).digest("hex");
+  return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(hmac));
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -9,6 +26,12 @@ export async function GET(req: NextRequest) {
 
   if (!code || !shop || !state) {
     return NextResponse.redirect(new URL("/seller/shopify?error=missing_params", req.url));
+  }
+
+  // Verify Shopify HMAC signature (required for App Store)
+  const secret = process.env.SHOPIFY_API_SECRET;
+  if (secret && !verifyHmac(searchParams, secret)) {
+    return NextResponse.redirect(new URL("/seller/shopify?error=invalid_hmac", req.url));
   }
 
   let sellerId: string;
