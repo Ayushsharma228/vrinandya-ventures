@@ -44,6 +44,7 @@ export default function SellerOrdersPage() {
   const [to] = useState(formatDate(today));
   const [confirming, setConfirming] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState("");
 
   const fetchOrders = useCallback(async () => {
     const params = new URLSearchParams({ from, to });
@@ -59,7 +60,14 @@ export default function SellerOrdersPage() {
 
   async function handleRefresh() {
     setRefreshing(true);
-    await fetch("/api/seller/shopify/sync-orders", { method: "POST" });
+    setSyncError("");
+    try {
+      const res = await fetch("/api/seller/shopify/sync-orders", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) setSyncError(data.error || "Sync failed. Please check your Shopify connection.");
+    } catch {
+      setSyncError("Network error. Please try again.");
+    }
     await fetchOrders();
     setRefreshing(false);
   }
@@ -159,6 +167,12 @@ export default function SellerOrdersPage() {
       />
 
       <div className="px-8 py-6 space-y-5">
+        {syncError && (
+          <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">
+            <XCircle className="w-4 h-4 flex-shrink-0" />
+            {syncError}
+          </div>
+        )}
         {/* Status filter buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           {STATUS_FILTERS.map((s) => {

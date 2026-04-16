@@ -108,6 +108,8 @@ export async function POST() {
         currency: so.currency,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         rawData: so as any,
+        // Use the actual Shopify order date so filters work correctly
+        ...(so.created_at ? { createdAt: new Date(so.created_at) } : {}),
       });
     }
   }
