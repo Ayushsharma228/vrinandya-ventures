@@ -8,19 +8,23 @@ const STATUS_RANK: Record<string, number> = {
   DELIVERED: 4, RTO: 4, CANCELLED: 4,
 };
 
+// Covers: "RTO Initiated", "RTO In Transit", "RTO Out for Delivery", "RTO Delivered",
+//         "Reverse In Transit", "Reverse Pickup Initiated", "Reverse Pickup"
+const isRTOStatus = (s: string) => s.includes("rto") || s.includes("reverse");
+
 function mapDelhiveryStatus(status: string): { dbStatus: string; courier: string } {
   const s = status?.toLowerCase() ?? "";
-  const isRTO = s.includes("rto");
+  const rto = isRTOStatus(s);
 
   let dbStatus = "";  // empty = unknown, do not change current status
-  if (isRTO)                                             dbStatus = "RTO";
-  else if (s.includes("delivered"))                      dbStatus = "DELIVERED";
+  if (rto)                                                dbStatus = "RTO";
+  else if (s.includes("delivered"))                       dbStatus = "DELIVERED";
   else if (s.includes("transit") || s.includes("out for delivery")) dbStatus = "IN_TRANSIT";
   else if (s.includes("dispatch") || s.includes("picked")) dbStatus = "SHIPPED";
-  else if (s.includes("cancel"))                         dbStatus = "CANCELLED";
-  // "Manifested", "Pending", etc. → empty → skip
+  else if (s.includes("cancel"))                          dbStatus = "CANCELLED";
+  // "Manifested", "Pickup Pending", etc. → empty → keep current status
 
-  const courier = isRTO ? "Delhivery (RTO)" : "Delhivery";
+  const courier = rto ? "Delhivery (RTO)" : "Delhivery";
   return { dbStatus, courier };
 }
 

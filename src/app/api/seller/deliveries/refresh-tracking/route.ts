@@ -9,14 +9,20 @@ const STATUS_RANK: Record<string, number> = {
   DELIVERED: 4, RTO: 4, CANCELLED: 4,
 };
 
+// Delhivery RTO statuses — check BEFORE generic "delivered"/"transit" to avoid misclassification
+// Covers: "RTO Initiated", "RTO In Transit", "RTO Out for Delivery", "RTO Delivered",
+//         "Reverse In Transit", "Reverse Pickup Initiated", "Reverse Pickup"
+const isRTO = (s: string) =>
+  s.includes("rto") || s.includes("reverse");
+
 function mapDelhiveryStatus(status: string): string {
   const s = status?.toLowerCase() ?? "";
-  if (s.includes("rto"))                              return "RTO";
-  if (s.includes("delivered"))                        return "DELIVERED";
+  if (isRTO(s))                                        return "RTO";
+  if (s.includes("delivered"))                         return "DELIVERED";
   if (s.includes("transit") || s.includes("out for delivery")) return "IN_TRANSIT";
-  if (s.includes("dispatch") || s.includes("picked")) return "SHIPPED";
-  if (s.includes("cancel"))                           return "CANCELLED";
-  return "";   // unknown — do not change current status
+  if (s.includes("dispatch") || s.includes("picked"))  return "SHIPPED";
+  if (s.includes("cancel"))                            return "CANCELLED";
+  return "";   // unknown (e.g. "Manifested") — do not change current status
 }
 
 export async function POST() {
