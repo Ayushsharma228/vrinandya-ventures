@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Verify the token works by fetching shop info
-  const shopRes = await fetch(`https://${storeUrl}/admin/api/2024-01/shop.json`, {
+  const shopRes = await fetch(`https://${storeUrl}/admin/api/2025-01/shop.json`, {
     headers: { "X-Shopify-Access-Token": accessToken },
   });
 

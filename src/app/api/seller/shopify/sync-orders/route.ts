@@ -28,12 +28,22 @@ export async function POST() {
 
   // Fetch all orders from Shopify (up to 250)
   const shopifyRes = await fetch(
-    `https://${store.storeUrl}/admin/api/2024-01/orders.json?status=any&limit=250`,
+    `https://${store.storeUrl}/admin/api/2025-01/orders.json?status=any&limit=250`,
     { headers: { "X-Shopify-Access-Token": store.accessToken } }
   );
 
   if (!shopifyRes.ok) {
-    return NextResponse.json({ error: "Failed to fetch orders from Shopify" }, { status: 400 });
+    const statusCode = shopifyRes.status;
+    if (statusCode === 401 || statusCode === 403) {
+      return NextResponse.json(
+        { error: "Access token is invalid or expired. Please reconnect your Shopify store." },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json(
+      { error: `Shopify returned error ${statusCode}. Please check your store connection.` },
+      { status: 400 }
+    );
   }
 
   const { orders: shopifyOrders } = await shopifyRes.json();

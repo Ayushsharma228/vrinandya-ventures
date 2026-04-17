@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     // Push to Shopify via API
     const shopifyRes = await fetch(
-      `https://${shopifyStore.storeUrl}/admin/api/2024-01/products.json`,
+      `https://${shopifyStore.storeUrl}/admin/api/2025-01/products.json`,
       {
         method: "POST",
         headers: {

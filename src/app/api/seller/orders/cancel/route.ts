@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
       if (shopifyOrderId) {
         const cancelRes = await fetch(
-          `https://${store.storeUrl}/admin/api/2024-01/orders/${shopifyOrderId}/cancel.json`,
+          `https://${store.storeUrl}/admin/api/2025-01/orders/${shopifyOrderId}/cancel.json`,
           {
             method: "POST",
             headers: {
