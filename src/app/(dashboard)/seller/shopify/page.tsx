@@ -13,14 +13,19 @@ interface Store {
 export default function ShopifyConnectPage() {
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
-  const [storeUrl, setStoreUrl] = useState("");
-  const [accessToken, setAccessToken] = useState("");
+  const [shop, setShop] = useState("");
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") === "true") setSuccess(true);
+    if (params.get("error")) setError(`Connection failed: ${params.get("error")}`);
+
     fetch("/api/seller/shopify/store")
       .then((r) => r.json())
       .then((d) => { setStore(d.store ?? null); setLoading(false); })
@@ -31,19 +36,17 @@ export default function ShopifyConnectPage() {
     e.preventDefault();
     setError("");
     setConnecting(true);
-    const shop = storeUrl.trim().replace("https://", "").replace(/\/$/, "");
-    const domain = shop.includes(".myshopify.com") ? shop : `${shop}.myshopify.com`;
-    const res = await fetch("/api/seller/shopify/connect", {
+
+    const res = await fetch("/api/seller/shopify/oauth-init", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ storeUrl: domain, accessToken: accessToken.trim() }),
+      body: JSON.stringify({ storeUrl: shop.trim(), clientId: clientId.trim(), clientSecret: clientSecret.trim() }),
     });
     const data = await res.json();
-    if (!res.ok) { setError(data.error || "Connection failed"); setConnecting(false); return; }
-    setStore(data.store);
-    setSuccess(true);
-    setStoreUrl(""); setAccessToken("");
-    setConnecting(false);
+    if (!res.ok) { setError(data.error || "Failed to start connection"); setConnecting(false); return; }
+
+    // Redirect to Shopify OAuth
+    window.location.href = data.authUrl;
   }
 
   async function handleDisconnect() {
@@ -124,33 +127,29 @@ export default function ShopifyConnectPage() {
       ) : (
         /* ── Connect form ── */
         <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-5">
-          {/* Instructions */}
           <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl p-4">
             <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-blue-800">How to get your Access Token</p>
+              <p className="text-sm font-semibold text-blue-800">How to get your credentials</p>
               <ol className="text-xs text-blue-700 space-y-0.5 list-decimal list-inside">
-                <li>Go to your Shopify Admin → Settings → Apps and sales channels</li>
-                <li>Click <strong>Develop apps</strong> → Create an app</li>
-                <li>Under <strong>Configuration</strong>, enable Orders (read) scope</li>
-                <li>Click <strong>Install app</strong> and copy the Admin API access token</li>
+                <li>Go to <strong>Shopify Partners</strong> → Apps → Your app</li>
+                <li>Copy the <strong>Client ID</strong> and <strong>Client Secret</strong></li>
+                <li>Enter your store subdomain below and click Connect</li>
               </ol>
             </div>
           </div>
 
           <form onSubmit={handleConnect} className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Store URL
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Store Subdomain</label>
               <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-400 focus-within:border-transparent">
                 <span className="px-3 py-2.5 text-sm text-gray-400 bg-gray-50 border-r border-gray-200 whitespace-nowrap">
                   https://
                 </span>
                 <input
                   type="text"
-                  value={storeUrl}
-                  onChange={(e) => setStoreUrl(e.target.value)}
+                  value={shop}
+                  onChange={(e) => setShop(e.target.value)}
                   placeholder="your-store-name"
                   required
                   className="flex-1 px-3 py-2.5 text-sm focus:outline-none"
@@ -159,24 +158,31 @@ export default function ShopifyConnectPage() {
                   .myshopify.com
                 </span>
               </div>
-              <p className="text-xs text-gray-400 mt-1">
-                e.g. if your store is <strong>mystore.myshopify.com</strong>, enter <strong>mystore</strong>
-              </p>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Admin API Access Token
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Client ID</label>
+              <input
+                type="text"
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                placeholder="Shopify app Client ID"
+                required
+                className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Client Secret</label>
               <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-400 focus-within:border-transparent">
                 <span className="px-3 py-2.5 bg-gray-50 border-r border-gray-200">
                   <Key className="w-4 h-4 text-gray-400" />
                 </span>
                 <input
                   type="password"
-                  value={accessToken}
-                  onChange={(e) => setAccessToken(e.target.value)}
-                  placeholder="shpat_xxxxxxxxxxxxxxxxxxxx"
+                  value={clientSecret}
+                  onChange={(e) => setClientSecret(e.target.value)}
+                  placeholder="Shopify app Client Secret"
                   required
                   className="flex-1 px-3 py-2.5 text-sm focus:outline-none font-mono"
                 />
@@ -185,19 +191,19 @@ export default function ShopifyConnectPage() {
 
             <button
               type="submit"
-              disabled={connecting || !storeUrl.trim() || !accessToken.trim()}
+              disabled={connecting || !shop.trim() || !clientId.trim() || !clientSecret.trim()}
               className="w-full py-3 font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
               style={{ background: "#00C67A", color: "white" }}
             >
               {connecting
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</>
-                : <><ShoppingBag className="w-4 h-4" /> Connect Store</>
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting to Shopify...</>
+                : <><ShoppingBag className="w-4 h-4" /> Connect with Shopify</>
               }
             </button>
           </form>
 
           <p className="text-xs text-center text-gray-400">
-            Your access token is encrypted and stored securely. It is only used to read orders from your store.
+            You&apos;ll be redirected to Shopify to approve access. No payment required.
           </p>
         </div>
       )}
