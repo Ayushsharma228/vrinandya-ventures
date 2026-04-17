@@ -6,7 +6,6 @@ function verifyHmac(searchParams: URLSearchParams, secret: string): boolean {
   const hmac = searchParams.get("hmac");
   if (!hmac) return false;
 
-  // Build the message: all params except hmac, sorted, joined as key=value pairs
   const params: string[] = [];
   searchParams.forEach((value, key) => {
     if (key !== "hmac") params.push(`${key}=${value}`);
@@ -28,24 +27,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/seller/shopify?error=missing_params", req.url));
   }
 
-  // Verify Shopify HMAC signature (required for App Store)
-  const secret = process.env.SHOPIFY_API_SECRET;
-  if (secret && !verifyHmac(searchParams, secret)) {
-    return NextResponse.redirect(new URL("/seller/shopify?error=invalid_hmac", req.url));
-  }
-
+  // Decode state first so we can get the per-seller secret for HMAC verification
   let sellerId: string;
   try {
     const decoded = JSON.parse(Buffer.from(state, "base64").toString());
     sellerId = decoded.sellerId;
+    if (!sellerId) throw new Error("missing sellerId");
   } catch {
     return NextResponse.redirect(new URL("/seller/shopify?error=invalid_state", req.url));
   }
 
-  // Use per-seller credentials if available, fall back to env vars
+  // Use per-seller credentials if available, fall back to platform env vars
   const store = await prisma.shopifyStore.findUnique({ where: { sellerId } });
   const clientId = store?.clientId || process.env.SHOPIFY_API_KEY!;
   const clientSecret = store?.clientSecret || process.env.SHOPIFY_API_SECRET!;
+
+  // Verify HMAC using the correct secret for this app (per-seller or platform)
+  if (clientSecret && !verifyHmac(searchParams, clientSecret)) {
+    return NextResponse.redirect(new URL("/seller/shopify?error=invalid_hmac", req.url));
+  }
 
   // Exchange code for access token
   const tokenRes = await fetch(`https://${shop}/admin/oauth/access_token`, {
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
   const shopData = await shopRes.json();
   const storeName = shopData.shop?.name ?? shop;
 
-  // Save to DB
+  // Save to DB — preserve clientId/clientSecret so future syncs work
   await prisma.shopifyStore.upsert({
     where: { sellerId },
     update: { storeUrl: shop, storeName, accessToken: access_token },
