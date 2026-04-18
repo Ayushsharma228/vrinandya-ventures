@@ -80,6 +80,7 @@ const sellerGroups: NavGroup[] = [
       { label: "Orders",            href: "/seller/orders",     icon: ShoppingCart },
       { label: "Delivery",          href: "/seller/deliveries", icon: Truck },
       { label: "NDR Management",    href: "/seller/ndr",        icon: AlertTriangle },
+      { label: "My Listings",       href: "/seller/listings",   icon: ListChecks },
     ],
   },
   {
