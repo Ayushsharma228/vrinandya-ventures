@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, MapPin, Truck, Clock, XCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { RefreshCw, Truck, Clock, XCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 interface Delivery {
@@ -41,8 +41,6 @@ export default function ManageDeliveryPage() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
-  const [gettingAwb, setGettingAwb] = useState<string | null>(null);
-  const [awbError, setAwbError] = useState<string | null>(null);
 
   const fetchDeliveries = useCallback(async (showRefreshing = false) => {
     if (showRefreshing) setRefreshing(true); else setLoading(true);
@@ -58,19 +56,6 @@ export default function ManageDeliveryPage() {
   }, [search, statusFilter]);
 
   useEffect(() => { fetchDeliveries(); }, [fetchDeliveries]);
-
-  async function handleGetAwb(orderId: string) {
-    setGettingAwb(orderId); setAwbError(null);
-    const res = await fetch("/api/seller/deliveries/create-awb", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId }),
-    });
-    const data = await res.json();
-    if (!res.ok) { setAwbError(data.error || "Failed to get AWB"); }
-    else { await fetchDeliveries(); }
-    setGettingAwb(null);
-  }
 
   async function handleRefreshTracking() {
     setRefreshing(true); setSyncMsg("");
@@ -121,11 +106,6 @@ export default function ManageDeliveryPage() {
       />
 
       <div className="px-8 py-6 space-y-5">
-        {awbError && (
-          <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">
-            <XCircle className="w-4 h-4 flex-shrink-0" /> {awbError}
-          </div>
-        )}
         {/* Status filter buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           {STATUS_FILTERS.map((s) => {
@@ -197,16 +177,10 @@ export default function ManageDeliveryPage() {
                             )}
                           </div>
                         ) : (
-                          <button
-                            onClick={() => handleGetAwb(d.id)}
-                            disabled={gettingAwb === d.id}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50 transition-colors"
-                            style={{ background: "#EFF6FF", color: "#3B82F6" }}>
-                            {gettingAwb === d.id
-                              ? <><RefreshCw className="w-3 h-3 animate-spin" /> Getting...</>
-                              : <><Truck className="w-3 h-3" /> Get AWB</>
-                            }
-                          </button>
+                          <span className="text-xs font-medium px-2.5 py-1 rounded-full"
+                            style={{ background: "#FFF7ED", color: "#D97706" }}>
+                            Pending AWB
+                          </span>
                         )}
                       </td>
                     </tr>

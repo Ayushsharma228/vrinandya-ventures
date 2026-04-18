@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Truck, Save } from "lucide-react";
+import { RefreshCw, Truck, Save, Loader2 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 interface Seller { id: string; name: string | null; email: string; brandName: string | null; }
@@ -45,6 +45,8 @@ export default function AdminDeliveryPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const [bulkSaving, setBulkSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [gettingAwb, setGettingAwb] = useState<string | null>(null);
+  const [awbError, setAwbError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/sellers")
@@ -123,6 +125,19 @@ export default function AdminDeliveryPage() {
     setSaving(null);
   }
 
+  async function handleGetAwb(orderId: string) {
+    setGettingAwb(orderId); setAwbError(null);
+    const res = await fetch("/api/admin/deliveries/create-awb", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId }),
+    });
+    const data = await res.json();
+    if (!res.ok) setAwbError(data.error || "Failed to get AWB");
+    else await fetchOrders();
+    setGettingAwb(null);
+  }
+
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
       <PageHero
@@ -173,6 +188,11 @@ export default function AdminDeliveryPage() {
       />
 
       <div className="px-8 py-6">
+      {awbError && (
+        <div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">
+          <Truck className="w-4 h-4 flex-shrink-0" /> {awbError}
+        </div>
+      )}
       {/* Table */}
       <div className="card overflow-hidden">
         <div className="px-5 py-3.5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
@@ -219,18 +239,31 @@ export default function AdminDeliveryPage() {
                       <td className="px-4 py-3">
                         {isCancelled ? (
                           <span className="text-xs text-gray-300">—</span>
-                        ) : (
+                        ) : order.awbNumber ? (
                           <div className="flex flex-col gap-0.5">
+                            <span className="font-mono text-xs font-medium text-gray-800">{order.awbNumber}</span>
+                            {order.trackingUrl && (
+                              <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="text-blue-500 text-xs hover:underline">Track →</a>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-1.5">
+                            <button
+                              onClick={() => handleGetAwb(order.id)}
+                              disabled={gettingAwb === order.id}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50 whitespace-nowrap"
+                              style={{ background: "#EFF6FF", color: "#3B82F6" }}>
+                              {gettingAwb === order.id
+                                ? <><Loader2 className="w-3 h-3 animate-spin" /> Getting...</>
+                                : <><Truck className="w-3 h-3" /> Get AWB</>}
+                            </button>
                             <input
                               type="text"
-                              placeholder="Enter AWB"
+                              placeholder="Or enter manually"
                               value={awbInputs[order.id] ?? ""}
                               onChange={(e) => setAwbInputs((p) => ({ ...p, [order.id]: e.target.value }))}
                               className="w-32 px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
                             />
-                            {order.trackingUrl && (
-                              <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="text-blue-500 text-xs hover:underline">Track</a>
-                            )}
                           </div>
                         )}
                       </td>
