@@ -78,6 +78,9 @@ export default function NdrPage() {
   async function handleSubmit(orderId: string) {
     const form = forms[orderId];
     if (!form) return;
+    if (form.action === "REATTEMPT" && !form.phone) {
+      setError("Phone number is required for re-attempt"); return;
+    }
     setSubmitting(orderId); setError(null); setSuccess(null);
 
     const res = await fetch("/api/seller/ndr/action", {
@@ -278,7 +281,7 @@ export default function NdrPage() {
                         )}
 
                         <button onClick={() => handleSubmit(order.id)}
-                          disabled={submitting === order.id || (!isRTO && !form.phone)}
+                          disabled={submitting === order.id}
                           className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
                           style={{ background: isRTO ? "#EF4444" : "#3B82F6", color: "white" }}>
                           {submitting === order.id

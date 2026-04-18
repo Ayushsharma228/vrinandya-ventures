@@ -106,8 +106,10 @@ export async function GET(req: NextRequest) {
 
   const [trackData, ndrData] = await Promise.all([trackRes.text(), ndrRes.text()]);
 
+  const safeParse = (text: string) => { try { return JSON.parse(text); } catch { return text; } };
+
   return NextResponse.json({
-    tracking: { status: trackRes.status, body: JSON.parse(trackData) },
-    ndr:      { status: ndrRes.status,   body: JSON.parse(ndrData) },
+    tracking: { status: trackRes.status, body: safeParse(trackData) },
+    ndr:      { status: ndrRes.status,   body: safeParse(ndrData) },
   });
 }
