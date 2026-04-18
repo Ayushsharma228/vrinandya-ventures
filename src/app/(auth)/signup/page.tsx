@@ -452,8 +452,8 @@ export default function SignupPage() {
                   </div>
                 ))}
 
-                <div className="border-t border-white/10 pt-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "rgba(255,255,255,0.35)" }}>UPI</p>
+                <div className="border-t border-white/10 pt-3 space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.35)" }}>UPI</p>
                   <div className="flex items-center justify-between">
                     <span className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>UPI ID</span>
                     <div className="flex items-center gap-2">
@@ -463,6 +463,20 @@ export default function SignupPage() {
                         {copied === "upi" ? <CheckCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
                     </div>
+                  </div>
+                  {/* QR Code */}
+                  <div className="flex flex-col items-center gap-2 pt-1">
+                    <div className="bg-white p-2 rounded-xl">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(BANK_HOLDER)}&am=${planAmount}&cu=INR&tn=${encodeURIComponent("Vrinandya Ventures Plan Payment")}`)}`}
+                        alt="Scan to pay via UPI"
+                        width={160}
+                        height={160}
+                        className="rounded-lg"
+                      />
+                    </div>
+                    <p className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>Scan with any UPI app to pay ₹{planAmount.toLocaleString("en-IN")}</p>
                   </div>
                 </div>
               </div>
