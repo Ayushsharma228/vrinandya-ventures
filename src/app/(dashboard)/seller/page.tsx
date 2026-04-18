@@ -133,7 +133,7 @@ export default function SellerDashboard() {
       sub: "Coming soon",
     },
     {
-      label: "Net Profit",
+      label: "Gross Profit",
       value: `₹${fmt(Math.max(0, netProfit))}`,
       icon: TrendingUp,
       iconBg: netProfit >= 0 ? "#F0FDF4" : "#FEF2F2",
