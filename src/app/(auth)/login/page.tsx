@@ -4,9 +4,9 @@ import { useState, Suspense } from "react";
 import { signIn, signOut } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, ArrowLeft, Store, Package, ChevronRight } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, Store, Package, ChevronRight, UserCheck } from "lucide-react";
 
-type Zone = "seller" | "supplier" | null;
+type Zone = "seller" | "supplier" | "sales" | null;
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -42,6 +42,12 @@ function LoginContent() {
     if (zone === "supplier" && role !== "SUPPLIER") {
       await signOut({ redirect: false });
       setError("These credentials don't belong to a Supplier account.");
+      setLoading(false);
+      return;
+    }
+    if (zone === "sales" && role !== "SALES") {
+      await signOut({ redirect: false });
+      setError("These credentials don't belong to a Sales team account.");
       setLoading(false);
       return;
     }
@@ -155,6 +161,23 @@ function LoginContent() {
                   <div className="flex-1">
                     <p className="font-semibold text-sm" style={{ color: "var(--text-900)" }}>Seller Portal</p>
                     <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>Manage your store, orders & deliveries</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--text-400)" }} />
+                </button>
+
+                {/* Sales Team */}
+                <button onClick={() => setZone("sales")}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all hover:shadow-md"
+                  style={{ border: "1.5px solid var(--border)", background: "white" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#7C3AED"; e.currentTarget.style.background = "#F5F3FF"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "white"; }}>
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: "#F5F3FF" }}>
+                    <UserCheck className="w-5 h-5" style={{ color: "#7C3AED" }} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm" style={{ color: "var(--text-900)" }}>Sales Team</p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>CRM, leads & target tracking</p>
                   </div>
                   <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--text-400)" }} />
                 </button>
