@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   UserCheck, Plus, Trash2, Loader2, Target,
-  TrendingUp, Users, Phone, MapPin, ChevronDown,
+  TrendingUp, Users, Phone, MapPin, ChevronDown, UserPlus, KeyRound,
 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
@@ -38,6 +38,7 @@ interface Lead {
 }
 
 export default function AdminCRMPage() {
+  const [tab, setTab] = useState<"leads" | "team">("leads");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [salesTeam, setSalesTeam] = useState<SalesPerson[]>([]);
   const [perfStats, setPerfStats] = useState<PerfStat[]>([]);
@@ -53,6 +54,12 @@ export default function AdminCRMPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", city: "", investment: "", assignedToId: "" });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+
+  // New team member form
+  const [teamForm, setTeamForm] = useState({ name: "", email: "", password: "", salesTitle: "", salesTarget: "" });
+  const [teamSaving, setTeamSaving] = useState(false);
+  const [teamError, setTeamError] = useState("");
+  const [teamSuccess, setTeamSuccess] = useState("");
 
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams();
@@ -103,6 +110,23 @@ export default function AdminCRMPage() {
     await fetch(`/api/admin/crm/leads/${leadId}`, { method: "DELETE" });
     setLeads(p => p.filter(l => l.id !== leadId));
     setDeleting(null);
+  }
+
+  async function handleCreateMember(e: React.FormEvent) {
+    e.preventDefault();
+    setTeamError(""); setTeamSuccess("");
+    setTeamSaving(true);
+    const res = await fetch("/api/admin/crm/team", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(teamForm),
+    });
+    const data = await res.json();
+    if (!res.ok) { setTeamError(data.error || "Failed"); setTeamSaving(false); return; }
+    setTeamSuccess(`Account created for ${data.user.name} — they can now log in at /login`);
+    setTeamForm({ name: "", email: "", password: "", salesTitle: "", salesTarget: "" });
+    await fetchData();
+    setTeamSaving(false);
   }
 
   const totalLeads = leads.length;
@@ -165,6 +189,112 @@ export default function AdminCRMPage() {
 
       <div className="px-8 pt-6 space-y-6 pb-8">
 
+        {/* Tab switcher */}
+        <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: "#F3F4F6" }}>
+          {([["leads", "Leads", UserCheck], ["team", "Sales Team", Users]] as const).map(([key, label, Icon]) => (
+            <button key={key} onClick={() => setTab(key)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+              style={tab === key
+                ? { background: "white", color: "var(--text-900)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+                : { color: "var(--text-400)" }}>
+              <Icon className="w-4 h-4" /> {label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── TEAM TAB ── */}
+        {tab === "team" && (
+          <div className="space-y-6">
+            {/* Create member form */}
+            <div className="card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <UserPlus className="w-4 h-4" style={{ color: "var(--green-500)" }} />
+                <h2 className="text-sm font-bold" style={{ color: "var(--text-900)" }}>Create Sales Account</h2>
+              </div>
+              {teamError && <div className="mb-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{teamError}</div>}
+              {teamSuccess && <div className="mb-3 text-sm text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2">{teamSuccess}</div>}
+              <form onSubmit={handleCreateMember} className="grid grid-cols-3 gap-3">
+                {[
+                  { key: "name",        label: "Full Name *",      placeholder: "e.g. Keshav Sharma", type: "text" },
+                  { key: "email",       label: "Email *",          placeholder: "work email",          type: "email" },
+                  { key: "password",    label: "Password *",       placeholder: "Set a password",      type: "password" },
+                  { key: "salesTitle",  label: "Title",            placeholder: "e.g. Sales Lead",     type: "text" },
+                  { key: "salesTarget", label: "Monthly Target",   placeholder: "No. of paid leads",   type: "number" },
+                ].map(({ key, label, placeholder, type }) => (
+                  <div key={key}>
+                    <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-600)" }}>{label}</label>
+                    <input type={type} value={teamForm[key as keyof typeof teamForm]}
+                      onChange={e => setTeamForm(p => ({ ...p, [key]: e.target.value }))}
+                      placeholder={placeholder}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  </div>
+                ))}
+                <div className="col-span-3 flex justify-end">
+                  <button type="submit" disabled={teamSaving}
+                    className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white rounded-xl disabled:opacity-50"
+                    style={{ background: "var(--green-500)" }}>
+                    {teamSaving ? <><Loader2 className="w-4 h-4 animate-spin" />Creating...</> : <><UserPlus className="w-4 h-4" />Create Account</>}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Team list */}
+            <div className="card overflow-hidden">
+              <div className="px-5 py-3.5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
+                <Users className="w-4 h-4" style={{ color: "var(--text-400)" }} />
+                <span className="font-semibold text-sm" style={{ color: "var(--text-900)" }}>
+                  Team Members ({salesTeam.length})
+                </span>
+              </div>
+              {salesTeam.length === 0 ? (
+                <div className="py-12 text-center text-sm" style={{ color: "var(--text-400)" }}>
+                  No sales team members yet — create one above
+                </div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
+                      {["Name","Title","Monthly Target","Login Email"].map(h => (
+                        <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide"
+                          style={{ color: "var(--text-400)" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y" style={{ borderColor: "var(--border)" }}>
+                    {salesTeam.map(rep => (
+                      <tr key={rep.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                              style={{ background: "var(--green-500)" }}>
+                              {rep.name?.[0]?.toUpperCase()}
+                            </div>
+                            <span className="font-medium" style={{ color: "var(--text-900)" }}>{rep.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5 text-sm" style={{ color: "var(--text-600)" }}>
+                          {rep.salesTitle || "—"}
+                        </td>
+                        <td className="px-5 py-3.5 text-sm font-semibold" style={{ color: "var(--text-900)" }}>
+                          {rep.salesTarget ? `${rep.salesTarget} paid/month` : "—"}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-400)" }}>
+                            <KeyRound className="w-3.5 h-3.5" />
+                            Logs in at <span className="font-mono font-medium" style={{ color: "var(--green-500)" }}>/login</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+
+        {tab === "leads" && <>
         {/* Add lead form */}
         {showForm && (
           <div className="card p-5">
@@ -358,6 +488,7 @@ export default function AdminCRMPage() {
             </div>
           )}
         </div>
+        </>}
       </div>
     </div>
   );
