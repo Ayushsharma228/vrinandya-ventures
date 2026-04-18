@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, RefreshCw, Truck, Save } from "lucide-react";
+import { RefreshCw, Truck, Save } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
+
+interface Seller { id: string; name: string | null; email: string; brandName: string | null; }
 
 interface Order {
   id: string;
@@ -33,19 +35,28 @@ const STATUSES = ["PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED
 
 export default function AdminDeliveryPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [sellerFilter, setSellerFilter] = useState("");
   const [awbInputs, setAwbInputs] = useState<Record<string, string>>({});
   const [statusInputs, setStatusInputs] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [bulkSaving, setBulkSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  useEffect(() => {
+    fetch("/api/admin/sellers")
+      .then(r => r.json())
+      .then(d => setSellers(d.sellers || []));
+  }, []);
+
   const fetchOrders = useCallback(async () => {
     const params = new URLSearchParams();
     if (search) params.set("search", search);
     if (statusFilter) params.set("status", statusFilter);
+    if (sellerFilter) params.set("sellerId", sellerFilter);
     const res = await fetch(`/api/admin/orders?${params}`);
     const data = await res.json();
     // Exclude cancelled orders that were never shipped (no AWB) — nothing to manage delivery-wise
@@ -62,7 +73,7 @@ export default function AdminDeliveryPage() {
       return next;
     });
     setLoading(false);
-  }, [search, statusFilter]);
+  }, [search, statusFilter, sellerFilter]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
@@ -140,12 +151,24 @@ export default function AdminDeliveryPage() {
           </div>
         }
         filters={
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl text-white outline-none"
-            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
-            <option value="" className="text-gray-900 bg-white">All Statuses</option>
-            {STATUSES.map((s) => <option key={s} value={s} className="text-gray-900 bg-white">{s}</option>)}
-          </select>
+          <div className="flex items-center gap-2">
+            <select value={sellerFilter} onChange={(e) => setSellerFilter(e.target.value)}
+              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
+              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              <option value="" className="text-gray-900 bg-white">All Sellers</option>
+              {sellers.map((s) => (
+                <option key={s.id} value={s.id} className="text-gray-900 bg-white">
+                  {s.brandName || s.name || s.email}
+                </option>
+              ))}
+            </select>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
+              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              <option value="" className="text-gray-900 bg-white">All Statuses</option>
+              {STATUSES.map((s) => <option key={s} value={s} className="text-gray-900 bg-white">{s}</option>)}
+            </select>
+          </div>
         }
       />
 
