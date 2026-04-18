@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Bell,
   Settings, LogOut, Truck, Store, ListChecks, CheckSquare,
-  Wallet, BadgeIndianRupee, ShoppingBag, ChevronRight, User, Megaphone, AlertTriangle,
+  Wallet, BadgeIndianRupee, ShoppingBag, ChevronRight, User, Megaphone, AlertTriangle, UserCheck,
 } from "lucide-react";
 
 interface NavItem {
@@ -49,6 +49,12 @@ const adminGroups: NavGroup[] = [
     items: [
       { label: "Remittance",        href: "/admin/remittance",  icon: BadgeIndianRupee },
       { label: "Meta Ads Spend",    href: "/admin/ad-spend",    icon: Megaphone },
+    ],
+  },
+  {
+    label: "Sales",
+    items: [
+      { label: "CRM",               href: "/admin/crm",         icon: UserCheck },
     ],
   },
   {
@@ -99,6 +105,27 @@ const sellerGroups: NavGroup[] = [
   },
 ];
 
+const salesGroups: NavGroup[] = [
+  {
+    label: "Main",
+    items: [
+      { label: "Dashboard",    href: "/sales",        icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: "CRM",
+    items: [
+      { label: "My Leads",     href: "/sales/leads",  icon: UserCheck },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { label: "Profile",      href: "/sales/profile", icon: User },
+    ],
+  },
+];
+
 const supplierGroups: NavGroup[] = [
   {
     label: "Main",
@@ -122,7 +149,7 @@ const supplierGroups: NavGroup[] = [
 ];
 
 interface SidebarV2Props {
-  role: "admin" | "seller" | "supplier";
+  role: "admin" | "seller" | "supplier" | "sales";
   userName?: string;
   userEmail?: string;
 }
@@ -142,11 +169,13 @@ export function SidebarV2({ role, userName, userEmail }: SidebarV2Props) {
   const groups =
     role === "admin" ? adminGroups :
     role === "seller" ? sellerGroups :
+    role === "sales" ? salesGroups :
     supplierGroups;
 
   const roleLabel =
     role === "admin" ? "Admin Portal" :
     role === "seller" ? "Seller Portal" :
+    role === "sales" ? "Sales CRM" :
     "Supplier Portal";
 
   const initial = userName?.[0]?.toUpperCase() || "U";

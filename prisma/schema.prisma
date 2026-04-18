@@ -10,6 +10,23 @@ enum Role {
   ADMIN
   SELLER
   SUPPLIER
+  SALES
+}
+
+enum SalesStage {
+  LEAD
+  CALL_NOT_PICKED
+  BUSY
+  SCHEDULE_MEETING
+  NOT_INTERESTED
+  PROSPECT
+  INTERESTED
+  WILL_PAY
+  PAID
+  ONBOARDED
+  WEBSITE_DONE
+  ENGAGEMENT_LIVE
+  ADS_LIVE
 }
 
 enum Plan {
@@ -119,6 +136,10 @@ model User {
   // Data visibility — orders before this date are hidden from seller dashboard
   dataStartDate        DateTime?
 
+  // Sales team
+  salesTarget          Int?
+  salesTitle           String?
+
   shopifyStore        ShopifyStore?
   marketplaceAccounts MarketplaceAccount[]
   orders              Order[]
@@ -129,8 +150,47 @@ model User {
   remittances         Remittance[]
   walletTransactions  WalletTransaction[]
   adSpends            AdSpend[]
+  assignedLeads       Lead[]         @relation("AssignedLeads")
+  createdLeads        Lead[]         @relation("CreatedLeads")
+  leadActivities      LeadActivity[]
 
   @@map("users")
+}
+
+model Lead {
+  id           String      @id @default(cuid())
+  name         String
+  email        String?
+  phone        String
+  city         String?
+  investment   Float?
+  source       String      @default("META_ADS")
+  stage        SalesStage  @default(LEAD)
+  isNI         Boolean     @default(false)
+  followUpDate DateTime?
+  notes        String?
+  assignedToId String?
+  assignedTo   User?       @relation("AssignedLeads", fields: [assignedToId], references: [id])
+  createdById  String
+  createdBy    User        @relation("CreatedLeads", fields: [createdById], references: [id])
+  activities   LeadActivity[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@map("leads")
+}
+
+model LeadActivity {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  content   String?
+  createdAt DateTime @default(now())
+
+  @@map("lead_activities")
 }
 
 enum WalletTxType {

@@ -48,6 +48,7 @@ function LoginContent() {
 
     if (role === "ADMIN") window.location.href = "/admin";
     else if (role === "SUPPLIER") window.location.href = "/supplier";
+    else if (role === "SALES") window.location.href = "/sales";
     else if (role === "SELLER") {
       window.location.href = session?.user?.plan ? "/seller" : "/onboarding";
     }
