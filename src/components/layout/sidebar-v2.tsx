@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import {
@@ -126,6 +127,15 @@ interface SidebarV2Props {
 
 export function SidebarV2({ role, userName, userEmail }: SidebarV2Props) {
   const pathname = usePathname();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (role !== "seller") return;
+    fetch("/api/seller/notifications")
+      .then(r => r.json())
+      .then(d => setUnreadCount(d.unreadCount ?? 0))
+      .catch(() => {});
+  }, [role]);
 
   const groups =
     role === "admin" ? adminGroups :
@@ -193,6 +203,11 @@ export function SidebarV2({ role, userName, userEmail }: SidebarV2Props) {
                       style={isActive ? { color: "var(--green-500)" } : {}}
                     />
                     <span className="flex-1">{item.label}</span>
+                    {item.href === "/seller/notifications" && unreadCount > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center flex-shrink-0">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
                     {isActive && (
                       <div
                         className="w-1.5 h-1.5 rounded-full flex-shrink-0"
