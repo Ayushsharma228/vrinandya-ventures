@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Bell,
   Settings, LogOut, Truck, Store, ListChecks, CheckSquare,
-  Wallet, BadgeIndianRupee, ShoppingBag, ChevronRight, User,
+  Wallet, BadgeIndianRupee, ShoppingBag, ChevronRight, User, Megaphone,
 } from "lucide-react";
 
 interface NavItem {
@@ -47,6 +47,7 @@ const adminGroups: NavGroup[] = [
     label: "Finance",
     items: [
       { label: "Remittance",        href: "/admin/remittance",  icon: BadgeIndianRupee },
+      { label: "Meta Ads Spend",    href: "/admin/ad-spend",    icon: Megaphone },
     ],
   },
   {

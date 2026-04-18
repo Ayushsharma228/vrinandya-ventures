@@ -12,7 +12,7 @@ export async function GET() {
   const sellers = await prisma.user.findMany({
     where: { role: "SELLER" },
     select: {
-      id: true, name: true, email: true, username: true,
+      id: true, name: true, email: true, username: true, brandName: true,
       accountStatus: true, plan: true, planTier: true,
       paymentReference: true, paymentConfirmed: true,
       onboardingDone: true, kycStatus: true,

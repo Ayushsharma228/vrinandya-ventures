@@ -77,6 +77,7 @@ export default function SellerDashboard() {
   const [recentOrders, setRecentOrders] = useState<{ id: string; externalOrderId: string; customerName: string; totalAmount: number; status: string; createdAt: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [chartDays, setChartDays] = useState(14);
+  const [adSpend, setAdSpend] = useState(0);
 
   const name = session?.user?.name?.split(" ")[0] || "Seller";
 
@@ -85,10 +86,12 @@ export default function SellerDashboard() {
       fetch("/api/seller/analytics").then(r => r.json()),
       fetch("/api/seller/wallet").then(r => r.json()),
       fetch("/api/seller/orders?limit=6").then(r => r.json()),
-    ]).then(([a, w, o]) => {
+      fetch("/api/seller/ad-spend").then(r => r.json()),
+    ]).then(([a, w, o, ads]) => {
       setAnalytics(a);
       setWallet(w);
       setRecentOrders(o.orders?.slice(0, 6) || []);
+      setAdSpend(ads.total ?? 0);
       setLoading(false);
     });
   }, []);
@@ -126,11 +129,11 @@ export default function SellerDashboard() {
     },
     {
       label: "Meta Ads Spent",
-      value: "₹0",
+      value: `₹${fmt(adSpend)}`,
       icon: Megaphone,
       iconBg: "#F5F3FF",
       iconColor: "#7C3AED",
-      sub: "Coming soon",
+      sub: adSpend > 0 ? "Total ad spend" : "No spend logged yet",
     },
     {
       label: "Gross Profit",

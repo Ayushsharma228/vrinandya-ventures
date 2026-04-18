@@ -128,6 +128,7 @@ model User {
   warehouses          Warehouse[]
   remittances         Remittance[]
   walletTransactions  WalletTransaction[]
+  adSpends            AdSpend[]
 
   @@map("users")
 }
@@ -135,6 +136,18 @@ model User {
 enum WalletTxType {
   CREDIT
   DEBIT
+}
+
+model AdSpend {
+  id        String   @id @default(cuid())
+  sellerId  String
+  seller    User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  date      DateTime
+  amount    Float
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@map("ad_spends")
 }
 
 model WalletTransaction {
