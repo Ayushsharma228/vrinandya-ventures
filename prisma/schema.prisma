@@ -254,6 +254,10 @@ model Order {
   rtoCharge       Float?
   remittedAt      DateTime?
   remittanceTxId  String?
+  ndrReason       String?
+  ndrStatus       String?
+  ndrAttempts     Int         @default(0)
+  ndrActionTaken  String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 

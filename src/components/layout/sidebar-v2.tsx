@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Bell,
   Settings, LogOut, Truck, Store, ListChecks, CheckSquare,
-  Wallet, BadgeIndianRupee, ShoppingBag, ChevronRight, User, Megaphone,
+  Wallet, BadgeIndianRupee, ShoppingBag, ChevronRight, User, Megaphone, AlertTriangle,
 } from "lucide-react";
 
 interface NavItem {
@@ -79,6 +79,7 @@ const sellerGroups: NavGroup[] = [
     items: [
       { label: "Orders",            href: "/seller/orders",     icon: ShoppingCart },
       { label: "Delivery",          href: "/seller/deliveries", icon: Truck },
+      { label: "NDR Management",    href: "/seller/ndr",        icon: AlertTriangle },
     ],
   },
   {
