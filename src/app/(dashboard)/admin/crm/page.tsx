@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   UserCheck, Plus, Trash2, Loader2, Target,
   TrendingUp, Users, Phone, MapPin, ChevronDown, UserPlus, KeyRound,
+  Upload, Download,
 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
@@ -49,6 +50,13 @@ export default function AdminCRMPage() {
   const [showForm, setShowForm] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [assigning, setAssigning] = useState<string | null>(null);
+
+  // Bulk upload
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [bulkRows, setBulkRows] = useState<Array<Record<string, string>>>([]);
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{ created: number; skipped: number } | null>(null);
+  const [bulkError, setBulkError] = useState("");
 
   // New lead form
   const [form, setForm] = useState({ name: "", email: "", phone: "", city: "", investment: "", assignedToId: "" });
@@ -112,6 +120,59 @@ export default function AdminCRMPage() {
     setDeleting(null);
   }
 
+  function downloadTemplate() {
+    const csv = [
+      "date,type,experience,what they want,investment,when they start,name,number,email",
+      "01/04/2026,Dropshipping,Beginner,Shopify store,50000,Immediately,Rahul Sharma,9876543210,rahul@example.com",
+      "02/04/2026,Marketplace,Intermediate,Amazon listing,80000,Next month,Priya Singh,9123456789,",
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "leads_template.csv"; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function parseCSV(text: string): Array<Record<string, string>> {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+    return lines.slice(1).filter(l => l.trim()).map(line => {
+      const vals = line.split(",").map(v => v.trim().replace(/^"|"$/g, ""));
+      const row: Record<string, string> = {};
+      headers.forEach((h, i) => { row[h] = vals[i] ?? ""; });
+      return row;
+    });
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const rows = parseCSV(ev.target?.result as string);
+      setBulkRows(rows); setBulkResult(null); setBulkError("");
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
+
+  async function handleBulkUpload() {
+    if (!bulkRows.length) return;
+    setBulkUploading(true); setBulkError("");
+    const res = await fetch("/api/admin/crm/leads/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ leads: bulkRows }),
+    });
+    const data = await res.json();
+    if (!res.ok) { setBulkError(data.error || "Upload failed"); setBulkUploading(false); return; }
+    setBulkResult({ created: data.created, skipped: data.skipped });
+    setBulkRows([]);
+    await fetchData();
+    setBulkUploading(false);
+  }
+
   async function handleCreateMember(e: React.FormEvent) {
     e.preventDefault();
     setTeamError(""); setTeamSuccess("");
@@ -142,11 +203,19 @@ export default function AdminCRMPage() {
         onSearchChange={setSearch}
         onSearchSubmit={fetchData}
         actions={
-          <button onClick={() => setShowForm(p => !p)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-            style={{ background: "var(--green-500)" }}>
-            <Plus className="w-4 h-4" /> Add Lead
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setShowBulkUpload(p => !p); setShowForm(false); setBulkResult(null); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+              style={{ background: "rgba(255,255,255,0.12)", color: "white", border: "1px solid rgba(255,255,255,0.2)" }}>
+              <Upload className="w-4 h-4" /> Bulk Upload
+            </button>
+            <button onClick={() => { setShowForm(p => !p); setShowBulkUpload(false); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+              style={{ background: "var(--green-500)" }}>
+              <Plus className="w-4 h-4" /> Add Lead
+            </button>
+          </div>
         }
         filters={
           <div className="flex items-center gap-2">
@@ -341,6 +410,103 @@ export default function AdminCRMPage() {
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {/* Bulk upload panel */}
+        {showBulkUpload && (
+          <div className="card p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold" style={{ color: "var(--text-900)" }}>Bulk Upload Leads</h2>
+              <button onClick={downloadTemplate}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors hover:opacity-80"
+                style={{ background: "#EFF6FF", color: "#3B82F6" }}>
+                <Download className="w-3.5 h-3.5" /> Download Template
+              </button>
+            </div>
+
+            {bulkError && (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{bulkError}</div>
+            )}
+            {bulkResult && (
+              <div className="text-sm text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2">
+                ✓ {bulkResult.created} leads uploaded successfully
+                {bulkResult.skipped > 0 && ` · ${bulkResult.skipped} rows skipped (missing name/phone)`}
+              </div>
+            )}
+
+            <label htmlFor="bulk-csv-input"
+              className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-8 cursor-pointer transition-colors hover:bg-gray-50"
+              style={{ borderColor: "#E5E7EB" }}>
+              <Upload className="w-8 h-8" style={{ color: "var(--text-400)" }} />
+              <p className="text-sm font-medium" style={{ color: "var(--text-600)" }}>Click to choose a CSV file</p>
+              <p className="text-xs" style={{ color: "var(--text-400)" }}>Columns: <span className="font-mono">date, type, experience, what they want, investment, when they start, name, number, email</span></p>
+              <input id="bulk-csv-input" type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
+            </label>
+
+            {bulkRows.length > 0 && (
+              <>
+                <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "var(--border)" }}>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ background: "#F9FAFB", borderBottom: "1px solid var(--border)" }}>
+                        {["Name","Number","Email","Type","Experience","Investment (₹)","When they start"].map(h => (
+                          <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap"
+                            style={{ color: "var(--text-400)" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y" style={{ borderColor: "var(--border)" }}>
+                      {bulkRows.slice(0, 5).map((row, i) => {
+                        const phone = row["number"] || row["phone"] || "";
+                        return (
+                          <tr key={i}>
+                            <td className="px-4 py-2.5 font-medium whitespace-nowrap" style={{ color: row["name"] ? "var(--text-900)" : "#EF4444" }}>
+                              {row["name"] || "⚠ missing"}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap" style={{ color: phone ? "var(--text-600)" : "#EF4444" }}>
+                              {phone || "⚠ missing"}
+                            </td>
+                            <td className="px-4 py-2.5" style={{ color: "var(--text-400)" }}>{row["email"] || "—"}</td>
+                            <td className="px-4 py-2.5" style={{ color: "var(--text-400)" }}>{row["type"] || "—"}</td>
+                            <td className="px-4 py-2.5" style={{ color: "var(--text-400)" }}>{row["experience"] || "—"}</td>
+                            <td className="px-4 py-2.5 whitespace-nowrap" style={{ color: "var(--text-400)" }}>
+                              {row["investment"] ? `₹${parseFloat(row["investment"]).toLocaleString("en-IN")}` : "—"}
+                            </td>
+                            <td className="px-4 py-2.5" style={{ color: "var(--text-400)" }}>{row["when they start"] || "—"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {bulkRows.length > 5 && (
+                    <div className="px-4 py-2 text-xs text-center" style={{ color: "var(--text-400)", borderTop: "1px solid var(--border)" }}>
+                      + {bulkRows.length - 5} more rows (not shown)
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <p className="text-sm" style={{ color: "var(--text-600)" }}>
+                    <span className="font-semibold" style={{ color: "var(--text-900)" }}>
+                      {bulkRows.filter(r => r["name"]?.trim() && (r["number"]?.trim() || r["phone"]?.trim())).length}
+                    </span> valid rows ready
+                    {bulkRows.filter(r => !r["name"]?.trim() || (!r["number"]?.trim() && !r["phone"]?.trim())).length > 0 && (
+                      <span className="text-red-500 ml-2">
+                        · {bulkRows.filter(r => !r["name"]?.trim() || (!r["number"]?.trim() && !r["phone"]?.trim())).length} will be skipped
+                      </span>
+                    )}
+                  </p>
+                  <button onClick={handleBulkUpload} disabled={bulkUploading}
+                    className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white rounded-xl disabled:opacity-50"
+                    style={{ background: "var(--green-500)" }}>
+                    {bulkUploading
+                      ? <><Loader2 className="w-4 h-4 animate-spin" />Uploading...</>
+                      : <><Upload className="w-4 h-4" />Upload {bulkRows.length} Leads</>}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
 
