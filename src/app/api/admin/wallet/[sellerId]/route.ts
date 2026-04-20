@@ -29,7 +29,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
   }
 
   const { sellerId } = await params;
-  const url = new URL(_req.url);
+  const url = new URL(req.url);
   const txId = url.searchParams.get("txId");
   if (!txId) return NextResponse.json({ error: "txId required" }, { status: 400 });
 
