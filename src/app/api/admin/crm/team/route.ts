@@ -40,15 +40,20 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id, salesTitle, salesTarget } = await req.json();
+  const { id, salesTitle, salesTarget, password } = await req.json();
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+  const data: Record<string, unknown> = {
+    salesTitle: salesTitle ?? undefined,
+    salesTarget: salesTarget !== undefined ? parseInt(salesTarget) : undefined,
+  };
+  if (password?.trim()) {
+    data.password = await bcrypt.hash(password.trim(), 10);
+  }
 
   const user = await prisma.user.update({
     where: { id },
-    data: {
-      salesTitle: salesTitle ?? undefined,
-      salesTarget: salesTarget !== undefined ? parseInt(salesTarget) : undefined,
-    },
+    data,
     select: { id: true, name: true, email: true, salesTitle: true, salesTarget: true },
   });
 

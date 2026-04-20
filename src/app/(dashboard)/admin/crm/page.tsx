@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   UserCheck, Plus, Trash2, Loader2, Target,
   TrendingUp, Users, Phone, MapPin, ChevronDown, UserPlus, KeyRound,
-  Upload, Download,
+  Upload, Download, RefreshCw,
 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
@@ -68,6 +68,11 @@ export default function AdminCRMPage() {
   const [teamSaving, setTeamSaving] = useState(false);
   const [teamError, setTeamError] = useState("");
   const [teamSuccess, setTeamSuccess] = useState("");
+
+  // Reset password
+  const [resetId, setResetId] = useState<string | null>(null);
+  const [resetPw, setResetPw] = useState("");
+  const [resetSaving, setResetSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams();
@@ -171,6 +176,19 @@ export default function AdminCRMPage() {
     setBulkRows([]);
     await fetchData();
     setBulkUploading(false);
+  }
+
+  async function handleResetPassword(id: string) {
+    if (!resetPw.trim()) return;
+    setResetSaving(true);
+    await fetch("/api/admin/crm/team", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, password: resetPw }),
+    });
+    setResetId(null);
+    setResetPw("");
+    setResetSaving(false);
   }
 
   async function handleCreateMember(e: React.FormEvent) {
@@ -324,7 +342,7 @@ export default function AdminCRMPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
-                      {["Name","Title","Monthly Target","Login Email"].map(h => (
+                      {["Name","Title","Monthly Target","Password"].map(h => (
                         <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide"
                           style={{ color: "var(--text-400)" }}>{h}</th>
                       ))}
@@ -349,10 +367,36 @@ export default function AdminCRMPage() {
                           {rep.salesTarget ? `${rep.salesTarget} paid/month` : "—"}
                         </td>
                         <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-400)" }}>
-                            <KeyRound className="w-3.5 h-3.5" />
-                            Logs in at <span className="font-mono font-medium" style={{ color: "var(--green-500)" }}>/login</span>
-                          </div>
+                          {resetId === rep.id ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="password"
+                                value={resetPw}
+                                onChange={e => setResetPw(e.target.value)}
+                                placeholder="New password"
+                                autoFocus
+                                className="px-2 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-400 w-32"
+                              />
+                              <button
+                                onClick={() => handleResetPassword(rep.id)}
+                                disabled={resetSaving || !resetPw.trim()}
+                                className="px-2.5 py-1.5 text-xs font-semibold text-white rounded-lg disabled:opacity-50"
+                                style={{ background: "var(--green-500)" }}>
+                                {resetSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+                              </button>
+                              <button onClick={() => { setResetId(null); setResetPw(""); }}
+                                className="text-xs px-2 py-1.5 rounded-lg border border-gray-200 text-gray-500">
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => { setResetId(rep.id); setResetPw(""); }}
+                              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors hover:bg-orange-50"
+                              style={{ color: "#D97706" }}>
+                              <RefreshCw className="w-3.5 h-3.5" /> Reset Password
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
