@@ -3,7 +3,7 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-export async function GET() {
+export async function GET(req: NextRequest)() {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "SELLER") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -15,7 +15,7 @@ export async function GET() {
   return NextResponse.json({ user });
 }
 
-export async function PATCH(req: NextRequest) {
+export async function PATCH(req: NextRequest)(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "SELLER") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

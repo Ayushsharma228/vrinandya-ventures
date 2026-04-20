@@ -3,7 +3,7 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest)(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ user });
 }
 
-export async function PATCH(req: NextRequest) {
+export async function PATCH(req: NextRequest)(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest)(req: NextRequest) {
   try {
     const session = await getRouteSession(req);
     if (!session || session.user.role !== "SELLER" || session.user.plan !== "DROPSHIPPING") {

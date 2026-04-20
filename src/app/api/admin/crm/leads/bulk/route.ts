@@ -23,7 +23,7 @@ function buildNotes(l: Record<string, string>): string | null {
   return parts.length ? parts.join(" | ") : null;
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest)(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

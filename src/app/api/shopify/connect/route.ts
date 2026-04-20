@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest)(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "SELLER") {
     return NextResponse.redirect(new URL("/login", req.url));

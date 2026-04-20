@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest)(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "SALES") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -21,7 +21,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
   return NextResponse.json({ lead });
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest)(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "SALES") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 const VALID_STATUSES = ["NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "RTO"];
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest)(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
