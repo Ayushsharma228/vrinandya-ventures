@@ -2,11 +2,11 @@
   "crons": [
     {
       "path": "/api/cron/refresh-tracking",
-      "schedule": "0 */4 * * *"
+      "schedule": "0 6 * * *"
     },
     {
       "path": "/api/cron/sync-ndr",
-      "schedule": "0 */4 * * *"
+      "schedule": "0 7 * * *"
     }
   ]
 }

@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // One-time cleanup: remove orders with numeric Shopify IDs (old format before using so.name)
 export async function POST() {
-  const session = await getServerSession(authOptions);
+  const session = await getRouteSession(req);
   if (!session || session.user.role !== "SELLER") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

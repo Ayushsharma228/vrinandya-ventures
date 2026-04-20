@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getRouteSession(req);
   if (!session || session.user.role !== "SELLER") {
     return NextResponse.redirect(new URL("/login", req.url));
   }

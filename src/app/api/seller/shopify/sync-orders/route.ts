@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { OrderStatus, Prisma } from "@prisma/client";
 
@@ -13,7 +11,7 @@ function mapShopifyStatus(financial: string, fulfillment: string | null): OrderS
 }
 
 export async function POST() {
-  const session = await getServerSession(authOptions);
+  const session = await getRouteSession(req);
   if (!session || session.user.role !== "SELLER") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

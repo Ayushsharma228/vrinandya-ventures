@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getRouteSession(req);
     if (!session || session.user.role !== "SELLER" || session.user.plan !== "DROPSHIPPING") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
