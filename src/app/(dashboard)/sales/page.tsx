@@ -67,7 +67,7 @@ export default function SalesDashboard() {
         title={`Hey, ${data.name?.split(" ")[0] || "there"} 👋`}
         subtitle={data.salesTitle || "Sales Team · Vrinandya Ventures"}
         cards={
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               { label: "Assigned Leads",    value: data.totalLeads,     icon: UserCheck,    color: "#3B82F6" },
               { label: "Paid This Month",   value: data.paidThisMonth,  icon: TrendingUp,   color: "#00C67A" },
@@ -89,7 +89,7 @@ export default function SalesDashboard() {
         }
       />
 
-      <div className="px-8 pt-6 space-y-6 pb-8">
+      <div className="px-4 md:px-8 pt-6 space-y-6 pb-8">
 
         {/* Monthly Target */}
         <div className="card px-6 py-5">
@@ -111,7 +111,7 @@ export default function SalesDashboard() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Today's Follow-ups */}
           <div className="card overflow-hidden">
             <div className="px-5 py-3.5 flex items-center justify-between"

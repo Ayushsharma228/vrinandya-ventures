@@ -126,7 +126,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
       {/* Header */}
-      <div className="px-8 pt-6 pb-4 flex items-center gap-4" style={{ borderBottom: "1px solid var(--border)" }}>
+      <div className="px-4 md:px-8 pt-6 pb-4 flex items-center gap-4 flex-wrap gap-y-2" style={{ borderBottom: "1px solid var(--border)" }}>
         <button onClick={() => router.back()}
           className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
           <ArrowLeft className="w-4 h-4" style={{ color: "var(--text-600)" }} />
@@ -153,9 +153,9 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
         )}
       </div>
 
-      <div className="px-8 py-6 grid grid-cols-3 gap-6">
+      <div className="px-4 md:px-8 py-6 grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left — Lead info + edit */}
-        <div className="col-span-1 space-y-4">
+        <div className="md:col-span-1 space-y-4">
           {/* Info card */}
           <div className="card p-5 space-y-3">
             <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Lead Info</h2>
@@ -224,7 +224,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {/* Right — Activity log */}
-        <div className="col-span-2 space-y-4">
+        <div className="md:col-span-2 space-y-4">
           {/* Log activity */}
           <div className="card p-5 space-y-3">
             <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Log Activity</h2>

@@ -75,7 +75,7 @@ export default function SalesLeadsPage() {
         onSearchSubmit={fetchLeads}
       />
 
-      <div className="px-8 py-6 space-y-4">
+      <div className="px-4 md:px-8 py-6 space-y-4">
         {/* Filters */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -113,7 +113,7 @@ export default function SalesLeadsPage() {
             <p className="text-sm" style={{ color: "var(--text-400)" }}>No leads found</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {leads.map(lead => {
               const cfg = STAGE_COLOR[lead.stage] ?? STAGE_COLOR.LEAD;
               const isFollowUpToday = lead.followUpDate && new Date(lead.followUpDate).toDateString() === today;

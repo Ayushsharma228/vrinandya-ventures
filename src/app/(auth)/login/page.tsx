@@ -239,11 +239,11 @@ function LoginContent() {
               <div className="mb-7">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-3"
                   style={{
-                    background: zone === "seller" ? "#EFF6FF" : "#F0FDF4",
-                    color: zone === "seller" ? "#3B82F6" : "var(--green-500)",
+                    background: zone === "seller" ? "#EFF6FF" : zone === "sales" ? "#F5F3FF" : "#F0FDF4",
+                    color: zone === "seller" ? "#3B82F6" : zone === "sales" ? "#7C3AED" : "var(--green-500)",
                   }}>
-                  {zone === "seller" ? <Store className="w-3 h-3" /> : <Package className="w-3 h-3" />}
-                  {zone === "seller" ? "Seller Portal" : "Supplier Portal"}
+                  {zone === "seller" ? <Store className="w-3 h-3" /> : zone === "sales" ? <UserCheck className="w-3 h-3" /> : <Package className="w-3 h-3" />}
+                  {zone === "seller" ? "Seller Portal" : zone === "sales" ? "Sales Team" : "Supplier Portal"}
                 </div>
                 <h2 className="text-2xl font-bold" style={{ color: "var(--text-900)" }}>Sign in to your account</h2>
                 <p className="text-sm mt-1" style={{ color: "var(--text-400)" }}>Enter your credentials to continue</p>

@@ -7,8 +7,9 @@ import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Bell,
-  Settings, LogOut, Truck, Store, ListChecks, CheckSquare,
-  Wallet, BadgeIndianRupee, ShoppingBag, ChevronRight, User, Megaphone, AlertTriangle, UserCheck,
+  LogOut, Truck, Store, ListChecks, CheckSquare,
+  Wallet, BadgeIndianRupee, ShoppingBag, User, Megaphone, AlertTriangle, UserCheck,
+  Menu, X,
 } from "lucide-react";
 
 interface NavItem {
@@ -157,6 +158,9 @@ interface SidebarV2Props {
 export function SidebarV2({ role, userName, userEmail }: SidebarV2Props) {
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   useEffect(() => {
     if (role !== "seller") return;
@@ -180,17 +184,12 @@ export function SidebarV2({ role, userName, userEmail }: SidebarV2Props) {
 
   const initial = userName?.[0]?.toUpperCase() || "U";
 
-  return (
-    <aside
-      className="w-60 flex flex-col min-h-screen flex-shrink-0"
-      style={{ background: "var(--bg-sidebar)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
-    >
+  const navContent = (
+    <>
       {/* Logo */}
       <div className="px-5 py-5 flex items-center gap-2.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-          style={{ background: "var(--green-500)" }}
-        >
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+          style={{ background: "var(--green-500)" }}>
           V
         </div>
         <div>
@@ -203,36 +202,28 @@ export function SidebarV2({ role, userName, userEmail }: SidebarV2Props) {
       <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
         {groups.map((group) => (
           <div key={group.label}>
-            <p
-              className="text-xs font-semibold uppercase tracking-wider px-2 mb-1.5"
-              style={{ color: "rgba(255,255,255,0.3)" }}
-            >
+            <p className="text-xs font-semibold uppercase tracking-wider px-2 mb-1.5"
+              style={{ color: "rgba(255,255,255,0.3)" }}>
               {group.label}
             </p>
             <div className="space-y-0.5">
               {group.items.map((item) => {
                 const Icon = item.icon;
+                const rootPaths = ["/admin", "/seller", "/supplier", "/sales"];
                 const isActive = pathname === item.href ||
-                  (item.href !== "/admin" && item.href !== "/seller" && item.href !== "/supplier" && pathname.startsWith(item.href));
+                  (!rootPaths.includes(item.href) && pathname.startsWith(item.href));
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 group",
-                      isActive
-                        ? "text-white"
-                        : "text-white/50 hover:text-white/80"
+                      "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+                      isActive ? "text-white" : "text-white/50 hover:text-white/80"
                     )}
-                    style={isActive ? {
-                      background: "rgba(0, 198, 122, 0.15)",
-                      color: "var(--green-400)",
-                    } : {}}
+                    style={isActive ? { background: "rgba(0, 198, 122, 0.15)", color: "var(--green-400)" } : {}}
                   >
-                    <Icon
-                      className="w-4 h-4 flex-shrink-0"
-                      style={isActive ? { color: "var(--green-500)" } : {}}
-                    />
+                    <Icon className="w-4 h-4 flex-shrink-0"
+                      style={isActive ? { color: "var(--green-500)" } : {}} />
                     <span className="flex-1">{item.label}</span>
                     {item.href === "/seller/notifications" && unreadCount > 0 && (
                       <span className="min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center flex-shrink-0">
@@ -240,10 +231,8 @@ export function SidebarV2({ role, userName, userEmail }: SidebarV2Props) {
                       </span>
                     )}
                     {isActive && (
-                      <div
-                        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                        style={{ background: "var(--green-500)" }}
-                      />
+                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                        style={{ background: "var(--green-500)" }} />
                     )}
                   </Link>
                 );
@@ -256,10 +245,8 @@ export function SidebarV2({ role, userName, userEmail }: SidebarV2Props) {
       {/* User footer */}
       <div className="px-3 py-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div className="flex items-center gap-2.5 px-2 mb-2">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-            style={{ background: "var(--green-600)" }}
-          >
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+            style={{ background: "var(--green-600)" }}>
             {initial}
           </div>
           <div className="flex-1 min-w-0">
@@ -271,19 +258,56 @@ export function SidebarV2({ role, userName, userEmail }: SidebarV2Props) {
           onClick={() => signOut({ callbackUrl: "/login" })}
           className="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-sm transition-colors duration-150"
           style={{ color: "rgba(255,255,255,0.4)" }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = "rgba(255,255,255,0.8)";
-            e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = "rgba(255,255,255,0.4)";
-            e.currentTarget.style.background = "transparent";
-          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.8)"; e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.4)"; e.currentTarget.style.background = "transparent"; }}
         >
           <LogOut className="w-4 h-4" />
           Sign Out
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* ── Mobile top bar ── */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 flex items-center justify-between px-4"
+        style={{ background: "var(--bg-sidebar)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+            style={{ background: "var(--green-500)" }}>V</div>
+          <div>
+            <p className="text-white font-semibold text-sm leading-tight">Vrinandya</p>
+            <p className="text-[10px] leading-tight" style={{ color: "var(--green-500)" }}>{roleLabel}</p>
+          </div>
+        </div>
+        <button onClick={() => setMobileOpen(true)} className="p-2 rounded-lg"
+          style={{ color: "rgba(255,255,255,0.7)" }}>
+          <Menu className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* ── Mobile overlay drawer ── */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
+          <aside className="relative w-72 flex flex-col min-h-screen z-10 overflow-y-auto"
+            style={{ background: "var(--bg-sidebar)" }}>
+            <button onClick={() => setMobileOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg"
+              style={{ color: "rgba(255,255,255,0.5)" }}>
+              <X className="w-5 h-5" />
+            </button>
+            {navContent}
+          </aside>
+        </div>
+      )}
+
+      {/* ── Desktop sidebar ── */}
+      <aside className="hidden md:flex w-60 flex-col min-h-screen flex-shrink-0"
+        style={{ background: "var(--bg-sidebar)", borderRight: "1px solid rgba(255,255,255,0.06)" }}>
+        {navContent}
+      </aside>
+    </>
   );
 }
