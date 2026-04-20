@@ -3,7 +3,7 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ListingStatus } from "@prisma/client";
 
-export async function GET(req: NextRequest)(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest)(req: NextRequest) {
   return NextResponse.json({ listings, stats });
 }
 
-export async function PATCH(req: NextRequest)(req: NextRequest) {
+export async function PATCH(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

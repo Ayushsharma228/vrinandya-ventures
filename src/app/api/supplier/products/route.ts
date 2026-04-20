@@ -3,7 +3,7 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 
-export async function POST(req: NextRequest)(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const session = await getRouteSession(req);
     if (!session || session.user.role !== "SUPPLIER") {
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest)(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest)(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const session = await getRouteSession(req);
     if (!session || session.user.role !== "SUPPLIER") {

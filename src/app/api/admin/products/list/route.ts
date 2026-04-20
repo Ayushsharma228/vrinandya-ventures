@@ -3,7 +3,7 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ProductStatus } from "@prisma/client";
 
-export async function GET(req: NextRequest)(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const session = await getRouteSession(req);
     if (!session || session.user.role !== "ADMIN") {

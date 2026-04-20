@@ -3,7 +3,7 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ProductStatus } from "@prisma/client";
 
-export async function DELETE(req: NextRequest)(req: NextRequest) {
+export async function DELETE(req: NextRequest) {
   try {
     const session = await getRouteSession(req);
     if (!session || session.user.role !== "ADMIN") {
@@ -21,7 +21,7 @@ export async function DELETE(req: NextRequest)(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest)(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const session = await getRouteSession(req);
     if (!session || session.user.role !== "ADMIN") {
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest)(req: NextRequest) {
   }
 }
 
-export async function PATCH(req: NextRequest)(req: NextRequest) {
+export async function PATCH(req: NextRequest) {
   try {
     const session = await getRouteSession(req);
     if (!session || session.user.role !== "ADMIN") {

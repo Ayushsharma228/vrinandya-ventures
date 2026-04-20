@@ -3,7 +3,7 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
 // GET: all sellers with their wallet balance
-export async function GET(req: NextRequest)() {
+export async function GET(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest)() {
 }
 
 // POST: add transaction for a seller
-export async function POST(req: NextRequest)(req: NextRequest) {
+export async function POST(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -11,7 +11,7 @@ function mapShopifyStatus(financial: string, fulfillment: string | null): OrderS
   return OrderStatus.NEW;
 }
 
-export async function POST(req: NextRequest)() {
+export async function POST(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "SELLER") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

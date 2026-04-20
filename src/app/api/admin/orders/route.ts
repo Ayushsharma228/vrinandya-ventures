@@ -3,7 +3,7 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
-export async function GET(req: NextRequest)(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest)(req: NextRequest) {
 }
 
 // PATCH — bulk date update
-export async function PATCH(req: NextRequest)(req: NextRequest) {
+export async function PATCH(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -56,7 +56,7 @@ export async function PATCH(req: NextRequest)(req: NextRequest) {
 }
 
 // DELETE — single or bulk
-export async function DELETE(req: NextRequest)(req: NextRequest) {
+export async function DELETE(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -70,7 +70,7 @@ export async function DELETE(req: NextRequest)(req: NextRequest) {
 }
 
 // POST — manually create an order
-export async function POST(req: NextRequest)(req: NextRequest) {
+export async function POST(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -3,7 +3,7 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { Plan } from "@prisma/client";
 
-export async function POST(req: NextRequest)(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const session = await getRouteSession(req);
     if (!session) {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest)(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const session = await getRouteSession(req);
     if (!session || session.user.role !== "SUPPLIER") {

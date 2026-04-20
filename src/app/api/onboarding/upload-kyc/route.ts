@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { put } from "@vercel/blob";
 
-export async function POST(req: NextRequest)(req: NextRequest) {
+export async function POST(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

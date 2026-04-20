@@ -3,7 +3,7 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { getResend, FROM_EMAIL, ADMIN_EMAIL } from "@/lib/resend";
 
-export async function POST(req: NextRequest)(req: NextRequest) {
+export async function POST(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

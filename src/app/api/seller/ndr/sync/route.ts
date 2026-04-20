@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
-export async function POST(req: NextRequest)() {
+export async function POST(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "SELLER") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest)() {
 }
 
 // Debug endpoint — GET to see raw Delhivery response for a specific AWB
-export async function GET(req: NextRequest)(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "SELLER") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

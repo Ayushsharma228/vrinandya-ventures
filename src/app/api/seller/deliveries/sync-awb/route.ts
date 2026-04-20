@@ -27,7 +27,7 @@ function mapDelhiveryStatus(status: string): { dbStatus: string; courier: string
   return { dbStatus, courier };
 }
 
-export async function POST(req: NextRequest)() {
+export async function POST(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "SELLER") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
