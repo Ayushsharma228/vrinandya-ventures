@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {

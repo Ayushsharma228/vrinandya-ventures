@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
 // Parses DD/MM/YYYY or DD/MM/YY → Date. Returns undefined if invalid.

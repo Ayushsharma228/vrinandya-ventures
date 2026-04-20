@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
 // One-time cleanup: remove orders with numeric Shopify IDs (old format before using so.name)

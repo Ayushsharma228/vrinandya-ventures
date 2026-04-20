@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { getResend, FROM_EMAIL, ADMIN_EMAIL } from "@/lib/resend";
 

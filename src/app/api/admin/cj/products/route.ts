@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getRouteSession } from "@/lib/session";
 import { cjFetch } from "@/lib/cj";
 
 export async function GET(req: NextRequest) {

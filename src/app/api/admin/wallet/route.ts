@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
 // GET: all sellers with their wallet balance

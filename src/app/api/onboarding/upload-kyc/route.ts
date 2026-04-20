@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getRouteSession } from "@/lib/session";
 import { put } from "@vercel/blob";
 
 export async function POST(req: NextRequest) {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getRouteSession } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
   const session = await getRouteSession(req);
