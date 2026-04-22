@@ -74,6 +74,10 @@ export default function AdminCRMPage() {
   const [resetPw, setResetPw] = useState("");
   const [resetSaving, setResetSaving] = useState(false);
 
+  // Meta sync
+  const [metaSyncing, setMetaSyncing] = useState(false);
+  const [metaResult, setMetaResult] = useState<{ imported: number; skipped: number } | null>(null);
+
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams();
     if (search)     params.set("search", search);
@@ -228,6 +232,26 @@ export default function AdminCRMPage() {
               style={{ background: "rgba(255,255,255,0.12)", color: "white", border: "1px solid rgba(255,255,255,0.2)" }}>
               <Upload className="w-4 h-4" /> Bulk Upload
             </button>
+            <button
+              onClick={async () => {
+                setMetaSyncing(true); setMetaResult(null);
+                const res = await fetch("/api/admin/meta/sync-leads", { method: "POST" });
+                const data = await res.json();
+                setMetaResult(data);
+                setMetaSyncing(false);
+                if (data.imported > 0) fetchData();
+              }}
+              disabled={metaSyncing}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
+              style={{ background: "rgba(0,198,122,0.15)", color: "#00C67A", border: "1px solid rgba(0,198,122,0.3)" }}>
+              <RefreshCw className={`w-4 h-4 ${metaSyncing ? "animate-spin" : ""}`} />
+              {metaSyncing ? "Syncing..." : "Sync Meta Leads"}
+            </button>
+            {metaResult && (
+              <span className="text-xs font-medium" style={{ color: metaResult.imported > 0 ? "#00C67A" : "var(--text-400)" }}>
+                {metaResult.imported} imported, {metaResult.skipped} skipped
+              </span>
+            )}
             <button onClick={() => { setShowForm(p => !p); setShowBulkUpload(false); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
               style={{ background: "var(--green-500)" }}>

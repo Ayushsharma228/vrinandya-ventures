@@ -169,6 +169,7 @@ model Lead {
   isNI         Boolean     @default(false)
   followUpDate DateTime?
   notes        String?
+  metaLeadId   String?     @unique
   assignedToId String?
   assignedTo   User?       @relation("AssignedLeads", fields: [assignedToId], references: [id])
   createdById  String
