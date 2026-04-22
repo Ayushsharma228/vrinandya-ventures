@@ -64,8 +64,8 @@ export default function SupplierProfilePage() {
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
       <PageHero title="My Profile" subtitle="Manage your personal, business and bank details" />
 
-      <div className="px-8 py-6">
-        <div className="grid grid-cols-4 gap-6">
+      <div className="px-4 md:px-8 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Left — avatar + tabs */}
           <div className="space-y-4">
             <div className="card p-5 flex flex-col items-center text-center">
@@ -99,7 +99,7 @@ export default function SupplierProfilePage() {
           </div>
 
           {/* Right — form */}
-          <div className="col-span-3 card p-6">
+          <div className="md:col-span-3 card p-6">
             {error && (
               <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm mb-4"
                 style={{ background: "#FEF2F2", color: "#EF4444", border: "1px solid #FEE2E2" }}>
@@ -110,7 +110,7 @@ export default function SupplierProfilePage() {
             {activeTab === "personal" && (
               <div className="space-y-5">
                 <h2 className="text-base font-semibold" style={{ color: "var(--text-900)" }}>Personal Information</h2>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Field icon={User} label="Full Name" value={personal.name} onChange={v => setPersonal(p => ({ ...p, name: v }))} />
                   <Field icon={Mail} label="Email Address" value={personal.email} onChange={() => {}} type="email" disabled />
                   <Field icon={Phone} label="Phone Number" value={personal.phone} onChange={v => setPersonal(p => ({ ...p, phone: v }))} type="tel" />
@@ -121,7 +121,7 @@ export default function SupplierProfilePage() {
             {activeTab === "business" && (
               <div className="space-y-5">
                 <h2 className="text-base font-semibold" style={{ color: "var(--text-900)" }}>Business Details</h2>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Field icon={Building2} label="Brand / Business Name" value={business.brandName} onChange={v => setBusiness(p => ({ ...p, brandName: v }))} />
                   <Field icon={FileText} label="GST Number (optional)" value={business.gst} onChange={v => setBusiness(p => ({ ...p, gst: v }))} />
                 </div>
@@ -132,7 +132,7 @@ export default function SupplierProfilePage() {
               <div className="space-y-5">
                 <h2 className="text-base font-semibold" style={{ color: "var(--text-900)" }}>Bank Details</h2>
                 <p className="text-xs" style={{ color: "var(--text-400)" }}>Your bank details for remittances from Vrinandya Ventures</p>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Field icon={User} label="Account Holder Name" value={bank.accountHolder} onChange={v => setBank(p => ({ ...p, accountHolder: v }))} />
                   <Field icon={CreditCard} label="Account Number" value={bank.accountNumber} onChange={v => setBank(p => ({ ...p, accountNumber: v }))} />
                   <Field icon={Building2} label="IFSC Code" value={bank.ifsc} onChange={v => setBank(p => ({ ...p, ifsc: v }))} />

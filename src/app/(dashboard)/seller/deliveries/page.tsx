@@ -87,7 +87,7 @@ export default function ManageDeliveryPage() {
           </div>
         }
         cards={
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {STAT_CARDS.map(({ key, label, icon: Icon, color }) => (
               <div key={key} className="rounded-2xl px-4 py-4 flex items-center gap-3"
                 style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
@@ -105,7 +105,7 @@ export default function ManageDeliveryPage() {
         }
       />
 
-      <div className="px-8 py-6 space-y-5">
+      <div className="px-4 md:px-8 py-6 space-y-5">
         {/* Status filter buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           {STATUS_FILTERS.map((s) => {
@@ -140,7 +140,7 @@ export default function ManageDeliveryPage() {
               <p className="text-sm" style={{ color: "var(--text-400)" }}>No deliveries found</p>
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
                   {["Order ID", "Customer", "Phone", "Date", "Status", "AWB / Tracking"].map((h) => (
@@ -187,7 +187,7 @@ export default function ManageDeliveryPage() {
                   );
                 })}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
       </div>

@@ -123,7 +123,7 @@ export default function SupplierOrdersPage() {
           </div>
         }
         cards={
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {statCards.map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
                 style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
@@ -140,7 +140,7 @@ export default function SupplierOrdersPage() {
         }
       />
 
-      <div className="px-8 py-6 space-y-5">
+      <div className="px-4 md:px-8 py-6 space-y-5">
         {/* Status filter pills */}
         <div className="flex items-center gap-2 flex-wrap">
           {STATUS_FILTERS.map((s) => {
@@ -173,7 +173,7 @@ export default function SupplierOrdersPage() {
               <p className="text-sm" style={{ color: "var(--text-400)" }}>No orders found</p>
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
                   {["Order ID", "Customer", "Products", "Seller", "Amount", "Status", "AWB", "Date"].map((h) => (
@@ -214,7 +214,7 @@ export default function SupplierOrdersPage() {
                   );
                 })}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
       </div>

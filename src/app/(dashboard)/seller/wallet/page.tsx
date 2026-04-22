@@ -46,7 +46,7 @@ export default function SellerWalletPage() {
         title="Wallet & Payouts"
         subtitle="Your earnings and remittance history"
         cards={
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Available Balance */}
             <div className="rounded-2xl px-6 py-5" style={{ background: "rgba(0,198,122,0.12)", border: "1px solid rgba(0,198,122,0.2)" }}>
               <div className="flex items-center justify-between mb-4">
@@ -108,7 +108,7 @@ export default function SellerWalletPage() {
         }
       />
 
-      <div className="px-8 py-6 space-y-6">
+      <div className="px-4 md:px-8 py-6 space-y-6">
         {/* Transaction history */}
         <div className="card overflow-hidden">
           <div className="px-5 py-3 flex items-center gap-1" style={{ borderBottom: "1px solid var(--border)" }}>

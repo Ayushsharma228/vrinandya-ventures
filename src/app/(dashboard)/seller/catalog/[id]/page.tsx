@@ -232,7 +232,7 @@ export default function ProductDetailPage({
           )}
 
           {/* Info Grid */}
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 grid grid-cols-2 gap-4 text-sm">
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-xs text-gray-400 mb-0.5">Category</p>
               <p className="font-medium text-gray-800">

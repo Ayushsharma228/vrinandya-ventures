@@ -132,7 +132,7 @@ export default function ListProductPage() {
           </div>
           <p className="text-blue-500 text-sm mb-6">Fill in the details below to submit your product for approval</p>
 
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             {/* Product Title */}
             <div className="col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -167,7 +167,7 @@ export default function ListProductPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             {/* SKU */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

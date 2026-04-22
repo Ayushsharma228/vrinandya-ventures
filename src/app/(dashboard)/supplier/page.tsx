@@ -46,7 +46,7 @@ export default async function SupplierDashboard() {
           </Link>
         }
         cards={
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: "Total Products", value: totalProducts,   icon: Package,     color: "#3B82F6" },
               { label: "Pending Review", value: pendingProducts,  icon: Clock,       color: "#F59E0B" },
@@ -69,7 +69,7 @@ export default async function SupplierDashboard() {
         }
       />
 
-      <div className="px-8 pt-6 space-y-6">
+      <div className="px-4 md:px-8 pt-6 space-y-6">
 
         {/* Rejection alert */}
         {rejectedWithNotes.length > 0 && (
@@ -101,7 +101,7 @@ export default async function SupplierDashboard() {
             <Layers className="w-4 h-4" style={{ color: "var(--green-500)" }} />
             <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Quick Actions</h2>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
               { label: "Add New Product",  sub: "Submit a product for review",        href: "/supplier/products/new", icon: Plus,    bg: "#F0FDF4", text: "#16A34A" },
               { label: "My Products",      sub: `${totalProducts} total · ${approvedProducts} approved`, href: "/supplier/products", icon: Package, bg: "#EFF6FF", text: "#3B82F6" },
@@ -148,7 +148,7 @@ export default async function SupplierDashboard() {
               </Link>
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
                   {["Product", "SKU", "Price", "Category", "Status", "Added"].map((h) => (
@@ -186,7 +186,7 @@ export default async function SupplierDashboard() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
 

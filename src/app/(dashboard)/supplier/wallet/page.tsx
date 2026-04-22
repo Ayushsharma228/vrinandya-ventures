@@ -73,7 +73,7 @@ export default function SupplierWalletPage() {
           </button>
         }
         cards={
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Wallet Balance */}
             <div className="rounded-2xl px-6 py-5"
               style={{ background: "rgba(0,198,122,0.12)", border: "1px solid rgba(0,198,122,0.2)" }}>
@@ -129,7 +129,7 @@ export default function SupplierWalletPage() {
         }
       />
 
-      <div className="px-8 py-6">
+      <div className="px-4 md:px-8 py-6">
         <div className="card overflow-hidden">
           <div className="px-5 py-3.5" style={{ borderBottom: "1px solid var(--border)" }}>
             <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Orders & Impact</h2>
@@ -143,7 +143,7 @@ export default function SupplierWalletPage() {
               <p className="text-sm" style={{ color: "var(--text-400)" }}>No orders yet</p>
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
                   {["Order ID", "Source", "Items", "Order Value", "Status", "Date"].map((h) => (
@@ -182,7 +182,7 @@ export default function SupplierWalletPage() {
                   );
                 })}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
       </div>

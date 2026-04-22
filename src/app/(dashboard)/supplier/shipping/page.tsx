@@ -96,7 +96,7 @@ export default function SupplierShippingPage() {
       </div>
 
       {/* 8 Stat Cards */}
-      <div className="grid grid-cols-8 gap-2 mb-5">
+      <div className="grid grid-cols-4 md:grid-cols-8 gap-2 mb-5">
         {STAT_CARDS.map((card) => (
           <div
             key={card.key}
@@ -178,7 +178,7 @@ export default function SupplierShippingPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto"><table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100">
                     {["Order ID", "Customer", "Seller", "AWB Number", "Courier", "Amount", "Status", "Date"].map(h => (
@@ -206,7 +206,7 @@ export default function SupplierShippingPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
         </div>

@@ -129,7 +129,7 @@ export default function SellerAnalyticsPage() {
       ) : (
         <>
           {/* Stat Cards — 5 across */}
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <StatCard
               label="Total Orders"
               value={data?.totalOrders ?? 0}
@@ -173,7 +173,7 @@ export default function SellerAnalyticsPage() {
           </div>
 
           {/* Revenue row */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500">Total Revenue</p>
@@ -201,7 +201,7 @@ export default function SellerAnalyticsPage() {
           </div>
 
           {/* Charts */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-white border border-gray-200 rounded-xl p-5">
               <h2 className="font-semibold text-gray-900 mb-4">Order Trends</h2>
               <ResponsiveContainer width="100%" height={220}>
@@ -245,7 +245,7 @@ export default function SellerAnalyticsPage() {
             <div className="px-5 py-4 border-b border-gray-100">
               <h2 className="font-semibold text-gray-900">Top Products</h2>
             </div>
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/50">
                   {["Product Name", "SKU", "Orders", "Units", "Del %", "RTO %"].map((h) => (
@@ -267,7 +267,7 @@ export default function SellerAnalyticsPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
         </>
       )}

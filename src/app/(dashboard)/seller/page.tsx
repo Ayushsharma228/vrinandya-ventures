@@ -150,7 +150,7 @@ export default function SellerDashboard() {
 
       {/* ── Hero Band (D-5 style) ────────────────────────────── */}
       <div
-        className="relative overflow-hidden px-8 pt-8 pb-10"
+        className="relative overflow-hidden px-4 md:px-8 pt-6 md:pt-8 pb-10"
         style={{ background: "linear-gradient(135deg, #0D1117 0%, #0D2818 60%, #0a1f12 100%)" }}
       >
         {/* background decoration */}
@@ -161,7 +161,7 @@ export default function SellerDashboard() {
             style={{ background: "radial-gradient(circle, #3B82F6, transparent)" }} />
         </div>
 
-        <div className="relative flex items-start justify-between">
+        <div className="relative flex flex-col md:flex-row md:items-start md:justify-between gap-3">
           <div>
             <p className="text-sm font-medium mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>
               {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
@@ -193,7 +193,7 @@ export default function SellerDashboard() {
         </div>
 
         {/* Mini stat row inside hero */}
-        <div className="relative mt-6 grid grid-cols-4 gap-4">
+        <div className="relative mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           {loading ? (
             [...Array(4)].map((_, i) => (
               <div key={i} className="h-20 rounded-xl animate-pulse"
@@ -220,10 +220,10 @@ export default function SellerDashboard() {
       </div>
 
       {/* ── Content ─────────────────────────────────────────── */}
-      <div className="px-8 py-6 space-y-6">
+      <div className="px-4 md:px-8 py-6 space-y-6">
 
         {/* Quick Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
           {[
             { label: "View Orders",    href: "/seller/orders",   icon: ShoppingCart, color: "#3B82F6" },
             { label: "Product Catalog", href: "/seller/catalog",  icon: Package,      color: "#00C67A" },
@@ -245,10 +245,10 @@ export default function SellerDashboard() {
         </div>
 
         {/* Charts Row */}
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
           {/* Area Chart — Order Trend */}
-          <div className="col-span-2 card p-5">
+          <div className="md:col-span-2 card p-5">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Order Trend</h2>

@@ -82,7 +82,7 @@ export default function SellerCatalogPage() {
         onSearchChange={setSearch}
       />
 
-      <div className="px-8 py-6">
+      <div className="px-4 md:px-8 py-6">
         {loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
             {[...Array(10)].map((_, i) => (

@@ -146,7 +146,7 @@ export default function SellerOrdersPage() {
           </div>
         }
         cards={
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {statCards.map((s) => {
               const Icon = s.icon;
               return (
@@ -166,7 +166,7 @@ export default function SellerOrdersPage() {
         }
       />
 
-      <div className="px-8 py-6 space-y-5">
+      <div className="px-4 md:px-8 py-6 space-y-5">
         {syncError && (
           <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">
             <XCircle className="w-4 h-4 flex-shrink-0" />
@@ -204,7 +204,7 @@ export default function SellerOrdersPage() {
               <p className="text-sm font-medium" style={{ color: "var(--text-400)" }}>No orders found</p>
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
                   {["Order #", "Customer", "Products", "Address", "Qty", "Amount", "Status", "Date", "Actions"].map((h) => (
@@ -284,7 +284,7 @@ export default function SellerOrdersPage() {
                   );
                 })}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
       </div>

@@ -28,7 +28,7 @@ export function PageHero({
 }: PageHeroProps) {
   return (
     <div
-      className="relative overflow-hidden px-8 pt-7"
+      className="relative overflow-hidden px-4 md:px-8 pt-6 md:pt-7"
       style={{
         background: "linear-gradient(135deg, #0D1117 0%, #0D2818 60%, #0a1f12 100%)",
         paddingBottom: cards ? "0" : "2rem",
@@ -48,7 +48,7 @@ export function PageHero({
 
       <div className="relative">
         {/* Title row */}
-        <div className="flex items-start justify-between mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
           <div>
             <h1 className="text-2xl font-bold text-white leading-tight">{title}</h1>
             {subtitle && (

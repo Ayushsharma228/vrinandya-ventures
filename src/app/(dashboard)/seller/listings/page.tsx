@@ -63,7 +63,7 @@ export default function SellerListingsPage() {
         title="My Listings"
         subtitle="Track your marketplace listing requests and their status"
         cards={
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
               { label: "Total",       value: stats.total,      icon: ListChecks,  color: "#7C3AED" },
               { label: "Pending",     value: stats.pending,    icon: Clock,       color: "#D97706" },
@@ -87,7 +87,7 @@ export default function SellerListingsPage() {
         }
       />
 
-      <div className="px-8 py-6 space-y-5">
+      <div className="px-4 md:px-8 py-6 space-y-5">
 
         {/* Failed alert */}
         {stats.failed > 0 && (
@@ -144,7 +144,7 @@ export default function SellerListingsPage() {
               </p>
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
                   {["Product", "Platform", "Status", "Admin Note", "Requested"].map(h => (
@@ -221,7 +221,7 @@ export default function SellerListingsPage() {
                   );
                 })}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
       </div>

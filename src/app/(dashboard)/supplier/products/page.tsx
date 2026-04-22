@@ -43,7 +43,7 @@ export default async function MyProductsPage() {
           </Link>
         }
         cards={
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {statCards.map(({ label, value, icon: Icon, color }) => (
               <div
                 key={label}
@@ -65,7 +65,7 @@ export default async function MyProductsPage() {
         }
       />
 
-      <div className="px-8 py-6">
+      <div className="px-4 md:px-8 py-6">
         <div className="card overflow-hidden">
           {products.length === 0 ? (
             <div className="py-16 flex flex-col items-center gap-3">
@@ -81,7 +81,7 @@ export default async function MyProductsPage() {
               </Link>
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
                   {["Product", "SKU", "Price", "Category", "Status", "Date"].map((h) => (
@@ -124,7 +124,7 @@ export default async function MyProductsPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
       </div>
