@@ -74,11 +74,15 @@ export default function SellerOrdersPage() {
 
   async function handleConfirm(orderId: string) {
     setConfirming(orderId);
-    await fetch("/api/seller/orders/ship", {
+    const res = await fetch("/api/seller/orders/ship", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderId }),
     });
+    if (!res.ok) {
+      const data = await res.json();
+      setSyncError(data.error || "Failed to confirm order");
+    }
     await fetchOrders();
     setConfirming(null);
   }
@@ -216,7 +220,7 @@ export default function SellerOrdersPage() {
                 {displayed.map((order) => {
                   const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.NEW;
                   const addr = order.customerAddress;
-                  const canConfirm = order.status === "NEW" || order.status === "PROCESSING";
+                  const canConfirm = order.status === "NEW";
                   const canCancel = order.status !== "CANCELLED" && order.status !== "DELIVERED";
                   return (
                     <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
