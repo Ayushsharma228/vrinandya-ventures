@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ShoppingCart, Save, Trash2, Plus, X, Loader2, CalendarDays } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, X, Loader2, CalendarDays, CheckCircle2, XCircle } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 interface Seller { id: string; name: string | null; email: string; }
@@ -14,7 +14,7 @@ interface Order {
   customerAddress: { phone?: string } | null;
   totalAmount: number;
   createdAt: string;
-  seller: { name: string | null; email: string };
+  seller: { id: string; name: string | null; email: string };
   items: { name: string; quantity: number }[];
 }
 
@@ -91,7 +91,7 @@ function AddOrderModal({ sellers, onClose, onSaved }: {
             <div className="px-4 py-3 rounded-xl text-sm bg-red-50 text-red-600 border border-red-100">{error}</div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="block text-xs font-semibold text-gray-500 mb-1">Seller *</label>
               <select value={sellerId} onChange={(e) => setSellerId(e.target.value)} required
@@ -148,7 +148,6 @@ function AddOrderModal({ sellers, onClose, onSaved }: {
             </div>
           </div>
 
-          {/* Items */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-semibold text-gray-500">Products / Items</label>
@@ -200,11 +199,11 @@ export default function AdminOrdersPage() {
   const [search, setSearch]               = useState("");
   const [sellerFilter, setSellerFilter]   = useState("");
   const [statusFilter, setStatusFilter]   = useState("");
-  const [statusInputs, setStatusInputs]   = useState<Record<string, string>>({});
   const [dateInputs, setDateInputs]       = useState<Record<string, string>>({});
-  const [saving, setSaving]               = useState<string | null>(null);
+  const [quickActing, setQuickActing]     = useState<string | null>(null);
   const [selected, setSelected]           = useState<Set<string>>(new Set());
   const [deleting, setDeleting]           = useState(false);
+  const [bulkConfirming, setBulkConfirming] = useState(false);
   const [showAddModal, setShowAddModal]   = useState(false);
   const [bulkDateModal, setBulkDateModal] = useState(false);
   const [bulkDate, setBulkDate]           = useState("");
@@ -228,22 +227,46 @@ export default function AdminOrdersPage() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  async function handleSaveStatus(order: Order) {
-    const status    = statusInputs[order.id] ?? order.status;
-    const orderDate = dateInputs[order.id] ?? null;
-    setSaving(order.id);
-    const res = await fetch("/api/admin/orders/update-status", {
+  // Quick confirm: NEW → PROCESSING
+  async function handleConfirm(order: Order) {
+    setQuickActing(order.id);
+    await fetch("/api/admin/orders/update-status", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId: order.id, status, orderDate }),
+      body: JSON.stringify({ orderId: order.id, status: "PROCESSING" }),
     });
-    if (!res.ok) { const d = await res.json(); alert(d.error || "Failed"); }
-    else {
-      setStatusInputs((p) => { const n = { ...p }; delete n[order.id]; return n; });
-      setDateInputs((p)   => { const n = { ...p }; delete n[order.id]; return n; });
-      await fetchOrders();
-    }
-    setSaving(null);
+    setQuickActing(null);
+    await fetchOrders();
+  }
+
+  // Quick cancel
+  async function handleCancel(order: Order) {
+    if (!confirm(`Cancel order ${order.externalOrderId}?`)) return;
+    setQuickActing(order.id);
+    await fetch("/api/admin/orders/update-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId: order.id, status: "CANCELLED" }),
+    });
+    setQuickActing(null);
+    await fetchOrders();
+  }
+
+  // Bulk confirm all selected NEW orders → PROCESSING
+  async function handleBulkConfirm() {
+    const newOrders = Array.from(selected).filter(id => orders.find(o => o.id === id)?.status === "NEW");
+    if (newOrders.length === 0) { alert("No NEW orders selected"); return; }
+    setBulkConfirming(true);
+    await Promise.all(newOrders.map(orderId =>
+      fetch("/api/admin/orders/update-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, status: "PROCESSING" }),
+      })
+    ));
+    setSelected(new Set());
+    await fetchOrders();
+    setBulkConfirming(false);
   }
 
   async function handleDelete(orderIds: string[]) {
@@ -281,6 +304,8 @@ export default function AdminOrdersPage() {
     setSelected(selected.size === orders.length ? new Set() : new Set(orders.map((o) => o.id)));
   }
 
+  const newSelectedCount = Array.from(selected).filter(id => orders.find(o => o.id === id)?.status === "NEW").length;
+
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
       <PageHero
@@ -299,7 +324,9 @@ export default function AdminOrdersPage() {
         }
         filters={
           <div className="flex items-center gap-2">
-            <select value={sellerFilter} onChange={(e) => setSellerFilter(e.target.value)}
+            <select
+              value={sellerFilter}
+              onChange={(e) => setSellerFilter(e.target.value)}
               className="px-3 py-2 text-sm rounded-xl text-white outline-none"
               style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
               <option value="" className="text-gray-900 bg-white">All Sellers</option>
@@ -317,9 +344,8 @@ export default function AdminOrdersPage() {
         }
       />
 
-      <div className="px-8 py-6">
+      <div className="px-4 md:px-8 py-6">
         <div className="card overflow-hidden">
-          {/* Table header */}
           <div className="px-5 py-3.5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
             <div className="flex items-center gap-2">
               <ShoppingCart className="w-4 h-4" style={{ color: "var(--text-400)" }} />
@@ -328,7 +354,17 @@ export default function AdminOrdersPage() {
               </span>
             </div>
             {selected.size > 0 && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {newSelectedCount > 0 && (
+                  <button
+                    onClick={handleBulkConfirm}
+                    disabled={bulkConfirming}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
+                    style={{ background: "#F0FDF4", color: "#16A34A", border: "1px solid #BBF7D0" }}>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    {bulkConfirming ? "Confirming..." : `Confirm New (${newSelectedCount})`}
+                  </button>
+                )}
                 <button
                   onClick={() => { setBulkDate(""); setBulkDateModal(true); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
@@ -366,13 +402,11 @@ export default function AdminOrdersPage() {
                   {orders.length === 0 ? (
                     <tr><td colSpan={10} className="py-12 text-center text-gray-400 text-sm">No orders found</td></tr>
                   ) : orders.map((order) => {
-                    const currentStatus = statusInputs[order.id] ?? order.status;
-                    const currentDate   = dateInputs[order.id] ?? order.createdAt.slice(0, 10);
-                    const isDirty = (statusInputs[order.id] !== undefined && statusInputs[order.id] !== order.status)
-                                 || (dateInputs[order.id] !== undefined && dateInputs[order.id] !== order.createdAt.slice(0, 10));
                     const isSelected = selected.has(order.id);
+                    const isActing   = quickActing === order.id;
+                    const isNew      = order.status === "NEW";
                     return (
-                      <tr key={order.id} className={`hover:bg-gray-50/50 ${isSelected ? "bg-red-50/30" : ""}`}>
+                      <tr key={order.id} className={`hover:bg-gray-50/50 transition-colors ${isSelected ? "bg-blue-50/30" : ""}`}>
                         <td className="px-4 py-3">
                           <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(order.id)} className="rounded cursor-pointer" />
                         </td>
@@ -385,16 +419,14 @@ export default function AdminOrdersPage() {
                         <td className="px-4 py-3 text-sm font-semibold text-gray-800 whitespace-nowrap">₹{order.totalAmount.toLocaleString()}</td>
                         <td className="px-4 py-3 text-xs text-gray-500 font-mono">{order.awbNumber || "—"}</td>
                         <td className="px-4 py-3">
-                          <select value={currentStatus}
-                            onChange={(e) => setStatusInputs((p) => ({ ...p, [order.id]: e.target.value }))}
-                            className={`text-xs px-2 py-1 rounded-full font-medium border-0 outline-none cursor-pointer ${STATUS_COLOR[currentStatus] ?? "bg-gray-100 text-gray-600"}`}>
-                            {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                          </select>
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-600"}`}>
+                            {order.status}
+                          </span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <input
                             type="date"
-                            value={currentDate}
+                            defaultValue={order.createdAt.slice(0, 10)}
                             max={new Date().toISOString().split("T")[0]}
                             onChange={(e) => setDateInputs((p) => ({ ...p, [order.id]: e.target.value }))}
                             className="text-xs text-gray-600 border border-gray-200 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-400"
@@ -402,17 +434,35 @@ export default function AdminOrdersPage() {
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-1.5">
-                            <button onClick={() => handleSaveStatus(order)}
-                              disabled={saving === order.id || !isDirty}
-                              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg disabled:opacity-40 ${isDirty ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-gray-100 text-gray-400"}`}>
-                              <Save className="w-3 h-3" />
-                              {saving === order.id ? "..." : "Save"}
-                            </button>
-                            <button onClick={() => handleDelete([order.id])} disabled={deleting}
-                              className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                          <div className="flex items-center gap-1">
+                            {isNew ? (
+                              <>
+                                {/* Tick → PROCESSING */}
+                                <button
+                                  onClick={() => handleConfirm(order)}
+                                  disabled={isActing}
+                                  title="Confirm → Processing"
+                                  className="p-1.5 rounded-lg text-green-500 hover:bg-green-50 disabled:opacity-40 transition-colors">
+                                  {isActing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                </button>
+                                {/* Cross → CANCELLED */}
+                                <button
+                                  onClick={() => handleCancel(order)}
+                                  disabled={isActing}
+                                  title="Cancel order"
+                                  className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 disabled:opacity-40 transition-colors">
+                                  <XCircle className="w-4 h-4" />
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => handleDelete([order.id])}
+                                disabled={deleting}
+                                title="Delete order"
+                                className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -433,7 +483,6 @@ export default function AdminOrdersPage() {
         />
       )}
 
-      {/* Bulk Date Modal */}
       {bulkDateModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
@@ -446,16 +495,10 @@ export default function AdminOrdersPage() {
                 <X className="w-4 h-4 text-gray-400" />
               </button>
             </div>
-
             <label className="block text-xs font-semibold text-gray-500 mb-1.5">Order Date</label>
-            <input
-              type="date"
-              value={bulkDate}
-              max={new Date().toISOString().split("T")[0]}
+            <input type="date" value={bulkDate} max={new Date().toISOString().split("T")[0]}
               onChange={(e) => setBulkDate(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"
-            />
-
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4" />
             <div className="flex gap-2">
               <button onClick={() => setBulkDateModal(false)}
                 className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">
