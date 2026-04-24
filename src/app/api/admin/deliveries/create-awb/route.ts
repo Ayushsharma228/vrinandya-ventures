@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
+async function getPickupLocationName(token: string): Promise<string> {
+  try {
+    const res = await fetch("https://track.delhivery.com/api/backend/clientwarehouse/get/", {
+      headers: { Authorization: `Token ${token}` },
+    });
+    if (!res.ok) return process.env.DELHIVERY_PICKUP_LOCATION || "SELF";
+    const data = await res.json();
+    const warehouses = data?.results ?? data?.data ?? [];
+    if (warehouses.length > 0) return warehouses[0].name;
+  } catch {}
+  return process.env.DELHIVERY_PICKUP_LOCATION || "SELF";
+}
+
 export async function POST(req: NextRequest) {
   const session = await getRouteSession(req);
   if (!session || session.user.role !== "ADMIN") {
@@ -12,7 +25,6 @@ export async function POST(req: NextRequest) {
   if (!orderId) return NextResponse.json({ error: "orderId required" }, { status: 400 });
 
   const token = process.env.DELHIVERY_API_TOKEN;
-  const pickupLocation = process.env.DELHIVERY_PICKUP_LOCATION || "SELF";
   if (!token) return NextResponse.json({ error: "Delhivery not configured" }, { status: 500 });
 
   const order = await prisma.order.findUnique({
@@ -32,6 +44,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Order is missing customer address details (phone, city, pincode required)" }, { status: 400 });
   }
 
+  const pickupLocation = await getPickupLocationName(token);
   const productDesc = order.items.map(i => `${i.name} x${i.quantity}`).join(", ") || "Product";
 
   const shipmentPayload = {
@@ -85,7 +98,7 @@ export async function POST(req: NextRequest) {
 
   if (!delhiveryRes.ok) {
     const errText = await delhiveryRes.text();
-    return NextResponse.json({ error: `Delhivery error: ${errText}` }, { status: 400 });
+    return NextResponse.json({ error: `Delhivery HTTP ${delhiveryRes.status}: ${errText}` }, { status: 400 });
   }
 
   const result = await delhiveryRes.json();
@@ -93,7 +106,7 @@ export async function POST(req: NextRequest) {
 
   if (!pkg || pkg?.status === "Error" || !pkg?.waybill) {
     const remark = pkg?.remark || result?.rmk || result?.error || JSON.stringify(result);
-    return NextResponse.json({ error: remark }, { status: 400 });
+    return NextResponse.json({ error: `[pickup: ${pickupLocation}] ${remark}` }, { status: 400 });
   }
 
   const awb = pkg.waybill;
