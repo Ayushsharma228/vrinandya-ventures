@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   const existingMap = new Map(existingOrders.map((o) => [o.externalOrderId, o]));
 
   // Statuses that have been manually set — don't overwrite from Shopify
-  const LOCKED_STATUSES: OrderStatus[] = ["SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED"];
+  const LOCKED_STATUSES: OrderStatus[] = ["PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED"];
 
   // Build data for new orders and updates
   type OrderCreateInput = {
