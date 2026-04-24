@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   UserCheck, Plus, Trash2, Loader2, Target,
-  TrendingUp, Users, Phone, MapPin, ChevronDown, UserPlus, KeyRound,
-  Upload, Download, RefreshCw,
+  TrendingUp, Users, Phone, MapPin, ChevronDown, UserPlus,
+  Upload, Download, RefreshCw, XCircle, Sparkles, DollarSign, AlertCircle,
 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
@@ -44,6 +44,9 @@ export default function AdminCRMPage() {
   const [salesTeam, setSalesTeam] = useState<SalesPerson[]>([]);
   const [perfStats, setPerfStats] = useState<PerfStat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stageCounts, setStageCounts] = useState<Record<string, number>>({});
+  const [notUpdated, setNotUpdated] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [repFilter, setRepFilter] = useState("");
   const [stageFilter, setStageFilter] = useState("");
@@ -88,8 +91,16 @@ export default function AdminCRMPage() {
     setLeads(data.leads ?? []);
     setSalesTeam(data.salesTeam ?? []);
     setPerfStats(data.perfStats ?? []);
+    setStageCounts(data.stageCounts ?? {});
+    setNotUpdated(data.notUpdated ?? 0);
     setLoading(false);
   }, [search, repFilter, stageFilter]);
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  }
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -212,8 +223,11 @@ export default function AdminCRMPage() {
     setTeamSaving(false);
   }
 
-  const totalLeads = leads.length;
-  const totalPaid = leads.filter(l => l.stage === "PAID").length;
+  const totalLeads  = Object.values(stageCounts).reduce((a, b) => a + b, 0);
+  const totalPaid   = (stageCounts["PAID"] ?? 0) + (stageCounts["ONBOARDED"] ?? 0) + (stageCounts["WEBSITE_DONE"] ?? 0) + (stageCounts["ENGAGEMENT_LIVE"] ?? 0) + (stageCounts["ADS_LIVE"] ?? 0);
+  const totalNI     = stageCounts["NOT_INTERESTED"] ?? 0;
+  const totalProspect  = stageCounts["PROSPECT"] ?? 0;
+  const totalInterested = (stageCounts["INTERESTED"] ?? 0) + (stageCounts["WILL_PAY"] ?? 0);
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
@@ -226,6 +240,12 @@ export default function AdminCRMPage() {
         onSearchSubmit={fetchData}
         actions={
           <div className="flex items-center gap-2">
+            <button onClick={handleRefresh} disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
+              style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </button>
             <button
               onClick={() => { setShowBulkUpload(p => !p); setShowForm(false); setBulkResult(null); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
@@ -276,22 +296,26 @@ export default function AdminCRMPage() {
           </div>
         }
         cards={
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
             {[
-              { label: "Total Leads",  value: totalLeads,           icon: UserCheck, color: "#3B82F6" },
-              { label: "Paid / Converted", value: totalPaid,        icon: TrendingUp, color: "#00C67A" },
-              { label: "Sales Reps",   value: salesTeam.length,     icon: Users,     color: "#A78BFA" },
-            ].map(({ label, value, icon: Icon, color }) => (
-              <div key={label} className="rounded-2xl px-5 py-4 flex items-center gap-4"
+              { label: "Total",        value: totalLeads,         color: "#3B82F6",  bg: "rgba(59,130,246,0.15)",  icon: Users },
+              { label: "Not Updated",  value: notUpdated,         color: "#F59E0B",  bg: "rgba(245,158,11,0.15)",  icon: AlertCircle },
+              { label: "NI",           value: totalNI,            color: "#EF4444",  bg: "rgba(239,68,68,0.15)",   icon: XCircle },
+              { label: "Prospect",     value: totalProspect,      color: "#A78BFA",  bg: "rgba(167,139,250,0.15)", icon: Target },
+              { label: "Interested",   value: totalInterested,    color: "#06B6D4",  bg: "rgba(6,182,212,0.15)",   icon: Sparkles },
+              { label: "Paid",         value: stageCounts["PAID"] ?? 0,     color: "#00C67A",  bg: "rgba(0,198,122,0.15)",   icon: DollarSign },
+              { label: "Onboarded",    value: stageCounts["ONBOARDED"] ?? 0, color: "#16A34A", bg: "rgba(22,163,74,0.15)",   icon: UserCheck },
+              { label: "Sales Reps",   value: salesTeam.length,   color: "#E879F9",  bg: "rgba(232,121,249,0.15)", icon: TrendingUp },
+            ].map(({ label, value, color, bg, icon: Icon }) => (
+              <div key={label} className="rounded-2xl px-3 py-3 flex flex-col gap-1"
                 style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(255,255,255,0.1)" }}>
-                  <Icon className="w-5 h-5" style={{ color }} />
+                <div className="flex items-center gap-1.5">
+                  <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
+                    <Icon className="w-3.5 h-3.5" style={{ color }} />
+                  </div>
+                  <p className="text-xs font-medium truncate" style={{ color: "rgba(255,255,255,0.5)" }}>{label}</p>
                 </div>
-                <div>
-                  <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
-                  <p className="text-2xl font-bold text-white">{value}</p>
-                </div>
+                <p className="text-2xl font-bold text-white leading-none">{value}</p>
               </div>
             ))}
           </div>

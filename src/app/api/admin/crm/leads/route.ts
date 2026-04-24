@@ -51,7 +51,18 @@ export async function GET(req: NextRequest) {
     return { ...rep, total, paid, paidThisMonth, onboarded };
   }));
 
-  return NextResponse.json({ leads, salesTeam, perfStats });
+  // Stage counts from ALL leads (unfiltered) for the dashboard header
+  const allLeadGroups = await prisma.lead.groupBy({
+    by: ["stage"],
+    _count: { stage: true },
+  });
+  const stageCounts: Record<string, number> = {};
+  for (const g of allLeadGroups) stageCounts[g.stage] = g._count.stage;
+
+  // "Not Updated" = still in LEAD stage (never called/moved)
+  const notUpdated = stageCounts["LEAD"] ?? 0;
+
+  return NextResponse.json({ leads, salesTeam, perfStats, stageCounts, notUpdated });
 }
 
 export async function POST(req: NextRequest) {
