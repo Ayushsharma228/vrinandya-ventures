@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
   if (!orderId) return NextResponse.json({ error: "orderId required" }, { status: 400 });
 
   const token = process.env.DELHIVERY_API_TOKEN;
+  const pickupLocation = process.env.DELHIVERY_PICKUP_LOCATION || "Primary";
   if (!token) return NextResponse.json({ error: "Delhivery not configured" }, { status: 500 });
 
   const order = await prisma.order.findUnique({
@@ -65,10 +66,10 @@ export async function POST(req: NextRequest) {
         shipment_height: 4,
         weight: 0.05,
         shipment_length: 23,
-        pickup_location: "SELF",
+        pickup_location: pickupLocation,
       },
     ],
-    pickup_location: { name: "SELF" },
+    pickup_location: { name: pickupLocation },
   };
 
   const formBody = `format=json&data=${encodeURIComponent(JSON.stringify(shipmentPayload))}`;
@@ -89,12 +90,13 @@ export async function POST(req: NextRequest) {
 
   const result = await delhiveryRes.json();
   const pkg = result?.packages?.[0];
-  const awb = pkg?.waybill ?? pkg?.remark;
 
-  if (!awb || pkg?.status === "Error") {
-    const remark = pkg?.remark || result?.rmk || "Unknown error from Delhivery";
+  if (!pkg || pkg?.status === "Error" || !pkg?.waybill) {
+    const remark = pkg?.remark || result?.rmk || result?.error || JSON.stringify(result);
     return NextResponse.json({ error: remark }, { status: 400 });
   }
+
+  const awb = pkg.waybill;
 
   await prisma.order.update({
     where: { id: order.id },
