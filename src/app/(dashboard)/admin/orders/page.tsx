@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ShoppingCart, Trash2, Plus, X, Loader2, CalendarDays, CheckCircle2, XCircle } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, X, Loader2, CalendarDays, CheckCircle2, XCircle, Truck } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 interface Seller { id: string; name: string | null; email: string; }
@@ -201,6 +201,8 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter]   = useState("");
   const [dateInputs, setDateInputs]       = useState<Record<string, string>>({});
   const [quickActing, setQuickActing]     = useState<string | null>(null);
+  const [awbActing, setAwbActing]         = useState<string | null>(null);
+  const [bulkAwbing, setBulkAwbing]       = useState(false);
   const [selected, setSelected]           = useState<Set<string>>(new Set());
   const [deleting, setDeleting]           = useState(false);
   const [bulkConfirming, setBulkConfirming] = useState(false);
@@ -269,6 +271,44 @@ export default function AdminOrdersPage() {
     setBulkConfirming(false);
   }
 
+  // Get AWB for a single PROCESSING order
+  async function handleGetAwb(order: Order) {
+    setAwbActing(order.id);
+    const res = await fetch("/api/admin/deliveries/create-awb", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId: order.id }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      alert(`AWB error: ${data.error}`);
+    }
+    setAwbActing(null);
+    await fetchOrders();
+  }
+
+  // Bulk get AWB for selected PROCESSING orders without AWB
+  async function handleBulkGetAwb() {
+    const targets = Array.from(selected).filter(id => {
+      const o = orders.find(o => o.id === id);
+      return o?.status === "PROCESSING" && !o.awbNumber;
+    });
+    if (targets.length === 0) { alert("No PROCESSING orders without AWB selected"); return; }
+    setBulkAwbing(true);
+    const results = await Promise.allSettled(targets.map(orderId =>
+      fetch("/api/admin/deliveries/create-awb", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      }).then(r => r.json())
+    ));
+    const failed = results.filter(r => r.status === "rejected" || (r.status === "fulfilled" && r.value?.error));
+    if (failed.length > 0) alert(`${failed.length} order(s) failed to get AWB`);
+    setSelected(new Set());
+    await fetchOrders();
+    setBulkAwbing(false);
+  }
+
   async function handleDelete(orderIds: string[]) {
     if (!confirm(`Delete ${orderIds.length} order${orderIds.length > 1 ? "s" : ""}? This cannot be undone.`)) return;
     setDeleting(true);
@@ -305,6 +345,10 @@ export default function AdminOrdersPage() {
   }
 
   const newSelectedCount = Array.from(selected).filter(id => orders.find(o => o.id === id)?.status === "NEW").length;
+  const awbSelectedCount = Array.from(selected).filter(id => {
+    const o = orders.find(o => o.id === id);
+    return o?.status === "PROCESSING" && !o.awbNumber;
+  }).length;
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
@@ -365,6 +409,16 @@ export default function AdminOrdersPage() {
                     {bulkConfirming ? "Confirming..." : `Confirm New (${newSelectedCount})`}
                   </button>
                 )}
+                {awbSelectedCount > 0 && (
+                  <button
+                    onClick={handleBulkGetAwb}
+                    disabled={bulkAwbing}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
+                    style={{ background: "#FFF7ED", color: "#C2410C", border: "1px solid #FED7AA" }}>
+                    <Truck className="w-3.5 h-3.5" />
+                    {bulkAwbing ? "Getting AWB..." : `Get AWB (${awbSelectedCount})`}
+                  </button>
+                )}
                 <button
                   onClick={() => { setBulkDate(""); setBulkDateModal(true); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
@@ -403,8 +457,10 @@ export default function AdminOrdersPage() {
                     <tr><td colSpan={10} className="py-12 text-center text-gray-400 text-sm">No orders found</td></tr>
                   ) : orders.map((order) => {
                     const isSelected = selected.has(order.id);
-                    const isActing   = quickActing === order.id;
-                    const isNew      = order.status === "NEW";
+                    const isActing     = quickActing === order.id;
+                    const isAwbActing  = awbActing === order.id;
+                    const isNew        = order.status === "NEW";
+                    const needsAwb     = order.status === "PROCESSING" && !order.awbNumber;
                     return (
                       <tr key={order.id} className={`hover:bg-gray-50/50 transition-colors ${isSelected ? "bg-blue-50/30" : ""}`}>
                         <td className="px-4 py-3">
@@ -455,13 +511,27 @@ export default function AdminOrdersPage() {
                                 </button>
                               </>
                             ) : (
-                              <button
-                                onClick={() => handleDelete([order.id])}
-                                disabled={deleting}
-                                title="Delete order"
-                                className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <>
+                                {needsAwb && (
+                                  <button
+                                    onClick={() => handleGetAwb(order)}
+                                    disabled={isAwbActing}
+                                    title="Get AWB from Delhivery"
+                                    className="p-1.5 rounded-lg transition-colors disabled:opacity-40"
+                                    style={{ color: "#C2410C", background: "#FFF7ED" }}>
+                                    {isAwbActing
+                                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      : <Truck className="w-3.5 h-3.5" />}
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDelete([order.id])}
+                                  disabled={deleting}
+                                  title="Delete order"
+                                  className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </>
                             )}
                           </div>
                         </td>
