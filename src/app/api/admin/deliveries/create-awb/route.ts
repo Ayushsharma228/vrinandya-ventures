@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   if (!orderId) return NextResponse.json({ error: "orderId required" }, { status: 400 });
 
   const token = process.env.DELHIVERY_API_TOKEN;
-  const pickupLocation = process.env.DELHIVERY_PICKUP_LOCATION || "Primary";
+  const pickupLocation = process.env.DELHIVERY_PICKUP_LOCATION || "SELF";
   if (!token) return NextResponse.json({ error: "Delhivery not configured" }, { status: 500 });
 
   const order = await prisma.order.findUnique({
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
         products_desc: productDesc,
         hsn_code: "",
         cod_amount: order.totalAmount,
-        order_date: new Date(order.createdAt).toISOString(),
+        order_date: new Date(order.createdAt).toISOString().replace("T", " ").split(".")[0],
         total_amount: order.totalAmount,
         seller_add: "4 210 Kacheri Ghat Unt Gali, Agra",
         seller_name: "Ayush Sharma",
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
         waybill: "",
         shipment_width: 13,
         shipment_height: 4,
-        weight: 0.05,
+        weight: 0.5,
         shipment_length: 23,
         pickup_location: pickupLocation,
       },
