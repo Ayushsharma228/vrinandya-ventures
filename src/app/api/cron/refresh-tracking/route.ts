@@ -6,11 +6,12 @@ const STATUS_RANK: Record<string, number> = {
   DELIVERED: 4, RTO: 4, CANCELLED: 4,
 };
 
-const isRTO = (s: string) => s.includes("rto") || s.includes("reverse");
+const isRTO = (s: string) =>
+  s.includes("rto") || s.includes("reverse") || s.includes("return");
 
-function mapDelhiveryStatus(status: string): string {
+function mapDelhiveryStatus(status: string, returnedAt?: string | null): string {
   const s = status?.toLowerCase() ?? "";
-  if (isRTO(s))                                                   return "RTO";
+  if (isRTO(s) || returnedAt)                                     return "RTO";
   if (s.includes("delivered"))                                    return "DELIVERED";
   if (s.includes("transit") || s.includes("out for delivery"))   return "IN_TRANSIT";
   if (s.includes("dispatch") || s.includes("picked"))            return "SHIPPED";
@@ -56,7 +57,8 @@ export async function GET(req: NextRequest) {
       if (!shipment) { skipped++; continue; }
 
       const statusStr = (shipment.Status as { Status?: string } | null)?.Status ?? "";
-      const dbStatus = mapDelhiveryStatus(statusStr);
+      const returnedAt = (shipment as { ReturnedAt?: string | null }).ReturnedAt ?? null;
+      const dbStatus = mapDelhiveryStatus(statusStr, returnedAt);
       if (!dbStatus) { skipped++; continue; }
 
       const currentRank = STATUS_RANK[order.status] ?? 0;
