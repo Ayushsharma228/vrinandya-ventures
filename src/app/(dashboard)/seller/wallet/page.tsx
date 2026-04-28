@@ -47,24 +47,24 @@ export default function SellerWalletPage() {
         subtitle="Your earnings and remittance history"
         cards={
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Available Balance */}
+            {/* Paid Till Now */}
             <div className="rounded-2xl px-6 py-5" style={{ background: "rgba(0,198,122,0.12)", border: "1px solid rgba(0,198,122,0.2)" }}>
               <div className="flex items-center justify-between mb-4">
                 <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.5)" }}>
-                  Available Balance
+                  Paid Till Now
                 </p>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(0,198,122,0.2)" }}>
                   <Wallet style={{ color: "var(--green-500)", width: 18, height: 18 }} />
                 </div>
               </div>
               <p className="text-3xl font-bold text-white mb-1">
-                {loading ? "—" : `₹${fmt(data?.balance ?? 0)}`}
+                {loading ? "—" : `₹${fmt(data?.totalCredit ?? 0)}`}
               </p>
-              <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>Total remitted so far</p>
+              <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>Total paid to your account</p>
               <div className="mt-4 pt-4 flex items-center gap-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                 <TrendingUp style={{ color: "var(--green-500)", width: 14, height: 14 }} />
                 <span className="text-xs" style={{ color: "var(--green-500)" }}>
-                  ₹{fmt(data?.totalCredit ?? 0)} total credited
+                  {paid.length} payment{paid.length !== 1 ? "s" : ""} completed
                 </span>
               </div>
             </div>
