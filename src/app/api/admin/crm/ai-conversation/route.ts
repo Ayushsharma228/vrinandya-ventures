@@ -142,9 +142,15 @@ export async function POST(req: NextRequest) {
 
   const rawReply = (response.content[0] as { type: string; text: string }).text ?? "";
 
-  // Extract qualification data if present
-  const qualMatch = rawReply.match(/\[QUALIFICATION_DATA\](.*?)\[\/QUALIFICATION_DATA\]/s);
-  const cleanReply = rawReply.replace(/\[QUALIFICATION_DATA\].*?\[\/QUALIFICATION_DATA\]/s, "").trim();
+  // Extract qualification data if present (avoid /s flag for TS compat)
+  const qualStart = rawReply.indexOf("[QUALIFICATION_DATA]");
+  const qualEnd   = rawReply.indexOf("[/QUALIFICATION_DATA]");
+  const qualMatch = qualStart !== -1 && qualEnd !== -1
+    ? [null, rawReply.slice(qualStart + 20, qualEnd)]
+    : null;
+  const cleanReply = qualStart !== -1
+    ? (rawReply.slice(0, qualStart) + rawReply.slice(qualEnd + 21)).trim()
+    : rawReply.trim();
 
   // Save assistant reply
   await prisma.aiMessage.create({
@@ -155,7 +161,7 @@ export async function POST(req: NextRequest) {
   let scoreResult = null;
   if (qualMatch) {
     try {
-      const answers = JSON.parse(qualMatch[1]);
+      const answers = JSON.parse(qualMatch[1] ?? "{}");
       const scored = calculateLeadScore(answers);
       scoreResult = scored;
 
