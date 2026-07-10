@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
     "@auth/prisma-adapter": "^2.11.1",
     "@fontsource/inter": "^5.2.8",
     "@prisma/adapter-pg": "^6.19.3",

@@ -27,8 +27,9 @@ export async function GET(req: NextRequest) {
       } : {}),
     },
     include: {
-      assignedTo: { select: { id: true, name: true } },
-      _count: { select: { activities: true } },
+      assignedTo:  { select: { id: true, name: true } },
+      scoreDetail: true,
+      _count:      { select: { activities: true, aiConversations: true } },
     },
     orderBy: { createdAt: "desc" },
   });

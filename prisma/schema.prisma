@@ -29,6 +29,42 @@ enum SalesStage {
   ADS_LIVE
 }
 
+// AI SDR pipeline stages
+enum PipelineStage {
+  NEW_LEAD
+  AI_CONTACT_PENDING
+  AI_CONVERSATION_STARTED
+  QUALIFICATION_COMPLETED
+  HOT_LEAD
+  WARM_LEAD
+  COLD_LEAD
+  SALES_CALL_SCHEDULED
+  SALES_CALL_COMPLETED
+  PROPOSAL_SENT
+  PAYMENT_PENDING
+  CLIENT
+}
+
+enum LeadTemperature {
+  HOT
+  WARM
+  COLD
+}
+
+enum AiConvStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  FAILED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
 enum Plan {
   DROPSHIPPING
   MARKETPLACE
@@ -153,6 +189,10 @@ model User {
   assignedLeads       Lead[]         @relation("AssignedLeads")
   createdLeads        Lead[]         @relation("CreatedLeads")
   leadActivities      LeadActivity[]
+  assignedTasks       Task[]         @relation("AssignedTasks")
+  createdTasks        Task[]         @relation("CreatedTasks")
+  assignedEvents      CalendarEvent[] @relation("AssignedEvents")
+  createdEvents       CalendarEvent[] @relation("CreatedEvents")
 
   @@map("users")
 }
@@ -178,6 +218,33 @@ model Lead {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
+  // AI SDR fields
+  pipelineStage        PipelineStage   @default(NEW_LEAD)
+  temperature          LeadTemperature?
+  leadScore            Int?
+  aiStatus             AiConvStatus    @default(PENDING)
+
+  // Meta form fields
+  businessStage        String?
+  budget               String?
+  timeline             String?
+  marketplace          String?
+  biggestChallenge     String?
+  campaign             String?
+  adSet                String?
+
+  // AI qualification output
+  qualificationSummary String?
+  recommendedPlan      String?
+  salesCallBookedAt    DateTime?
+  salesCallNotes       String?
+
+  // Relations
+  aiConversations      AiConversation[]
+  tasks                Task[]
+  scoreDetail          LeadScoreDetail?
+  calendarEvents       CalendarEvent[]
+
   @@map("leads")
 }
 
@@ -192,6 +259,107 @@ model LeadActivity {
   createdAt DateTime @default(now())
 
   @@map("lead_activities")
+}
+
+// ── AI SDR models ────────────────────────────────────────────────────────────
+
+model AiConversation {
+  id          String       @id @default(cuid())
+  leadId      String
+  lead        Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  status      AiConvStatus @default(PENDING)
+  channel     String       @default("WHATSAPP") // WHATSAPP | WEB
+  summary     String?      // AI-generated summary at end of conversation
+  messages    AiMessage[]
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String         // "user" | "assistant"
+  content        String
+  whatsappMsgId  String?        // Meta WhatsApp message ID
+  createdAt      DateTime       @default(now())
+
+  @@map("ai_messages")
+}
+
+model LeadScoreDetail {
+  id                 String   @id @default(cuid())
+  leadId             String   @unique
+  lead               Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  totalScore         Int      @default(0)        // 0–100
+  budgetScore        Int      @default(0)        // 0–20
+  timelineScore      Int      @default(0)        // 0–15
+  experienceScore    Int      @default(0)        // 0–15
+  decisionMakerScore Int      @default(0)        // 0–15
+  marketplaceScore   Int      @default(0)        // 0–10
+  goalScore          Int      @default(0)        // 0–10
+  urgencyScore       Int      @default(0)        // 0–10
+  buyingIntentScore  Int      @default(0)        // 0–5
+  scoredAt           DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("lead_score_details")
+}
+
+model Task {
+  id           String     @id @default(cuid())
+  leadId       String?
+  lead         Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  assignedToId String?
+  assignedTo   User?      @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  createdById  String
+  createdBy    User       @relation("CreatedTasks", fields: [createdById], references: [id])
+  title        String
+  description  String?
+  status       TaskStatus @default(PENDING)
+  dueDate      DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("tasks")
+}
+
+model KnowledgeBase {
+  id        String   @id @default(cuid())
+  category  String   // e.g. "pricing", "rto", "fulfilment"
+  question  String
+  answer    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("knowledge_base")
+}
+
+model CalendarEvent {
+  id           String    @id @default(cuid())
+  leadId       String?
+  lead         Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  assignedToId String?
+  assignedTo   User?     @relation("AssignedEvents", fields: [assignedToId], references: [id])
+  createdById  String
+  createdBy    User      @relation("CreatedEvents", fields: [createdById], references: [id])
+  title        String
+  description  String?
+  startAt      DateTime
+  endAt        DateTime
+  meetingLink  String?
+  status       String    @default("SCHEDULED") // SCHEDULED | COMPLETED | CANCELLED
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("calendar_events")
 }
 
 enum WalletTxType {
