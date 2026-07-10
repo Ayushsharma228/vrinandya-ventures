@@ -39,9 +39,10 @@ function buildNotes(fields: { name: string; values: string[] }[]): string {
   return parts.join(" | ");
 }
 
-async function fetchAllLeads(formId: string, pageToken: string): Promise<{ leads: MetaLead[]; error?: string }> {
+async function fetchAllLeads(formId: string, pageToken: string, since?: number): Promise<{ leads: MetaLead[]; error?: string }> {
   const leads: MetaLead[] = [];
-  let url = `https://graph.facebook.com/v18.0/${formId}/leads?fields=id,created_time,field_data&limit=100&access_token=${pageToken}`;
+  const sinceParam = since ? `&since=${since}` : "";
+  let url = `https://graph.facebook.com/v18.0/${formId}/leads?fields=id,created_time,field_data&limit=100${sinceParam}&access_token=${pageToken}`;
 
   while (url) {
     const res = await fetch(url);
@@ -68,15 +69,13 @@ export async function POST(req: NextRequest) {
   let skipped = 0;
   const errors: string[] = [];
   let sampleFields: string[] = [];
-  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
+  const since = Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000); // unix timestamp 24h ago
 
   for (const formId of FORM_IDS) {
-    const { leads, error } = await fetchAllLeads(formId, pageToken);
+    const { leads, error } = await fetchAllLeads(formId, pageToken, since);
     if (error) { errors.push(error); continue; }
 
     for (const lead of leads) {
-      // Only import leads from the last 24 hours
-      if (new Date(lead.created_time) < cutoff) { skipped++; continue; }
       // Capture field names from first lead for debugging
       if (sampleFields.length === 0 && lead.field_data?.length) {
         sampleFields = lead.field_data.map(f => f.name);
