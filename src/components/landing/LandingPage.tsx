@@ -77,7 +77,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black"
               style={{ background: "#00C67A", color: "#070F1C" }}>V</div>
-            <span className="font-semibold text-base tracking-tight">Vrinandya Ventures</span>
+            <span className="font-semibold text-base tracking-tight">Axiqen</span>
           </div>
 
           <div className="hidden md:flex items-center gap-8">
@@ -231,7 +231,7 @@ export default function LandingPage() {
               Save hours every week<br />on operations.
             </h2>
             <p className="text-base max-w-lg" style={{ color: "rgba(255,255,255,0.45)", lineHeight: 1.7 }}>
-              Eliminate manual tracking. Vrinandya Ventures centralises your orders, sellers, fulfilment, and payments in one structured system.
+              Eliminate manual tracking. Axiqen centralises your orders, sellers, fulfilment, and payments in one structured system.
             </p>
           </div>
 
@@ -409,7 +409,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-2.5 mb-5">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black"
                 style={{ background: "#00C67A", color: "#070F1C" }}>V</div>
-              <span className="font-semibold">Vrinandya Ventures</span>
+              <span className="font-semibold">Axiqen</span>
             </div>
             <p className="text-sm leading-relaxed max-w-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
               India&apos;s dropshipping operations platform. Built for sellers who want to scale without the chaos.
@@ -457,7 +457,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto mt-14 pt-8 flex flex-col md:flex-row items-center justify-between gap-4"
           style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
           <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
-            © {new Date().getFullYear()} Vrinandya Ventures. All rights reserved.
+            © {new Date().getFullYear()} Axiqen. All rights reserved.
           </p>
           <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
             connect@vrinandyaventures.in · +91 85339 49379

@@ -92,7 +92,7 @@ function LoginContent() {
             style={{ background: "var(--green-500)" }}>
             V
           </div>
-          <span className="text-white font-semibold text-lg">Vrinandya Ventures</span>
+          <span className="text-white font-semibold text-lg">Axiqen</span>
         </div>
 
         {/* Main copy */}
@@ -131,7 +131,7 @@ function LoginContent() {
 
         {/* Bottom credit */}
         <p className="relative text-xs font-light" style={{ color: "rgba(255,255,255,0.25)" }}>
-          © 2025 All rights reserved by Vrinandya Ventures PVT. LTD.
+          © 2025 All rights reserved by Axiqen PVT. LTD.
         </p>
       </div>
 

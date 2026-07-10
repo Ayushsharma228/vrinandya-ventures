@@ -10,35 +10,47 @@ interface MetaLead {
   field_data: { name: string; values: string[] }[];
 }
 
-function extractField(fields: { name: string; values: string[] }[], key: string): string {
-  return fields.find(f => f.name === key)?.values?.[0] ?? "";
+function extractField(fields: { name: string; values: string[] }[], ...keys: string[]): string {
+  for (const key of keys) {
+    const val = fields.find(f => f.name === key)?.values?.[0];
+    if (val) return val;
+  }
+  return "";
 }
 
 function buildNotes(fields: { name: string; values: string[] }[]): string {
   const parts: string[] = [];
-  const goal = extractField(fields, "what_is_your_main_goal_with_dropshipping?");
-  const exp  = extractField(fields, "are_you_new_to_dropshipping?");
-  const help = extractField(fields, "what_kind_of_help_are_you_looking_for?");
-  const when = extractField(fields, "when_would_you_like_to_start?");
-  if (goal) parts.push(`Goal: ${goal.replace(/_/g, " ")}`);
-  if (exp)  parts.push(`Experience: ${exp.replace(/_/g, " ")}`);
-  if (help) parts.push(`Help needed: ${help.replace(/_/g, " ")}`);
-  if (when) parts.push(`Start: ${when.replace(/_/g, " ")}`);
+  // Map known Meta form field names to readable labels
+  const MAP: [string, string][] = [
+    ["what_is_your_main_goal_with_dropshipping?", "Goal"],
+    ["are_you_new_to_dropshipping?",              "Experience"],
+    ["what_kind_of_help_are_you_looking_for?",    "Help needed"],
+    ["when_would_you_like_to_start?",             "Start"],
+    ["business_stage",                             "Business Stage"],
+    ["investment_budget",                          "Budget"],
+    ["timeline",                                   "Timeline"],
+    ["marketplace",                                "Marketplace"],
+    ["biggest_challenge",                          "Challenge"],
+  ];
+  for (const [key, label] of MAP) {
+    const val = extractField(fields, key);
+    if (val) parts.push(`${label}: ${val.replace(/_/g, " ")}`);
+  }
   return parts.join(" | ");
 }
 
-async function fetchAllLeads(formId: string, pageToken: string): Promise<MetaLead[]> {
+async function fetchAllLeads(formId: string, pageToken: string): Promise<{ leads: MetaLead[]; error?: string }> {
   const leads: MetaLead[] = [];
   let url = `https://graph.facebook.com/v18.0/${formId}/leads?fields=id,created_time,field_data&limit=100&access_token=${pageToken}`;
 
   while (url) {
     const res = await fetch(url);
     const data = await res.json();
-    if (data.error) break;
+    if (data.error) return { leads, error: `Form ${formId}: ${data.error.message}` };
     leads.push(...(data.data ?? []));
     url = data.paging?.next ?? null;
   }
-  return leads;
+  return { leads };
 }
 
 export async function POST(req: NextRequest) {
@@ -54,17 +66,24 @@ export async function POST(req: NextRequest) {
 
   let imported = 0;
   let skipped = 0;
+  const errors: string[] = [];
+  let sampleFields: string[] = [];
 
   for (const formId of FORM_IDS) {
-    const leads = await fetchAllLeads(formId, pageToken);
+    const { leads, error } = await fetchAllLeads(formId, pageToken);
+    if (error) { errors.push(error); continue; }
 
     for (const lead of leads) {
-      const name  = extractField(lead.field_data, "full_name") || "Unknown";
-      const phone = extractField(lead.field_data, "phone_number");
-      const email = extractField(lead.field_data, "email") || null;
-      const notes = buildNotes(lead.field_data) || null;
+      // Capture field names from first lead for debugging
+      if (sampleFields.length === 0 && lead.field_data?.length) {
+        sampleFields = lead.field_data.map(f => f.name);
+      }
 
-      if (!phone) { skipped++; continue; }
+      const name  = extractField(lead.field_data, "full_name", "name") || "Unknown";
+      // Try every common phone field name Meta might use
+      const phone = extractField(lead.field_data, "phone_number", "phone", "mobile", "mobile_number", "contact_number") || "—";
+      const email = extractField(lead.field_data, "email", "email_address") || null;
+      const notes = buildNotes(lead.field_data) || null;
 
       try {
         await prisma.lead.create({
@@ -87,5 +106,5 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ imported, skipped });
+  return NextResponse.json({ imported, skipped, errors, sampleFields });
 }

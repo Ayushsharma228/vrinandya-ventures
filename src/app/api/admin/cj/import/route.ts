@@ -17,10 +17,10 @@ export async function POST(req: NextRequest) {
   // Ensure the Vrinandya system supplier account exists (update name if it was set to old value)
   const cjSupplier = await prisma.user.upsert({
     where: { email: "cj@vrinandya.system" },
-    update: { name: "Vrinandya Ventures" },
+    update: { name: "Axiqen" },
     create: {
       email: "cj@vrinandya.system",
-      name: "Vrinandya Ventures",
+      name: "Axiqen",
       password: "system",
       role: "SUPPLIER",
     },

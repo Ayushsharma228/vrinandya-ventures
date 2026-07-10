@@ -65,7 +65,7 @@ export default function SalesDashboard() {
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
       <PageHero
         title={`Hey, ${data.name?.split(" ")[0] || "there"} 👋`}
-        subtitle={data.salesTitle || "Sales Team · Vrinandya Ventures"}
+        subtitle={data.salesTitle || "Sales Team · Axiqen"}
         cards={
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[

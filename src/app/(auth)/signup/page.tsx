@@ -57,7 +57,7 @@ const PLANS = {
 };
 
 const BANK_NAME    = process.env.NEXT_PUBLIC_BANK_NAME    ?? "HDFC Bank";
-const BANK_HOLDER  = process.env.NEXT_PUBLIC_BANK_HOLDER  ?? "Vrinandya Ventures";
+const BANK_HOLDER  = process.env.NEXT_PUBLIC_BANK_HOLDER  ?? "Axiqen";
 const BANK_ACCOUNT = process.env.NEXT_PUBLIC_BANK_ACCOUNT ?? "XXXXXXXXXXXX";
 const BANK_IFSC    = process.env.NEXT_PUBLIC_BANK_IFSC    ?? "HDFC0000000";
 const UPI_ID       = process.env.NEXT_PUBLIC_UPI_ID       ?? "vrinandya@upi";
@@ -213,7 +213,7 @@ export default function SignupPage() {
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#00C67A" }}>
               <Store className="w-4 h-4 text-white" />
             </div>
-            <span className="text-white font-bold text-lg">Vrinandya Ventures</span>
+            <span className="text-white font-bold text-lg">Axiqen</span>
           </div>
           <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>Create your seller account</p>
         </div>
@@ -469,7 +469,7 @@ export default function SignupPage() {
                     <div className="bg-white p-2 rounded-xl">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(BANK_HOLDER)}&am=${planAmount}&cu=INR&tn=${encodeURIComponent("Vrinandya Ventures Plan Payment")}`)}`}
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(BANK_HOLDER)}&am=${planAmount}&cu=INR&tn=${encodeURIComponent("Axiqen Plan Payment")}`)}`}
                         alt="Scan to pay via UPI"
                         width={160}
                         height={160}

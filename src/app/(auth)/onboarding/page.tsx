@@ -12,7 +12,7 @@ const STEPS = ["Welcome", "Business", "KYC", "Plan Brief", "Agreement"];
 
 const AGREEMENT_DS = `DROPSHIPPING SELLER AGREEMENT
 
-This Dropshipping Seller Agreement ("Agreement") is entered into between Vrinandya Ventures ("Company") and the Seller.
+This Dropshipping Seller Agreement ("Agreement") is entered into between Axiqen ("Company") and the Seller.
 
 1. SERVICES
 The Company will provide the Seller access to its dropshipping platform, including product sourcing, inventory management, order fulfillment, AWB generation, and delivery tracking services.
@@ -57,7 +57,7 @@ By checking the agreement box, you confirm that you have read, understood, and a
 
 const AGREEMENT_MP = `MARKETPLACE SELLER AGREEMENT
 
-This Marketplace Seller Agreement ("Agreement") is entered into between Vrinandya Ventures ("Company") and the Seller.
+This Marketplace Seller Agreement ("Agreement") is entered into between Axiqen ("Company") and the Seller.
 
 1. SCOPE OF SERVICES
 The Company will list the Seller's products on designated marketplaces including but not limited to Amazon, eBay, Etsy, and Walmart. The Company acts as an intermediary facilitating marketplace listings on behalf of the Seller.
@@ -304,7 +304,7 @@ export default function OnboardingPage() {
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#00C67A" }}>
               <Store className="w-4 h-4 text-white" />
             </div>
-            <span className="text-white font-bold text-lg">Vrinandya Ventures</span>
+            <span className="text-white font-bold text-lg">Axiqen</span>
           </div>
           <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>Complete your onboarding</p>
         </div>
@@ -334,9 +334,9 @@ export default function OnboardingPage() {
               <div className="text-left rounded-xl p-5 mb-6"
                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <p className="text-sm italic mb-3" style={{ color: "rgba(255,255,255,0.7)", lineHeight: "1.7" }}>
-                  "We built Vrinandya Ventures to make e-commerce accessible for every Indian entrepreneur. Our team is committed to your success — from product sourcing to delivery, we've got you covered. Welcome to the family!"
+                  "We built Axiqen to make e-commerce accessible for every Indian entrepreneur. Our team is committed to your success — from product sourcing to delivery, we've got you covered. Welcome to the family!"
                 </p>
-                <p className="text-xs font-semibold" style={{ color: "#00C67A" }}>— Founder, Vrinandya Ventures</p>
+                <p className="text-xs font-semibold" style={{ color: "#00C67A" }}>— Founder, Axiqen</p>
               </div>
               <p className="text-sm mb-6" style={{ color: "rgba(255,255,255,0.45)" }}>
                 Next, we&apos;ll collect a few details to set up your account. This takes about <strong className="text-white">2 minutes</strong>.
@@ -521,7 +521,7 @@ export default function OnboardingPage() {
                   {agreed && <Check className="w-3 h-3 text-white" />}
                 </div>
                 <span className="text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
-                  I have read and agree to the Seller Agreement for Vrinandya Ventures. I confirm all information provided is accurate.
+                  I have read and agree to the Seller Agreement for Axiqen. I confirm all information provided is accurate.
                 </span>
               </label>
 

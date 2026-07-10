@@ -17,7 +17,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Vrinandya Ventures",
+  title: "Axiqen",
   description: "Modern Dropshipping & Marketplace Platform",
 };
 

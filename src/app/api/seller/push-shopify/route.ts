@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
           product: {
             title: product.name,
             body_html: product.description,
-            vendor: "Vrinandya Ventures",
+            vendor: "Axiqen",
             product_type: product.category || "",
             variants: [{ price: product.price.toString(), sku: product.sku }],
             images: product.images.map((src) => ({ src })),

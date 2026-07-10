@@ -131,7 +131,7 @@ export default function SupplierProfilePage() {
             {activeTab === "bank" && (
               <div className="space-y-5">
                 <h2 className="text-base font-semibold" style={{ color: "var(--text-900)" }}>Bank Details</h2>
-                <p className="text-xs" style={{ color: "var(--text-400)" }}>Your bank details for remittances from Vrinandya Ventures</p>
+                <p className="text-xs" style={{ color: "var(--text-400)" }}>Your bank details for remittances from Axiqen</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Field icon={User} label="Account Holder Name" value={bank.accountHolder} onChange={v => setBank(p => ({ ...p, accountHolder: v }))} />
                   <Field icon={CreditCard} label="Account Number" value={bank.accountNumber} onChange={v => setBank(p => ({ ...p, accountNumber: v }))} />

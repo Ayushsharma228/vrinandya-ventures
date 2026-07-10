@@ -12,5 +12,5 @@ export function getResend(): Resend {
   return _resend;
 }
 
-export const FROM_EMAIL = "Vrinandya Ventures <onboarding@vrinandyaventures.in>";
+export const FROM_EMAIL = "Axiqen <onboarding@vrinandyaventures.in>";
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "connect@vrinandyaventures.in";

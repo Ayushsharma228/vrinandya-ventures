@@ -79,7 +79,7 @@ export default function AdminCRMPage() {
 
   // Meta sync
   const [metaSyncing, setMetaSyncing] = useState(false);
-  const [metaResult, setMetaResult] = useState<{ imported: number; skipped: number } | null>(null);
+  const [metaResult, setMetaResult] = useState<{ imported: number; skipped: number; errors?: string[]; sampleFields?: string[] } | null>(null);
 
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams();
@@ -268,9 +268,17 @@ export default function AdminCRMPage() {
               {metaSyncing ? "Syncing..." : "Sync Meta Leads"}
             </button>
             {metaResult && (
-              <span className="text-xs font-medium" style={{ color: metaResult.imported > 0 ? "#00C67A" : "var(--text-400)" }}>
-                {metaResult.imported} imported, {metaResult.skipped} skipped
-              </span>
+              <div className="text-xs font-medium flex flex-col gap-0.5">
+                <span style={{ color: metaResult.imported > 0 ? "#00C67A" : "var(--text-400)" }}>
+                  {metaResult.imported} imported, {metaResult.skipped} skipped
+                </span>
+                {metaResult.errors?.map((e, i) => (
+                  <span key={i} style={{ color: "#EF4444" }}>{e}</span>
+                ))}
+                {metaResult.sampleFields && metaResult.sampleFields.length > 0 && metaResult.imported === 0 && (
+                  <span style={{ color: "#F59E0B" }}>Fields from Meta: {metaResult.sampleFields.join(", ")}</span>
+                )}
+              </div>
             )}
             <button onClick={() => { setShowForm(p => !p); setShowBulkUpload(false); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
