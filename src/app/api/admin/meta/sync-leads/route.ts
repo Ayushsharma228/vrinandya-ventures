@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
-const FORM_IDS = ["1179279493990165", "892027506701838", "2253800491697371"];
+const FORM_IDS = ["1179279493990165", "892027506701838", "2253800491697371", "2038602106739692"];
 
 interface MetaLead {
   id: string;
@@ -68,12 +68,15 @@ export async function POST(req: NextRequest) {
   let skipped = 0;
   const errors: string[] = [];
   let sampleFields: string[] = [];
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
 
   for (const formId of FORM_IDS) {
     const { leads, error } = await fetchAllLeads(formId, pageToken);
     if (error) { errors.push(error); continue; }
 
     for (const lead of leads) {
+      // Only import leads from the last 24 hours
+      if (new Date(lead.created_time) < cutoff) { skipped++; continue; }
       // Capture field names from first lead for debugging
       if (sampleFields.length === 0 && lead.field_data?.length) {
         sampleFields = lead.field_data.map(f => f.name);
