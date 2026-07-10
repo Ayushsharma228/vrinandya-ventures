@@ -14,10 +14,12 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: "asc" },
   });
 
-  // Group by normalised phone
+  // Group by normalised phone — skip leads with no real phone number
   const byPhone: Record<string, typeof allLeads> = {};
   for (const lead of allLeads) {
-    const key = lead.phone.replace(/\D/g, "").slice(-10); // last 10 digits
+    const digits = lead.phone.replace(/\D/g, "");
+    if (digits.length < 7) continue; // skip "—" or empty/invalid phones
+    const key = digits.slice(-10);
     if (!byPhone[key]) byPhone[key] = [];
     byPhone[key].push(lead);
   }
@@ -40,10 +42,12 @@ export async function DELETE(req: NextRequest) {
     orderBy: { createdAt: "asc" },
   });
 
-  // Group by normalised phone
+  // Group by normalised phone — skip leads with no real phone number
   const byPhone: Record<string, typeof allLeads> = {};
   for (const lead of allLeads) {
-    const key = lead.phone.replace(/\D/g, "").slice(-10);
+    const digits = lead.phone.replace(/\D/g, "");
+    if (digits.length < 7) continue; // skip "—" or empty/invalid phones
+    const key = digits.slice(-10);
     if (!byPhone[key]) byPhone[key] = [];
     byPhone[key].push(lead);
   }
