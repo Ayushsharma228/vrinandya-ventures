@@ -81,6 +81,10 @@ export default function AdminCRMPage() {
   const [metaSyncing, setMetaSyncing] = useState(false);
   const [metaResult, setMetaResult] = useState<{ imported: number; skipped: number; errors?: string[]; sampleFields?: string[] } | null>(null);
 
+  // Deduplication
+  const [deduping, setDeduping] = useState(false);
+  const [dedupResult, setDedupResult] = useState<{ deleted: number } | null>(null);
+
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams();
     if (search)     params.set("search", search);
@@ -279,6 +283,27 @@ export default function AdminCRMPage() {
                   <span style={{ color: "#F59E0B" }}>Fields from Meta: {metaResult.sampleFields.join(", ")}</span>
                 )}
               </div>
+            )}
+            <button
+              onClick={async () => {
+                if (!confirm("This will delete duplicate leads (same phone number). Keep going?")) return;
+                setDeduping(true); setDedupResult(null);
+                const res = await fetch("/api/admin/crm/deduplicate", { method: "DELETE" });
+                const data = await res.json();
+                setDedupResult(data);
+                if (data.deleted > 0) fetchData();
+                setDeduping(false);
+              }}
+              disabled={deduping}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
+              style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444", border: "1px solid rgba(239,68,68,0.3)" }}>
+              {deduping ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span>🧹</span>}
+              {deduping ? "Cleaning..." : "Remove Duplicates"}
+            </button>
+            {dedupResult && (
+              <span className="text-xs font-medium" style={{ color: dedupResult.deleted > 0 ? "#EF4444" : "var(--text-400)" }}>
+                {dedupResult.deleted > 0 ? `${dedupResult.deleted} duplicates removed` : "No duplicates found"}
+              </span>
             )}
             <button onClick={() => { setShowForm(p => !p); setShowBulkUpload(false); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
