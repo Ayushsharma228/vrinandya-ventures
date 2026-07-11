@@ -5,6 +5,7 @@ export const ORDER_STATUS_LABEL: Record<string, string> = {
   IN_TRANSIT: "In Transit",
   DELIVERED: "Delivered",
   CANCELLED: "Cancelled",
+  RTO: "RTO",
 };
 
 export const ORDER_STATUS_COLOR: Record<string, string> = {
@@ -14,4 +15,5 @@ export const ORDER_STATUS_COLOR: Record<string, string> = {
   IN_TRANSIT: "bg-purple-50 text-purple-600",
   DELIVERED: "bg-green-50 text-green-600",
   CANCELLED: "bg-red-50 text-red-600",
+  RTO: "bg-orange-50 text-orange-600",
 };

@@ -259,11 +259,20 @@ export default function AdminCRMPage() {
             <button
               onClick={async () => {
                 setMetaSyncing(true); setMetaResult(null);
-                const res = await fetch("/api/admin/meta/sync-leads", { method: "POST" });
-                const data = await res.json();
-                setMetaResult(data);
-                setMetaSyncing(false);
-                if (data.imported > 0) fetchData();
+                try {
+                  const controller = new AbortController();
+                  const timeout = setTimeout(() => controller.abort(), 30000);
+                  const res = await fetch("/api/admin/meta/sync-leads", { method: "POST", signal: controller.signal });
+                  clearTimeout(timeout);
+                  const data = await res.json();
+                  setMetaResult(data);
+                  if (data.imported > 0) fetchData();
+                } catch (err: unknown) {
+                  const isAbort = err instanceof Error && err.name === "AbortError";
+                  setMetaResult({ imported: 0, skipped: 0, errors: [isAbort ? "Request timed out after 30 seconds" : "Network error — check Vercel logs"] });
+                } finally {
+                  setMetaSyncing(false);
+                }
               }}
               disabled={metaSyncing}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
@@ -273,14 +282,22 @@ export default function AdminCRMPage() {
             </button>
             {metaResult && (
               <div className="text-xs font-medium flex flex-col gap-0.5">
-                <span style={{ color: metaResult.imported > 0 ? "#00C67A" : "var(--text-400)" }}>
-                  {metaResult.imported} imported, {metaResult.skipped} skipped
-                </span>
-                {metaResult.errors?.map((e, i) => (
-                  <span key={i} style={{ color: "#EF4444" }}>{e}</span>
-                ))}
-                {metaResult.sampleFields && metaResult.sampleFields.length > 0 && metaResult.imported === 0 && (
-                  <span style={{ color: "#F59E0B" }}>Fields from Meta: {metaResult.sampleFields.join(", ")}</span>
+                {metaResult.tokenExpired ? (
+                  <span style={{ color: "#EF4444" }}>
+                    Meta token expired — update META_PAGE_TOKEN in Vercel env vars
+                  </span>
+                ) : (
+                  <>
+                    <span style={{ color: metaResult.imported > 0 ? "#00C67A" : "var(--text-400)" }}>
+                      {metaResult.imported} imported, {metaResult.skipped} skipped
+                    </span>
+                    {metaResult.errors?.map((e: string, i: number) => (
+                      <span key={i} style={{ color: "#EF4444" }}>{e}</span>
+                    ))}
+                    {metaResult.sampleFields && metaResult.sampleFields.length > 0 && metaResult.imported === 0 && (
+                      <span style={{ color: "#F59E0B" }}>Fields from Meta: {metaResult.sampleFields.join(", ")}</span>
+                    )}
+                  </>
                 )}
               </div>
             )}

@@ -39,15 +39,31 @@ function buildNotes(fields: { name: string; values: string[] }[]): string {
   return parts.join(" | ");
 }
 
-async function fetchAllLeads(formId: string, pageToken: string, since?: number): Promise<{ leads: MetaLead[]; error?: string }> {
+async function fetchAllLeads(
+  formId: string,
+  pageToken: string,
+  since?: number
+): Promise<{ leads: MetaLead[]; error?: string; tokenExpired?: boolean }> {
   const leads: MetaLead[] = [];
   const sinceParam = since ? `&since=${since}` : "";
   let url = `https://graph.facebook.com/v18.0/${formId}/leads?fields=id,created_time,field_data&limit=100${sinceParam}&access_token=${pageToken}`;
 
   while (url) {
-    const res = await fetch(url);
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 10000);
+    let res: Response;
+    try {
+      res = await fetch(url, { signal: controller.signal });
+    } catch {
+      clearTimeout(t);
+      return { leads, error: "Meta API did not respond within 10 seconds" };
+    }
+    clearTimeout(t);
     const data = await res.json();
-    if (data.error) return { leads, error: `Form ${formId}: ${data.error.message}` };
+    if (data.error) {
+      const isTokenError = data.error.code === 190 || data.error.type === "OAuthException";
+      return { leads, error: data.error.message, tokenExpired: isTokenError };
+    }
     leads.push(...(data.data ?? []));
     url = data.paging?.next ?? null;
   }
@@ -72,8 +88,14 @@ export async function POST(req: NextRequest) {
   const since = Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000); // unix timestamp 24h ago
 
   for (const formId of FORM_IDS) {
-    const { leads, error } = await fetchAllLeads(formId, pageToken, since);
-    if (error) { errors.push(error); continue; }
+    const { leads, error, tokenExpired } = await fetchAllLeads(formId, pageToken, since);
+    if (tokenExpired) {
+      return NextResponse.json(
+        { imported: 0, skipped: 0, errors: [], tokenExpired: true },
+        { status: 401 }
+      );
+    }
+    if (error) { errors.push(`Form ${formId}: ${error}`); continue; }
 
     for (const lead of leads) {
       // Capture field names from first lead for debugging
