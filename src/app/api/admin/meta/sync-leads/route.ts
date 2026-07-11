@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
-const FORM_IDS = ["1179279493990165", "892027506701838", "2253800491697371", "2038602106739692"];
+const FORM_IDS = ["2038602106739692"]; // 10 July form
 
 interface MetaLead {
   id: string;

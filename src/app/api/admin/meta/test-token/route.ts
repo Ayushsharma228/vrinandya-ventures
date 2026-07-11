@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 
-const FORM_IDS = ["1179279493990165", "892027506701838", "2253800491697371", "2038602106739692"];
+const FORM_IDS = ["2038602106739692"]; // 10 July form
 
 async function metaGet(url: string): Promise<{ data: Record<string, unknown>; timedOut?: boolean }> {
   const controller = new AbortController();
