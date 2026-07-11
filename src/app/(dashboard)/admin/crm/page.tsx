@@ -80,6 +80,8 @@ export default function AdminCRMPage() {
   // Meta sync
   const [metaSyncing, setMetaSyncing] = useState(false);
   const [metaResult, setMetaResult] = useState<{ imported: number; skipped: number; found?: number; errors?: string[]; sampleFields?: string[]; tokenExpired?: boolean } | null>(null);
+  const [tokenStatus, setTokenStatus] = useState<{ ok: boolean; page?: string; reason?: string } | null>(null);
+  const [testingToken, setTestingToken] = useState(false);
 
   // Deduplication
   const [deduping, setDeduping] = useState(false);
@@ -256,6 +258,30 @@ export default function AdminCRMPage() {
               style={{ background: "rgba(255,255,255,0.12)", color: "white", border: "1px solid rgba(255,255,255,0.2)" }}>
               <Upload className="w-4 h-4" /> Bulk Upload
             </button>
+            <button
+              onClick={async () => {
+                setTestingToken(true); setTokenStatus(null);
+                try {
+                  const res = await fetch("/api/admin/meta/test-token");
+                  const data = await res.json();
+                  setTokenStatus(data);
+                } catch {
+                  setTokenStatus({ ok: false, reason: "Could not reach test endpoint" });
+                } finally {
+                  setTestingToken(false);
+                }
+              }}
+              disabled={testingToken || metaSyncing}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
+              style={{ background: "rgba(255,255,255,0.08)", color: "var(--text-300)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              {testingToken ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span style={{ fontSize: 13 }}>🔑</span>}
+              {testingToken ? "Testing..." : "Test Token"}
+            </button>
+            {tokenStatus && (
+              <span className="text-xs font-medium" style={{ color: tokenStatus.ok ? "#00C67A" : "#EF4444" }}>
+                {tokenStatus.ok ? `Token OK · ${tokenStatus.page}` : tokenStatus.reason}
+              </span>
+            )}
             {(["", "?full=true"] as const).map((qs) => {
               const isFull = qs === "?full=true";
               return (
