@@ -273,7 +273,7 @@ export default function AdminCRMPage() {
                       if (data.imported > 0) fetchData();
                     } catch (err: unknown) {
                       const isAbort = err instanceof Error && err.name === "AbortError";
-                      setMetaResult({ imported: 0, skipped: 0, errors: [isAbort ? "Request timed out" : "Network error — check Vercel logs"] });
+                      setMetaResult({ imported: 0, skipped: 0, found: 0, errors: [isAbort ? "Request timed out — try again or check Vercel logs" : "Network error — check Vercel logs"] });
                     } finally {
                       setMetaSyncing(false);
                     }

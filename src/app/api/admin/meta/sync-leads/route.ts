@@ -85,21 +85,28 @@ export async function POST(req: NextRequest) {
   const full = searchParams.get("full") === "true";
   const since = full ? undefined : Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000);
 
+  // Fetch all forms in parallel instead of sequentially
+  const formResults = await Promise.all(
+    FORM_IDS.map(formId => fetchAllLeads(formId, pageToken, since))
+  );
+
+  // Check for token expiry on any form before processing
+  if (formResults.some(r => r.tokenExpired)) {
+    return NextResponse.json(
+      { imported: 0, skipped: 0, found: 0, errors: [], tokenExpired: true },
+      { status: 401 }
+    );
+  }
+
   let imported = 0;
   let skipped = 0;
   let found = 0;
   const errors: string[] = [];
   let sampleFields: string[] = [];
 
-  for (const formId of FORM_IDS) {
-    const { leads, error, tokenExpired } = await fetchAllLeads(formId, pageToken, since);
-    if (tokenExpired) {
-      return NextResponse.json(
-        { imported: 0, skipped: 0, found: 0, errors: [], tokenExpired: true },
-        { status: 401 }
-      );
-    }
-    if (error) { errors.push(`Form ${formId}: ${error}`); continue; }
+  for (let i = 0; i < FORM_IDS.length; i++) {
+    const { leads, error } = formResults[i];
+    if (error) { errors.push(`Form ${FORM_IDS[i]}: ${error}`); continue; }
 
     found += leads.length;
 
