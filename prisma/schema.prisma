@@ -181,7 +181,7 @@ model User {
 
   shopifyStore        ShopifyStore?
   marketplaceAccounts MarketplaceAccount[]
-  orders              Order[]
+  orders              Order[]              @relation("SellerOrders")
   listingRequests     ListingRequest[]
   notifications       Notification[]
   suppliedProducts    Product[]
@@ -190,13 +190,19 @@ model User {
   walletTransactions  WalletTransaction[]
   adSpends            AdSpend[]
   settlements         Settlement[]
-  assignedLeads       Lead[]         @relation("AssignedLeads")
-  createdLeads        Lead[]         @relation("CreatedLeads")
+  assignedLeads       Lead[]               @relation("AssignedLeads")
+  createdLeads        Lead[]               @relation("CreatedLeads")
   leadActivities      LeadActivity[]
-  assignedTasks       Task[]         @relation("AssignedTasks")
-  createdTasks        Task[]         @relation("CreatedTasks")
-  assignedEvents      CalendarEvent[] @relation("AssignedEvents")
-  createdEvents       CalendarEvent[] @relation("CreatedEvents")
+  assignedTasks       Task[]               @relation("AssignedTasks")
+  createdTasks        Task[]               @relation("CreatedTasks")
+  assignedEvents      CalendarEvent[]      @relation("AssignedEvents")
+  createdEvents       CalendarEvent[]      @relation("CreatedEvents")
+  // Supplier fulfillment relations
+  supplierOrders           Order[]              @relation("SupplierOrders")
+  purchaseOrdersAsSupplier PurchaseOrder[]      @relation("SupplierPOs")
+  purchaseOrdersAsSeller   PurchaseOrder[]      @relation("SellerPOs")
+  supplierInventory        InventoryItem[]      @relation("SupplierInventory")
+  supplierTransactions     SupplierTransaction[] @relation("SupplierTransactions")
 
   @@map("users")
 }
@@ -373,6 +379,36 @@ enum WalletTxType {
   DEBIT
 }
 
+enum SupplierOrderStatus {
+  PENDING_ASSIGNMENT
+  ASSIGNED
+  ACCEPTED
+  REJECTED
+  PROCESSING
+  PACKED
+  READY_TO_SHIP
+  DISPATCHED
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  PROCESSING
+  PACKED
+  DISPATCHED
+  DELIVERED
+  CANCELLED
+}
+
+enum SupplierTxType {
+  CREDIT
+  DEBIT
+  HOLD
+  RELEASE
+}
+
 enum SettlementStatus {
   PENDING
   PROCESSING
@@ -451,11 +487,25 @@ model Product {
   sku            String?       @unique
   status         ProductStatus @default(PENDING)
   adminNote      String?
+  // Enhanced supplier product fields
+  costPrice      Float?
+  suggestedPrice Float?
+  weight         Float?
+  length         Float?
+  width          Float?
+  height         Float?
+  moq            Int?
+  hsn            String?
+  gstRate        Float?
+  videoUrls      String[]
+  documents      Json?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   listingRequests ListingRequest[]
   orderItems      OrderItem[]
+  inventory       InventoryItem?
+  variants        ProductVariant[]
 
   @@map("products")
 }
@@ -479,7 +529,7 @@ model ListingRequest {
 model Order {
   id              String       @id @default(cuid())
   sellerId        String
-  seller          User         @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  seller          User         @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Cascade)
   organizationId  String?
   organization    Organization? @relation(fields: [organizationId], references: [id])
   externalOrderId String
@@ -489,7 +539,7 @@ model Order {
   customerEmail   String?
   customerAddress Json?
   totalAmount     Float
-  currency        String      @default("INR")
+  currency        String       @default("INR")
   awbNumber       String?
   trackingUrl     String?
   courier         String?
@@ -502,12 +552,24 @@ model Order {
   remittanceTxId  String?
   ndrReason       String?
   ndrStatus       String?
-  ndrAttempts     Int         @default(0)
+  ndrAttempts     Int          @default(0)
   ndrActionTaken  String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  // Supplier fulfillment fields
+  supplierId           String?
+  supplier             User?                @relation("SupplierOrders", fields: [supplierId], references: [id])
+  supplierStatus       SupplierOrderStatus?
+  supplierNote         String?
+  expectedDispatchDate DateTime?
+  expectedDeliveryDate DateTime?
+  dispatchedAt         DateTime?
+  supplierTrackingNo   String?
+  supplierCourier      String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
-  items OrderItem[]
+  items         OrderItem[]
+  purchaseOrder PurchaseOrder?
+  timeline      OrderTimeline[]
 
   @@unique([sellerId, externalOrderId, source])
   @@map("orders")
@@ -641,4 +703,103 @@ model Organization {
   products Product[]
 
   @@map("organizations")
+}
+
+// ── Supplier Fulfillment Engine ───────────────────────────────────────────────
+
+model PurchaseOrder {
+  id                   String              @id @default(cuid())
+  poNumber             String              @unique
+  orderId              String              @unique
+  order                Order               @relation(fields: [orderId], references: [id])
+  supplierId           String
+  supplier             User                @relation("SupplierPOs", fields: [supplierId], references: [id])
+  sellerId             String
+  seller               User                @relation("SellerPOs", fields: [sellerId], references: [id])
+  status               PurchaseOrderStatus @default(DRAFT)
+  supplierCost         Float               @default(0)
+  sellingPrice         Float               @default(0)
+  expectedDispatchDate DateTime?
+  expectedDeliveryDate DateTime?
+  rejectionReason      String?
+  dispatchedAt         DateTime?
+  notes                String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  items                PurchaseOrderItem[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       String?
+  name            String
+  sku             String?
+  quantity        Int
+  unitCost        Float         @default(0)
+
+  @@map("purchase_order_items")
+}
+
+model OrderTimeline {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  actorId   String?
+  actorRole String?
+  event     String
+  details   String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@map("order_timeline")
+}
+
+model InventoryItem {
+  id                String   @id @default(cuid())
+  productId         String   @unique
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplierId        String
+  supplier          User     @relation("SupplierInventory", fields: [supplierId], references: [id])
+  availableQty      Int      @default(0)
+  reservedQty       Int      @default(0)
+  incomingQty       Int      @default(0)
+  lowStockThreshold Int      @default(5)
+  updatedAt         DateTime @updatedAt
+
+  @@map("inventory_items")
+}
+
+model SupplierTransaction {
+  id         String         @id @default(cuid())
+  supplierId String
+  supplier   User           @relation("SupplierTransactions", fields: [supplierId], references: [id])
+  type       SupplierTxType
+  amount     Float
+  note       String?
+  orderId    String?
+  poId       String?
+  settledAt  DateTime?
+  createdAt  DateTime       @default(now())
+
+  @@map("supplier_transactions")
+}
+
+model ProductVariant {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name       String
+  sku        String?  @unique
+  price      Float
+  stock      Int      @default(0)
+  attributes Json?
+  images     String[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("product_variants")
 }

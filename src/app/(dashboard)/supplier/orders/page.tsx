@@ -1,223 +1,403 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Download, ShoppingCart, Package, IndianRupee, Calendar, CheckCircle, Truck, XCircle, RotateCcw } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import {
+  ShoppingCart, CheckCircle, XCircle, Clock, Package,
+  Truck, AlertCircle, RefreshCw, ChevronRight,
+} from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
-interface Order {
+type SupplierOrderStatus =
+  | "PENDING_ASSIGNMENT" | "ASSIGNED" | "ACCEPTED" | "REJECTED"
+  | "PROCESSING" | "PACKED" | "READY_TO_SHIP" | "DISPATCHED";
+
+type OrderItem = {
+  id: string; name: string; sku: string | null; quantity: number; price: number;
+  product: { name: string; sku: string | null; images: string[] } | null;
+};
+
+type Order = {
   id: string;
   externalOrderId: string;
   source: string;
   status: string;
-  customerName: string | null;
-  customerEmail: string | null;
+  supplierStatus: SupplierOrderStatus | null;
+  supplierNote: string | null;
   totalAmount: number;
-  awbNumber: string | null;
+  customerName: string | null;
+  customerAddress: Record<string, string> | null;
+  expectedDispatchDate: string | null;
+  expectedDeliveryDate: string | null;
+  dispatchedAt: string | null;
   createdAt: string;
-  items: { name: string; quantity: number; price: number }[];
-  seller: { name: string };
-}
-
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  NEW:        { label: "New",        color: "#3B82F6", bg: "#EFF6FF" },
-  PROCESSING: { label: "Processing", color: "#F59E0B", bg: "#FFF7ED" },
-  SHIPPED:    { label: "Shipped",    color: "#7C3AED", bg: "#F5F3FF" },
-  IN_TRANSIT: { label: "In Transit", color: "#025864", bg: "#ECFDF5" },
-  DELIVERED:  { label: "Delivered",  color: "#00C67A", bg: "#F0FDF4" },
-  RTO:        { label: "RTO",        color: "#EF4444", bg: "#FEF2F2" },
-  CANCELLED:  { label: "Cancelled",  color: "#6B7280", bg: "#F9FAFB" },
+  seller: { name: string | null };
+  items: OrderItem[];
 };
 
-const STATUS_FILTERS = ["ALL", "NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "RTO", "CANCELLED"];
+const TABS: Array<{ key: string | null; label: string; icon: React.ElementType; color: string }> = [
+  { key: null,             label: "All",         icon: ShoppingCart, color: "#6B7280" },
+  { key: "ASSIGNED",       label: "Pending",     icon: Clock,        color: "#F59E0B" },
+  { key: "ACCEPTED",       label: "Accepted",    icon: CheckCircle,  color: "#3B82F6" },
+  { key: "PROCESSING",     label: "Processing",  icon: RefreshCw,    color: "#8B5CF6" },
+  { key: "PACKED",         label: "Packed",      icon: Package,      color: "#0EA5E9" },
+  { key: "READY_TO_SHIP",  label: "Ready",       icon: AlertCircle,  color: "#F97316" },
+  { key: "DISPATCHED",     label: "Dispatched",  icon: Truck,        color: "#00C67A" },
+  { key: "REJECTED",       label: "Rejected",    icon: XCircle,      color: "#EF4444" },
+];
 
-function fmt(n: number) { return new Intl.NumberFormat("en-IN").format(n); }
+const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> = {
+  ASSIGNED:      { bg: "#FFF7ED", text: "#D97706", label: "Pending Acceptance" },
+  ACCEPTED:      { bg: "#EFF6FF", text: "#3B82F6", label: "Accepted" },
+  PROCESSING:    { bg: "#F5F3FF", text: "#7C3AED", label: "Processing" },
+  PACKED:        { bg: "#F0F9FF", text: "#0369A1", label: "Packed" },
+  READY_TO_SHIP: { bg: "#FFF7ED", text: "#EA580C", label: "Ready to Ship" },
+  DISPATCHED:    { bg: "#F0FDF4", text: "#15803D", label: "Dispatched" },
+  REJECTED:      { bg: "#FEF2F2", text: "#DC2626", label: "Rejected" },
+};
+
+const NEXT_ACTION: Record<string, { action: string; label: string; color: string } | null> = {
+  ASSIGNED:      { action: "ACCEPT",          label: "Accept",          color: "#00C67A" },
+  ACCEPTED:      { action: "MARK_PROCESSING", label: "Mark Processing", color: "#8B5CF6" },
+  PROCESSING:    { action: "MARK_PACKED",     label: "Mark Packed",     color: "#0EA5E9" },
+  PACKED:        { action: "READY_TO_SHIP",   label: "Ready to Ship",   color: "#F97316" },
+  READY_TO_SHIP: null,
+  DISPATCHED:    null,
+  REJECTED:      null,
+};
 
 export default function SupplierOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [actioning, setActioning] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Order | null>(null);
+  const [rejectNote, setRejectNote] = useState("");
+  const [dispatchData, setDispatchData] = useState({ trackingNo: "", courier: "" });
+  const [showReject, setShowReject] = useState<string | null>(null);
+  const [showDispatch, setShowDispatch] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
-    const res = await fetch("/api/supplier/orders");
-    const data = await res.json();
-    setOrders(data.orders || []);
-    setLoading(false);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/supplier/orders");
+      const data = await res.json();
+      setOrders(data.orders ?? []);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  async function handleRefresh() {
-    setRefreshing(true);
-    await fetchOrders();
-    setRefreshing(false);
-  }
-
-  function handleExport() {
-    const csv = [
-      ["Order ID", "Customer", "Products", "Seller", "Amount", "Status", "AWB", "Date"].join(","),
-      ...displayed.map((o) => [
-        o.externalOrderId, o.customerName || "", o.items.map((i) => `${i.name} x${i.quantity}`).join("; "),
-        o.seller.name, o.totalAmount, o.status, o.awbNumber || "",
-        new Date(o.createdAt).toLocaleDateString("en-IN"),
-      ].map((v) => `"${v}"`).join(","))
-    ].join("\n");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    a.download = "supplier-orders.csv";
-    a.click();
-  }
-
-  const now = new Date();
-  const filtered = orders.filter((o) => {
-    const matchSearch = !search ||
-      o.externalOrderId.toLowerCase().includes(search.toLowerCase()) ||
-      o.customerName?.toLowerCase().includes(search.toLowerCase()) ||
-      o.items.some((i) => i.name.toLowerCase().includes(search.toLowerCase()));
-    const matchStatus = statusFilter === "ALL" || o.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
-
-  const displayed = filtered;
-
-  const stats = {
-    total:     orders.length,
-    items:     orders.reduce((s, o) => s + o.items.reduce((a, i) => a + i.quantity, 0), 0),
-    revenue:   orders.reduce((s, o) => s + o.totalAmount, 0),
-    thisMonth: orders.filter((o) => {
-      const d = new Date(o.createdAt);
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    }).length,
+  const runAction = async (orderId: string, action: string, extra?: Record<string, string>) => {
+    setActioning(orderId);
+    try {
+      const res = await fetch(`/api/supplier/orders/${orderId}/action`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ...extra }),
+      });
+      if (res.ok) {
+        await fetchOrders();
+        setSelected(null);
+        setShowReject(null);
+        setShowDispatch(null);
+        setRejectNote("");
+        setDispatchData({ trackingNo: "", courier: "" });
+      }
+    } finally {
+      setActioning(null);
+    }
   };
 
-  const statCards = [
-    { label: "Total Orders",  value: fmt(stats.total),       icon: ShoppingCart, color: "#3B82F6" },
-    { label: "Total Items",   value: fmt(stats.items),       icon: Package,      color: "#7C3AED" },
-    { label: "Order Value",   value: `₹${fmt(stats.revenue)}`, icon: IndianRupee,  color: "#00C67A" },
-    { label: "This Month",    value: fmt(stats.thisMonth),   icon: Calendar,     color: "#F59E0B" },
-  ];
+  const counts: Record<string, number> = {};
+  orders.forEach((o) => {
+    if (o.supplierStatus) counts[o.supplierStatus] = (counts[o.supplierStatus] ?? 0) + 1;
+  });
+
+  const filteredOrders = activeTab
+    ? orders.filter((o) => o.supplierStatus === activeTab)
+    : orders;
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
       <PageHero
-        title="My Orders"
-        subtitle="Orders containing your products"
-        searchValue={search}
-        searchPlaceholder="Search by order ID, customer or product..."
-        onSearchChange={setSearch}
-        onSearchSubmit={fetchOrders}
-        actions={
-          <div className="flex items-center gap-2">
-            <button onClick={handleRefresh} disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
-              style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
-              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-              Refresh
-            </button>
-            <button onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
-              style={{ background: "var(--green-500)", color: "white" }}>
-              <Download className="w-4 h-4" /> Export
-            </button>
-          </div>
-        }
+        title="Order Queue"
+        subtitle="Manage and fulfill your assigned orders"
         cards={
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {statCards.map(({ label, value, icon: Icon, color }) => (
-              <div key={label} className="rounded-2xl px-5 py-4"
+          <div className="flex flex-wrap gap-3">
+            {TABS.filter((t) => t.key).map((t) => (
+              <div key={t.key} className="flex items-center gap-2 px-4 py-2 rounded-xl"
                 style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)" }}>
-                    <Icon className="w-4 h-4" style={{ color }} />
-                  </div>
-                </div>
-                <p className="text-xl font-bold text-white">{value}</p>
+                <t.icon className="w-4 h-4" style={{ color: t.color }} />
+                <span className="text-white text-sm font-bold">{counts[t.key!] ?? 0}</span>
+                <span className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>{t.label}</span>
               </div>
             ))}
           </div>
         }
       />
 
-      <div className="px-4 md:px-8 py-6 space-y-5">
-        {/* Status filter pills */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {STATUS_FILTERS.map((s) => {
-            const cfg = STATUS_CONFIG[s];
-            const isActive = statusFilter === s;
+      <div className="px-4 md:px-8 pt-6 space-y-4">
+        {/* Tabs */}
+        <div className="flex gap-1 overflow-x-auto pb-1">
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.key;
             return (
-              <button key={s} onClick={() => setStatusFilter(s)}
-                className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
-                style={isActive
-                  ? { background: cfg ? cfg.color : "var(--bg-sidebar)", color: "white" }
-                  : { background: cfg ? cfg.bg : "#F3F4F6", color: cfg ? cfg.color : "var(--text-600)" }
-                }>
-                {s === "ALL" ? "All Orders" : cfg?.label ?? s}
+              <button key={String(tab.key)} onClick={() => setActiveTab(tab.key)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all"
+                style={{
+                  background: isActive ? "rgba(0,198,122,0.12)" : "transparent",
+                  color: isActive ? "var(--green-500)" : "var(--text-400)",
+                  border: isActive ? "1px solid rgba(0,198,122,0.3)" : "1px solid transparent",
+                }}>
+                <tab.icon className="w-3.5 h-3.5" />
+                {tab.label}
+                {tab.key && (counts[tab.key] ?? 0) > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold"
+                    style={{
+                      background: isActive ? "rgba(0,198,122,0.2)" : "rgba(0,0,0,0.06)",
+                      color: isActive ? "var(--green-600)" : "var(--text-500)",
+                    }}>
+                    {counts[tab.key]}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
 
-        {/* Table */}
+        {/* Orders table */}
         <div className="card overflow-hidden">
-          <div className="px-5 py-3.5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
-            <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Orders ({displayed.length})</h2>
-          </div>
-
           {loading ? (
-            <div className="py-16 text-center text-sm" style={{ color: "var(--text-400)" }}>Loading...</div>
-          ) : displayed.length === 0 ? (
+            <div className="py-16 flex items-center justify-center">
+              <RefreshCw className="w-6 h-6 animate-spin" style={{ color: "var(--text-300)" }} />
+            </div>
+          ) : filteredOrders.length === 0 ? (
             <div className="py-16 flex flex-col items-center gap-3">
               <ShoppingCart className="w-10 h-10" style={{ color: "var(--border)" }} />
-              <p className="text-sm" style={{ color: "var(--text-400)" }}>No orders found</p>
+              <p className="text-sm" style={{ color: "var(--text-400)" }}>No orders in this queue</p>
             </div>
           ) : (
-            <div className="overflow-x-auto"><table className="w-full text-sm">
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
-                  {["Order ID", "Customer", "Products", "Seller", "Amount", "Status", "AWB", "Date"].map((h) => (
-                    <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-400)" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y" style={{ borderColor: "var(--border)" }}>
-                {displayed.map((order) => {
-                  const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.NEW;
-                  return (
-                    <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-5 py-3.5 font-semibold text-xs" style={{ color: "var(--green-500)" }}>
-                        #{order.externalOrderId}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <p className="text-sm font-medium" style={{ color: "var(--text-900)" }}>{order.customerName || "—"}</p>
-                        <p className="text-xs" style={{ color: "var(--text-400)" }}>{order.customerEmail || ""}</p>
-                      </td>
-                      <td className="px-5 py-3.5 max-w-xs">
-                        <p className="text-xs line-clamp-2" style={{ color: "var(--text-600)" }}>
-                          {order.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
-                        </p>
-                      </td>
-                      <td className="px-5 py-3.5 text-xs" style={{ color: "var(--text-600)" }}>{order.seller.name}</td>
-                      <td className="px-5 py-3.5 font-bold text-xs" style={{ color: "var(--text-900)" }}>₹{fmt(order.totalAmount)}</td>
-                      <td className="px-5 py-3.5">
-                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold"
-                          style={{ background: cfg.bg, color: cfg.color }}>
-                          {cfg.label}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5 font-mono text-xs" style={{ color: "var(--text-400)" }}>{order.awbNumber || "—"}</td>
-                      <td className="px-5 py-3.5 text-xs" style={{ color: "var(--text-400)" }}>
-                        {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table></div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
+                    {["Order", "Customer", "Items", "Amount", "Status", "Expected Dispatch", "Actions"].map((h) => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
+                        style={{ color: "var(--text-400)" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y" style={{ borderColor: "var(--border)" }}>
+                  {filteredOrders.map((order) => {
+                    const badge = order.supplierStatus ? STATUS_BADGE[order.supplierStatus] : null;
+                    const nextAction = order.supplierStatus ? NEXT_ACTION[order.supplierStatus] : null;
+                    const isActioning = actioning === order.id;
+                    return (
+                      <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-4 py-3.5">
+                          <p className="font-mono text-xs font-semibold" style={{ color: "var(--green-500)" }}>
+                            #{order.externalOrderId}
+                          </p>
+                          <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>
+                            {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <p className="text-sm font-medium" style={{ color: "var(--text-900)" }}>{order.customerName ?? "—"}</p>
+                          <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>
+                            {(order.customerAddress as any)?.city ?? ""}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <p className="text-sm" style={{ color: "var(--text-900)" }}>
+                            {order.items.length} item{order.items.length !== 1 ? "s" : ""}
+                          </p>
+                          <p className="text-xs mt-0.5 line-clamp-1" style={{ color: "var(--text-400)" }}>
+                            {order.items.map((i) => i.name).join(", ")}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3.5 font-semibold text-sm" style={{ color: "var(--text-900)" }}>
+                          ₹{order.totalAmount.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3.5">
+                          {badge ? (
+                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold"
+                              style={{ background: badge.bg, color: badge.text }}>
+                              {badge.label}
+                            </span>
+                          ) : "—"}
+                        </td>
+                        <td className="px-4 py-3.5 text-xs" style={{ color: "var(--text-500)" }}>
+                          {order.expectedDispatchDate
+                            ? new Date(order.expectedDispatchDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+                            : "—"}
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => setSelected(order)}
+                              className="p-1.5 rounded-lg" style={{ background: "rgba(0,0,0,0.04)" }}
+                              title="View details">
+                              <ChevronRight className="w-3.5 h-3.5" style={{ color: "var(--text-400)" }} />
+                            </button>
+                            {order.supplierStatus === "ASSIGNED" && (
+                              <>
+                                <button onClick={() => setShowReject(order.id)}
+                                  className="px-2 py-1 rounded-lg text-xs font-semibold"
+                                  style={{ background: "#FEF2F2", color: "#DC2626" }}>
+                                  Reject
+                                </button>
+                                <button onClick={() => runAction(order.id, "ACCEPT")} disabled={isActioning}
+                                  className="px-2 py-1 rounded-lg text-xs font-semibold text-white"
+                                  style={{ background: "#00C67A", opacity: isActioning ? 0.6 : 1 }}>
+                                  {isActioning ? "..." : "Accept"}
+                                </button>
+                              </>
+                            )}
+                            {order.supplierStatus === "READY_TO_SHIP" && (
+                              <button onClick={() => setShowDispatch(order.id)} disabled={isActioning}
+                                className="px-2 py-1 rounded-lg text-xs font-semibold text-white"
+                                style={{ background: "#00C67A" }}>
+                                Dispatch
+                              </button>
+                            )}
+                            {nextAction && order.supplierStatus !== "ASSIGNED" && order.supplierStatus !== "READY_TO_SHIP" && (
+                              <button onClick={() => runAction(order.id, nextAction.action)} disabled={isActioning}
+                                className="px-2 py-1 rounded-lg text-xs font-semibold text-white"
+                                style={{ background: nextAction.color, opacity: isActioning ? 0.6 : 1 }}>
+                                {isActioning ? "..." : nextAction.label}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
+
+      {/* Order Detail Modal */}
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 flex items-center justify-between border-b">
+              <h3 className="font-semibold text-gray-900">Order #{selected.externalOrderId}</h3>
+              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+            </div>
+            <div className="px-6 py-4 space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Customer</p>
+                <p className="text-sm font-medium text-gray-900">{selected.customerName ?? "—"}</p>
+                {selected.customerAddress && (
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {[(selected.customerAddress as any).address1, (selected.customerAddress as any).city,
+                      (selected.customerAddress as any).province, (selected.customerAddress as any).zip]
+                      .filter(Boolean).join(", ")}
+                  </p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Items to Fulfill</p>
+                <div className="space-y-2">
+                  {selected.items.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{item.name}</p>
+                        {item.sku && <p className="text-xs text-gray-400 font-mono">SKU: {item.sku}</p>}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-gray-900">₹{item.price.toLocaleString()}</p>
+                        <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "Expected Dispatch", value: selected.expectedDispatchDate },
+                  { label: "Expected Delivery", value: selected.expectedDeliveryDate },
+                ].map(({ label, value }) => (
+                  <div key={label} className="p-3 rounded-lg bg-gray-50">
+                    <p className="text-xs text-gray-400">{label}</p>
+                    <p className="text-sm font-medium text-gray-900 mt-0.5">
+                      {value ? new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t">
+                <p className="text-sm text-gray-500">Total Order Value</p>
+                <p className="text-lg font-bold text-gray-900">₹{selected.totalAmount.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Modal */}
+      {showReject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6">
+            <h3 className="font-semibold text-gray-900 mb-1">Reject Order</h3>
+            <p className="text-sm text-gray-500 mb-4">Provide a reason — the admin will be notified immediately.</p>
+            <textarea value={rejectNote} onChange={(e) => setRejectNote(e.target.value)}
+              className="w-full border rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-300"
+              rows={3} placeholder="e.g. Out of stock, unable to source..." />
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => { setShowReject(null); setRejectNote(""); }}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-medium border text-gray-600">Cancel</button>
+              <button onClick={() => runAction(showReject, "REJECT", { note: rejectNote })}
+                disabled={!rejectNote.trim() || actioning === showReject}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+                style={{ background: "#EF4444", opacity: !rejectNote.trim() ? 0.5 : 1 }}>
+                Confirm Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dispatch Modal */}
+      {showDispatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6">
+            <h3 className="font-semibold text-gray-900 mb-1">Mark as Dispatched</h3>
+            <p className="text-sm text-gray-500 mb-4">Enter tracking details. Order status will update to Shipped.</p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Tracking Number</label>
+                <input value={dispatchData.trackingNo}
+                  onChange={(e) => setDispatchData((d) => ({ ...d, trackingNo: e.target.value }))}
+                  className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+                  placeholder="e.g. DTDC1234567890" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Courier Partner</label>
+                <input value={dispatchData.courier}
+                  onChange={(e) => setDispatchData((d) => ({ ...d, courier: e.target.value }))}
+                  className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+                  placeholder="e.g. Delhivery, DTDC, Bluedart..." />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => { setShowDispatch(null); setDispatchData({ trackingNo: "", courier: "" }); }}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-medium border text-gray-600">Cancel</button>
+              <button onClick={() => runAction(showDispatch, "DISPATCH", dispatchData)}
+                disabled={actioning === showDispatch}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+                style={{ background: "#00C67A" }}>
+                Confirm Dispatch
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

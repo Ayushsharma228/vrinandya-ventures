@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Bell,
   LogOut, Truck, Store, ListChecks, CheckSquare,
-  Wallet, BadgeIndianRupee, ShoppingBag, User, Megaphone, AlertTriangle, UserCheck,
-  Menu, X,
+  Wallet, BadgeIndianRupee, User, Megaphone, AlertTriangle, UserCheck,
+  Menu, X, ClipboardList, BarChart2, Boxes, Receipt, TrendingUp,
 } from "lucide-react";
 
 interface NavItem {
@@ -42,7 +42,12 @@ const adminGroups: NavGroup[] = [
     label: "Products",
     items: [
       { label: "Products",          href: "/admin/products",    icon: Package },
-      { label: "CJ Catalog",        href: "/admin/cj-catalog",  icon: ShoppingBag },
+    ],
+  },
+  {
+    label: "Suppliers",
+    items: [
+      { label: "Purchase Orders",   href: "/admin/purchase-orders", icon: ClipboardList },
     ],
   },
   {
@@ -131,20 +136,42 @@ const supplierGroups: NavGroup[] = [
   {
     label: "Main",
     items: [
-      { label: "Dashboard",         href: "/supplier",          icon: LayoutDashboard },
+      { label: "Dashboard",         href: "/supplier",              icon: LayoutDashboard },
     ],
   },
   {
-    label: "Products",
+    label: "Orders",
     items: [
-      { label: "My Products",       href: "/supplier/products", icon: Package },
+      { label: "Order Queue",       href: "/supplier/orders",       icon: ShoppingCart },
+      { label: "Purchase Orders",   href: "/supplier/purchase-orders", icon: ClipboardList },
+    ],
+  },
+  {
+    label: "Catalog",
+    items: [
+      { label: "My Products",       href: "/supplier/products",     icon: Package },
       { label: "Add Product",       href: "/supplier/products/new", icon: CheckSquare },
+      { label: "Inventory",         href: "/supplier/inventory",    icon: Boxes },
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      { label: "Wallet",            href: "/supplier/wallet",       icon: Wallet },
+      { label: "Settlements",       href: "/supplier/settlements",  icon: Receipt },
+    ],
+  },
+  {
+    label: "Analytics",
+    items: [
+      { label: "Performance",       href: "/supplier/performance",  icon: TrendingUp },
     ],
   },
   {
     label: "Account",
     items: [
-      { label: "Profile",           href: "/supplier/profile",  icon: User },
+      { label: "Notifications",     href: "/supplier/notifications", icon: Bell },
+      { label: "Profile",           href: "/supplier/profile",      icon: User },
     ],
   },
 ];
