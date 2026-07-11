@@ -80,7 +80,7 @@ export default function AdminCRMPage() {
   // Meta sync
   const [metaSyncing, setMetaSyncing] = useState(false);
   const [metaResult, setMetaResult] = useState<{ imported: number; skipped: number; found?: number; errors?: string[]; sampleFields?: string[]; tokenExpired?: boolean } | null>(null);
-  const [tokenStatus, setTokenStatus] = useState<{ ok: boolean; page?: string; reason?: string } | null>(null);
+  const [tokenStatus, setTokenStatus] = useState<{ ok: boolean; page?: string; reason?: string; formLeadsAccessible?: boolean; sampleLeadsFound?: number } | null>(null);
   const [testingToken, setTestingToken] = useState(false);
 
   // Deduplication
@@ -279,7 +279,9 @@ export default function AdminCRMPage() {
             </button>
             {tokenStatus && (
               <span className="text-xs font-medium" style={{ color: tokenStatus.ok ? "#00C67A" : "#EF4444" }}>
-                {tokenStatus.ok ? `Token OK · ${tokenStatus.page}` : tokenStatus.reason}
+                {tokenStatus.ok
+                  ? `Token OK · ${tokenStatus.page} · Forms accessible · ${tokenStatus.sampleLeadsFound} lead(s) visible`
+                  : tokenStatus.reason}
               </span>
             )}
             {(["", "?full=true"] as const).map((qs) => {
