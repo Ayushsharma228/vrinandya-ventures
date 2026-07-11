@@ -79,7 +79,7 @@ export default function AdminCRMPage() {
 
   // Meta sync
   const [metaSyncing, setMetaSyncing] = useState(false);
-  const [metaResult, setMetaResult] = useState<{ imported: number; skipped: number; errors?: string[]; sampleFields?: string[] } | null>(null);
+  const [metaResult, setMetaResult] = useState<{ imported: number; skipped: number; errors?: string[]; sampleFields?: string[]; tokenExpired?: boolean } | null>(null);
 
   // Deduplication
   const [deduping, setDeduping] = useState(false);
