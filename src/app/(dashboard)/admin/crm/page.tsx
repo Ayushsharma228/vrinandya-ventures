@@ -53,6 +53,10 @@ export default function AdminCRMPage() {
   const [showForm, setShowForm] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [assigning, setAssigning] = useState<string | null>(null);
+  const [convertingLead, setConvertingLead] = useState<{ id: string; name: string; email: string | null } | null>(null);
+  const [convertPlan, setConvertPlan] = useState<"DROPSHIPPING" | "MARKETPLACE">("DROPSHIPPING");
+  const [converting, setConverting] = useState(false);
+  const [convertResult, setConvertResult] = useState<{ success?: boolean; error?: string; username?: string } | null>(null);
 
   // Bulk upload
   const [showBulkUpload, setShowBulkUpload] = useState(false);
@@ -809,10 +813,21 @@ export default function AdminCRMPage() {
                           {new Date(lead.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                         </td>
                         <td className="px-4 py-3">
-                          <button onClick={() => handleDelete(lead.id)} disabled={deleting === lead.id}
-                            className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50">
-                            {deleting === lead.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                          </button>
+                          <div className="flex items-center gap-1">
+                            {(lead.stage === "PAID" || lead.stage === "ONBOARDED") && (
+                              <button
+                                onClick={() => { setConvertingLead({ id: lead.id, name: lead.name, email: lead.email }); setConvertResult(null); }}
+                                title="Convert to Seller Account"
+                                className="p-1.5 rounded-lg transition-colors"
+                                style={{ color: "#00C67A", background: "rgba(0,198,122,0.1)" }}>
+                                <UserCheck className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button onClick={() => handleDelete(lead.id)} disabled={deleting === lead.id}
+                              className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50">
+                              {deleting === lead.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -824,6 +839,80 @@ export default function AdminCRMPage() {
         </div>
         </>}
       </div>
+
+      {/* Convert to Seller Modal */}
+      {convertingLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }}>
+          <div className="w-full max-w-md rounded-2xl p-6 shadow-2xl" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+            <h3 className="text-lg font-bold mb-1" style={{ color: "var(--text-900)" }}>Convert to Seller Account</h3>
+            <p className="text-sm mb-4" style={{ color: "var(--text-400)" }}>
+              Create a seller account for <strong>{convertingLead.name}</strong>
+              {convertingLead.email ? ` · ${convertingLead.email}` : " (no email — account will be created without email invite)"}
+            </p>
+
+            {!convertResult ? (
+              <>
+                <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-600)" }}>Plan</label>
+                <select
+                  value={convertPlan}
+                  onChange={e => setConvertPlan(e.target.value as "DROPSHIPPING" | "MARKETPLACE")}
+                  className="w-full px-3 py-2 rounded-xl text-sm border outline-none mb-4"
+                  style={{ background: "var(--bg-input)", color: "var(--text-900)", borderColor: "var(--border)" }}>
+                  <option value="DROPSHIPPING">Dropshipping</option>
+                  <option value="MARKETPLACE">Marketplace</option>
+                </select>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setConvertingLead(null)}
+                    className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold"
+                    style={{ background: "var(--bg-hover)", color: "var(--text-600)" }}>
+                    Cancel
+                  </button>
+                  <button
+                    disabled={converting}
+                    onClick={async () => {
+                      setConverting(true);
+                      try {
+                        const res = await fetch(`/api/admin/crm/leads/${convertingLead.id}/convert`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ plan: convertPlan, sendEmail: !!convertingLead.email }),
+                        });
+                        const data = await res.json();
+                        setConvertResult(res.ok ? { success: true, username: data.username } : { error: data.error });
+                        if (res.ok) fetchData();
+                      } catch {
+                        setConvertResult({ error: "Network error" });
+                      } finally {
+                        setConverting(false);
+                      }
+                    }}
+                    className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60 flex items-center justify-center gap-2"
+                    style={{ background: "#00C67A", color: "white" }}>
+                    {converting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
+                    {converting ? "Creating..." : "Create Seller Account"}
+                  </button>
+                </div>
+              </>
+            ) : convertResult.error ? (
+              <>
+                <p className="text-sm font-medium text-red-500 mb-4">{convertResult.error}</p>
+                <button onClick={() => setConvertResult(null)} className="w-full px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: "var(--bg-hover)", color: "var(--text-600)" }}>Try Again</button>
+              </>
+            ) : (
+              <>
+                <div className="rounded-xl p-4 mb-4" style={{ background: "rgba(0,198,122,0.08)", border: "1px solid rgba(0,198,122,0.2)" }}>
+                  <p className="text-sm font-semibold" style={{ color: "#00C67A" }}>Seller account created!</p>
+                  <p className="text-xs mt-1" style={{ color: "var(--text-400)" }}>Username: <strong>{convertResult.username}</strong></p>
+                  {convertingLead.email && <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>Welcome email sent to {convertingLead.email}</p>}
+                </div>
+                <button onClick={() => { setConvertingLead(null); setConvertResult(null); }} className="w-full px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: "#00C67A", color: "white" }}>Done</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

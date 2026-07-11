@@ -176,6 +176,9 @@ model User {
   salesTarget          Int?
   salesTitle           String?
 
+  organizationId      String?
+  organization        Organization?       @relation(fields: [organizationId], references: [id])
+
   shopifyStore        ShopifyStore?
   marketplaceAccounts MarketplaceAccount[]
   orders              Order[]
@@ -186,6 +189,7 @@ model User {
   remittances         Remittance[]
   walletTransactions  WalletTransaction[]
   adSpends            AdSpend[]
+  settlements         Settlement[]
   assignedLeads       Lead[]         @relation("AssignedLeads")
   createdLeads        Lead[]         @relation("CreatedLeads")
   leadActivities      LeadActivity[]
@@ -210,13 +214,15 @@ model Lead {
   followUpDate DateTime?
   notes        String?
   metaLeadId   String?     @unique
-  assignedToId String?
-  assignedTo   User?       @relation("AssignedLeads", fields: [assignedToId], references: [id])
-  createdById  String
-  createdBy    User        @relation("CreatedLeads", fields: [createdById], references: [id])
-  activities   LeadActivity[]
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  assignedToId   String?
+  assignedTo     User?       @relation("AssignedLeads", fields: [assignedToId], references: [id])
+  createdById    String
+  createdBy      User        @relation("CreatedLeads", fields: [createdById], references: [id])
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  activities     LeadActivity[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   // AI SDR fields
   pipelineStage        PipelineStage   @default(NEW_LEAD)
@@ -367,6 +373,13 @@ enum WalletTxType {
   DEBIT
 }
 
+enum SettlementStatus {
+  PENDING
+  PROCESSING
+  SETTLED
+  DISPUTED
+}
+
 model AdSpend {
   id        String   @id @default(cuid())
   sellerId  String
@@ -425,19 +438,21 @@ model MarketplaceAccount {
 
 model Product {
   id          String        @id @default(cuid())
-  supplierId  String
-  supplier    User          @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  name        String
-  description String?
-  price       Float
-  stock       Int           @default(0)
-  images      String[]
-  category    String?
-  sku         String?       @unique
-  status      ProductStatus @default(PENDING)
-  adminNote   String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  supplierId     String
+  supplier       User          @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  name           String
+  description    String?
+  price          Float
+  stock          Int           @default(0)
+  images         String[]
+  category       String?
+  sku            String?       @unique
+  status         ProductStatus @default(PENDING)
+  adminNote      String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   listingRequests ListingRequest[]
   orderItems      OrderItem[]
@@ -462,12 +477,14 @@ model ListingRequest {
 }
 
 model Order {
-  id              String      @id @default(cuid())
+  id              String       @id @default(cuid())
   sellerId        String
-  seller          User        @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  seller          User         @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
   externalOrderId String
   source          OrderSource
-  status          OrderStatus @default(NEW)
+  status          OrderStatus  @default(NEW)
   customerName    String?
   customerEmail   String?
   customerAddress Json?
@@ -568,4 +585,60 @@ model Notification {
   createdAt DateTime         @default(now())
 
   @@map("notifications")
+}
+
+// ── Platform Configuration ────────────────────────────────────────────────────
+// Key-value store for admin-editable platform settings (return address, fees, etc.)
+model PlatformConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  label     String?
+  updatedAt DateTime @updatedAt
+
+  @@map("platform_configs")
+}
+
+// ── Settlement ────────────────────────────────────────────────────────────────
+// Structured per-order settlement record (replaces free-text wallet notes)
+model Settlement {
+  id              String           @id @default(cuid())
+  orderId         String           @unique
+  sellerId        String
+  seller          User             @relation(fields: [sellerId], references: [id])
+  sellingPrice    Float
+  productCost     Float            @default(0)
+  shippingCharge  Float            @default(0)
+  packingCharge   Float            @default(0)
+  platformFee     Float            @default(0)
+  codFee          Float            @default(0)
+  rtoCharge       Float            @default(0)
+  otherDeductions Float            @default(0)
+  netPayable      Float
+  status          SettlementStatus @default(PENDING)
+  settledAt       DateTime?
+  walletTxId      String?
+  notes           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@map("settlements")
+}
+
+// ── Organization ──────────────────────────────────────────────────────────────
+// Multi-tenancy foundation. Vrinandya Ventures is org 1.
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users    User[]
+  leads    Lead[]
+  orders   Order[]
+  products Product[]
+
+  @@map("organizations")
 }
