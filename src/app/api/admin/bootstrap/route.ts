@@ -18,16 +18,16 @@ export async function POST(req: NextRequest) {
   const password = "8533949379@aA";
 
   try {
+    const hashed = await bcrypt.hash(password, 12);
+
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      if (existing.role !== "ADMIN") {
-        await prisma.user.update({ where: { email }, data: { role: "ADMIN" } });
-        return NextResponse.json({ message: "Role updated to ADMIN", email });
-      }
-      return NextResponse.json({ message: "Admin already exists", email });
+      await prisma.user.update({
+        where: { email },
+        data: { role: "ADMIN", accountStatus: "ACTIVE", onboardingDone: true, password: hashed },
+      });
+      return NextResponse.json({ message: "Admin updated (role + password reset)", email });
     }
-
-    const hashed = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
       data: {
         name: "Axiqen Admin",
