@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { decrypt } from "@/lib/encrypt";
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Shopify-Access-Token": shopifyStore.accessToken,
+          "X-Shopify-Access-Token": decrypt(shopifyStore.accessToken),
         },
         body: JSON.stringify({
           product: {

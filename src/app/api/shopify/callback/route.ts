@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
+import { encrypt } from "@/lib/encrypt";
 
 function verifyHmac(searchParams: URLSearchParams, secret: string): boolean {
   const hmac = searchParams.get("hmac");
@@ -70,8 +71,8 @@ export async function GET(req: NextRequest) {
   // Save to DB — preserve clientId/clientSecret so future syncs work
   await prisma.shopifyStore.upsert({
     where: { sellerId },
-    update: { storeUrl: shop, storeName, accessToken: access_token },
-    create: { sellerId, storeUrl: shop, storeName, accessToken: access_token },
+    update: { storeUrl: shop, storeName, accessToken: encrypt(access_token) },
+    create: { sellerId, storeUrl: shop, storeName, accessToken: encrypt(access_token) },
   });
 
   return NextResponse.redirect(new URL("/seller/shopify?success=true", req.url));

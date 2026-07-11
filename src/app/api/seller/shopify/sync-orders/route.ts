@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { OrderStatus, Prisma } from "@prisma/client";
+import { decrypt } from "@/lib/encrypt";
 
 function mapShopifyStatus(financial: string, fulfillment: string | null): OrderStatus {
   if (financial === "refunded" || financial === "voided") return OrderStatus.CANCELLED;
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   // Fetch all orders from Shopify (up to 250)
   const shopifyRes = await fetch(
     `https://${store.storeUrl}/admin/api/2025-01/orders.json?status=any&limit=250`,
-    { headers: { "X-Shopify-Access-Token": store.accessToken } }
+    { headers: { "X-Shopify-Access-Token": decrypt(store.accessToken) } }
   );
 
   if (!shopifyRes.ok) {

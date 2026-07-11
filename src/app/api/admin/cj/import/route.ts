@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { cjFetch } from "@/lib/cj";
+import bcrypt from "bcryptjs";
 
 export async function POST(req: NextRequest) {
   const session = await getRouteSession(req);
@@ -14,15 +15,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No products selected" }, { status: 400 });
   }
 
-  // Ensure the Vrinandya system supplier account exists (update name if it was set to old value)
+  // Ensure the system supplier account exists; password is a locked bcrypt hash (not usable for login)
+  const lockedHash = await bcrypt.hash(crypto.randomUUID(), 12);
   const cjSupplier = await prisma.user.upsert({
     where: { email: "cj@vrinandya.system" },
     update: { name: "Axiqen" },
     create: {
       email: "cj@vrinandya.system",
       name: "Axiqen",
-      password: "system",
+      password: lockedHash,
       role: "SUPPLIER",
+      accountStatus: "SUSPENDED",
     },
   });
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { encrypt } from "@/lib/encrypt";
 
 export async function POST(req: NextRequest) {
   const session = await getRouteSession(req);
@@ -30,8 +31,8 @@ export async function POST(req: NextRequest) {
 
   const store = await prisma.shopifyStore.upsert({
     where: { sellerId: session.user.id },
-    update: { storeUrl, storeName, accessToken },
-    create: { sellerId: session.user.id, storeUrl, storeName, accessToken },
+    update: { storeUrl, storeName, accessToken: encrypt(accessToken) },
+    create: { sellerId: session.user.id, storeUrl, storeName, accessToken: encrypt(accessToken) },
     select: { id: true, storeName: true, storeUrl: true, createdAt: true },
   });
 
