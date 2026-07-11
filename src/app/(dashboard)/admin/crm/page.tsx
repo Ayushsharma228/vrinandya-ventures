@@ -316,23 +316,15 @@ export default function AdminCRMPage() {
             })}
             {metaResult && (
               <div className="text-xs font-medium flex flex-col gap-0.5">
-                {metaResult.tokenExpired ? (
-                  <span style={{ color: "#EF4444" }}>
-                    Meta token expired — update META_PAGE_TOKEN in Vercel env vars
-                  </span>
-                ) : (
-                  <>
-                    <span style={{ color: metaResult.imported > 0 ? "#00C67A" : "var(--text-400)" }}>
-                      Found {metaResult.found ?? "?"} on Meta · {metaResult.imported} new · {metaResult.skipped} already exist
-                    </span>
-                    {metaResult.errors?.map((e: string, i: number) => (
-                      <span key={i} style={{ color: "#EF4444" }}>{e}</span>
-                    ))}
-                    {metaResult.sampleFields && metaResult.sampleFields.length > 0 && metaResult.imported === 0 && (
-                      <span style={{ color: "#F59E0B" }}>Fields: {metaResult.sampleFields.join(", ")}</span>
-                    )}
-                  </>
+                <span style={{ color: metaResult.imported > 0 ? "#00C67A" : "var(--text-400)" }}>
+                  Found {metaResult.found ?? 0} on Meta · {metaResult.imported} new · {metaResult.skipped} already exist
+                </span>
+                {metaResult.tokenExpired && (
+                  <span style={{ color: "#EF4444" }}>Token expired — update META_PAGE_TOKEN in Vercel and redeploy</span>
                 )}
+                {metaResult.errors?.map((e: string, i: number) => (
+                  <span key={i} style={{ color: "#EF4444" }}>{e}</span>
+                ))}
               </div>
             )}
             <button

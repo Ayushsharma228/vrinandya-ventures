@@ -61,8 +61,9 @@ async function fetchAllLeads(
     clearTimeout(t);
     const data = await res.json();
     if (data.error) {
-      const isTokenError = data.error.code === 190 || data.error.type === "OAuthException";
-      return { leads, error: data.error.message, tokenExpired: isTokenError };
+      // code 190 = token expired/invalid; other OAuthExceptions = permission issues
+      const isTokenExpired = data.error.code === 190;
+      return { leads, error: `[${data.error.code}] ${data.error.message}`, tokenExpired: isTokenExpired };
     }
     leads.push(...(data.data ?? []));
     url = data.paging?.next ?? null;
