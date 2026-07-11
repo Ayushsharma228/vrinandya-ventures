@@ -79,7 +79,7 @@ export default function AdminCRMPage() {
 
   // Meta sync
   const [metaSyncing, setMetaSyncing] = useState(false);
-  const [metaResult, setMetaResult] = useState<{ imported: number; skipped: number; errors?: string[]; sampleFields?: string[]; tokenExpired?: boolean } | null>(null);
+  const [metaResult, setMetaResult] = useState<{ imported: number; skipped: number; found?: number; errors?: string[]; sampleFields?: string[]; tokenExpired?: boolean } | null>(null);
 
   // Deduplication
   const [deduping, setDeduping] = useState(false);
@@ -256,30 +256,36 @@ export default function AdminCRMPage() {
               style={{ background: "rgba(255,255,255,0.12)", color: "white", border: "1px solid rgba(255,255,255,0.2)" }}>
               <Upload className="w-4 h-4" /> Bulk Upload
             </button>
-            <button
-              onClick={async () => {
-                setMetaSyncing(true); setMetaResult(null);
-                try {
-                  const controller = new AbortController();
-                  const timeout = setTimeout(() => controller.abort(), 30000);
-                  const res = await fetch("/api/admin/meta/sync-leads", { method: "POST", signal: controller.signal });
-                  clearTimeout(timeout);
-                  const data = await res.json();
-                  setMetaResult(data);
-                  if (data.imported > 0) fetchData();
-                } catch (err: unknown) {
-                  const isAbort = err instanceof Error && err.name === "AbortError";
-                  setMetaResult({ imported: 0, skipped: 0, errors: [isAbort ? "Request timed out after 30 seconds" : "Network error — check Vercel logs"] });
-                } finally {
-                  setMetaSyncing(false);
-                }
-              }}
-              disabled={metaSyncing}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
-              style={{ background: "rgba(0,198,122,0.15)", color: "#00C67A", border: "1px solid rgba(0,198,122,0.3)" }}>
-              <RefreshCw className={`w-4 h-4 ${metaSyncing ? "animate-spin" : ""}`} />
-              {metaSyncing ? "Syncing..." : "Sync Meta Leads"}
-            </button>
+            {(["", "?full=true"] as const).map((qs) => {
+              const isFull = qs === "?full=true";
+              return (
+                <button
+                  key={qs}
+                  onClick={async () => {
+                    setMetaSyncing(true); setMetaResult(null);
+                    try {
+                      const controller = new AbortController();
+                      const timeout = setTimeout(() => controller.abort(), 60000);
+                      const res = await fetch(`/api/admin/meta/sync-leads${qs}`, { method: "POST", signal: controller.signal });
+                      clearTimeout(timeout);
+                      const data = await res.json();
+                      setMetaResult(data);
+                      if (data.imported > 0) fetchData();
+                    } catch (err: unknown) {
+                      const isAbort = err instanceof Error && err.name === "AbortError";
+                      setMetaResult({ imported: 0, skipped: 0, errors: [isAbort ? "Request timed out" : "Network error — check Vercel logs"] });
+                    } finally {
+                      setMetaSyncing(false);
+                    }
+                  }}
+                  disabled={metaSyncing}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
+                  style={{ background: "rgba(0,198,122,0.15)", color: "#00C67A", border: "1px solid rgba(0,198,122,0.3)" }}>
+                  <RefreshCw className={`w-4 h-4 ${metaSyncing ? "animate-spin" : ""}`} />
+                  {metaSyncing ? "Syncing..." : isFull ? "Full Sync" : "Sync (24h)"}
+                </button>
+              );
+            })}
             {metaResult && (
               <div className="text-xs font-medium flex flex-col gap-0.5">
                 {metaResult.tokenExpired ? (
@@ -289,13 +295,13 @@ export default function AdminCRMPage() {
                 ) : (
                   <>
                     <span style={{ color: metaResult.imported > 0 ? "#00C67A" : "var(--text-400)" }}>
-                      {metaResult.imported} imported, {metaResult.skipped} skipped
+                      Found {metaResult.found ?? "?"} on Meta · {metaResult.imported} new · {metaResult.skipped} already exist
                     </span>
                     {metaResult.errors?.map((e: string, i: number) => (
                       <span key={i} style={{ color: "#EF4444" }}>{e}</span>
                     ))}
                     {metaResult.sampleFields && metaResult.sampleFields.length > 0 && metaResult.imported === 0 && (
-                      <span style={{ color: "#F59E0B" }}>Fields from Meta: {metaResult.sampleFields.join(", ")}</span>
+                      <span style={{ color: "#F59E0B" }}>Fields: {metaResult.sampleFields.join(", ")}</span>
                     )}
                   </>
                 )}

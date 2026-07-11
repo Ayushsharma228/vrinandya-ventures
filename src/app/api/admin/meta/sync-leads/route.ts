@@ -81,30 +81,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "META_PAGE_TOKEN not configured" }, { status: 500 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const full = searchParams.get("full") === "true";
+  const since = full ? undefined : Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000);
+
   let imported = 0;
   let skipped = 0;
+  let found = 0;
   const errors: string[] = [];
   let sampleFields: string[] = [];
-  const since = Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000); // unix timestamp 24h ago
 
   for (const formId of FORM_IDS) {
     const { leads, error, tokenExpired } = await fetchAllLeads(formId, pageToken, since);
     if (tokenExpired) {
       return NextResponse.json(
-        { imported: 0, skipped: 0, errors: [], tokenExpired: true },
+        { imported: 0, skipped: 0, found: 0, errors: [], tokenExpired: true },
         { status: 401 }
       );
     }
     if (error) { errors.push(`Form ${formId}: ${error}`); continue; }
 
+    found += leads.length;
+
     for (const lead of leads) {
-      // Capture field names from first lead for debugging
       if (sampleFields.length === 0 && lead.field_data?.length) {
         sampleFields = lead.field_data.map(f => f.name);
       }
 
       const name  = extractField(lead.field_data, "full_name", "name") || "Unknown";
-      // Try every common phone field name Meta might use
       const phone = extractField(lead.field_data, "phone_number", "phone", "mobile", "mobile_number", "contact_number") || "—";
       const email = extractField(lead.field_data, "email", "email_address") || null;
       const notes = buildNotes(lead.field_data) || null;
@@ -124,11 +128,11 @@ export async function POST(req: NextRequest) {
         });
         imported++;
       } catch {
-        // unique constraint on metaLeadId → already imported
+        // unique constraint on metaLeadId → already exists
         skipped++;
       }
     }
   }
 
-  return NextResponse.json({ imported, skipped, errors, sampleFields });
+  return NextResponse.json({ imported, skipped, found, errors, sampleFields });
 }
