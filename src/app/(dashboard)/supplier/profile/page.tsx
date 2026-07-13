@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { User, Mail, Phone, Building2, FileText, CreditCard, Lock, Save, CheckCircle2, AlertCircle, Truck, Plus, Trash2, X, Loader2 } from "lucide-react";
+import { User, Mail, Phone, Building2, FileText, CreditCard, Lock, Save, CheckCircle2, AlertCircle, Truck, Plus, Trash2, X, Loader2, ExternalLink, Info } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 const TABS = [
@@ -13,10 +13,56 @@ const TABS = [
   { id: "password", label: "Password",         icon: Lock },
 ];
 
+const PROVIDER_HELP: Record<string, {
+  steps: string[];
+  link: string;
+  linkLabel: string;
+  fields: { key: string; label: string; hint: string; type?: string }[];
+}> = {
+  SHIPROCKET: {
+    steps: [
+      "Log in to your Shiprocket account at app.shiprocket.in",
+      "Use the same email and password you use to log in — no extra API key needed",
+      "AXQEN will authenticate on your behalf each time a shipment is created",
+    ],
+    link: "https://app.shiprocket.in",
+    linkLabel: "Open Shiprocket",
+    fields: [
+      { key: "apiKey",    label: "Email",    hint: "Your Shiprocket login email (e.g. you@company.com)", type: "text" },
+      { key: "apiSecret", label: "Password", hint: "Your Shiprocket login password",                     type: "password" },
+    ],
+  },
+  DELHIVERY: {
+    steps: [
+      "Log in to your Delhivery Business dashboard at app.delhivery.com",
+      "Go to Settings → API Integration",
+      "Copy the API Token shown on that page",
+    ],
+    link: "https://app.delhivery.com",
+    linkLabel: "Open Delhivery",
+    fields: [
+      { key: "apiKey", label: "API Token", hint: "Found in Delhivery dashboard → Settings → API Integration", type: "text" },
+    ],
+  },
+  CUSTOM: {
+    steps: [
+      "Get the API key (Bearer token) from your shipping panel's developer/API settings",
+      "Get the POST endpoint URL that accepts shipment creation requests",
+      "Your API must return a JSON response containing an 'awb' field (e.g. { awb: '12345' })",
+    ],
+    link: "",
+    linkLabel: "",
+    fields: [
+      { key: "apiKey",  label: "API Key",           hint: "Bearer token / API key from your shipping panel's developer settings", type: "text" },
+      { key: "baseUrl", label: "API Endpoint URL",  hint: "Full POST URL — e.g. https://api.yourshipping.com/v1/create-shipment",  type: "text" },
+    ],
+  },
+};
+
 const PROVIDERS = [
-  { value: "SHIPROCKET", label: "Shiprocket",  fields: ["apiKey:Email", "apiSecret:Password"] },
-  { value: "DELHIVERY",  label: "Delhivery",   fields: ["apiKey:API Token"] },
-  { value: "CUSTOM",     label: "Custom API",  fields: ["apiKey:API Key", "baseUrl:API Endpoint URL"] },
+  { value: "SHIPROCKET", label: "Shiprocket" },
+  { value: "DELHIVERY",  label: "Delhivery"  },
+  { value: "CUSTOM",     label: "Custom API" },
 ];
 
 type ShippingProvider = { id: string; provider: string; label: string; apiKey: string | null; baseUrl: string | null; isActive: boolean };
@@ -73,6 +119,7 @@ function ShippingTab() {
   }
 
   const selectedProviderDef = PROVIDERS.find((p) => p.value === form.provider);
+  const selectedHelp = PROVIDER_HELP[form.provider];
 
   return (
     <div className="space-y-5">
@@ -139,45 +186,69 @@ function ShippingTab() {
               <h3 className="font-semibold text-gray-900">Add Shipping Provider</h3>
               <button onClick={() => setShowAdd(false)}><X className="w-5 h-5 text-gray-400" /></button>
             </div>
-            <form onSubmit={handleAdd} className="px-6 py-5 space-y-4">
+            <form onSubmit={handleAdd} className="px-6 py-5 space-y-4 max-h-[80vh] overflow-y-auto">
               {addError && <div className="px-4 py-3 rounded-xl text-sm bg-red-50 text-red-600 border border-red-100">{addError}</div>}
 
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5">Provider Type</label>
-                <select value={form.provider} onChange={(e) => setForm((f) => ({ ...f, provider: e.target.value }))}
+                <select value={form.provider} onChange={(e) => setForm((f) => ({ ...f, provider: e.target.value, apiKey: "", apiSecret: "", baseUrl: "", label: "" }))}
                   className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 bg-white">
                   {PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                 </select>
               </div>
+
+              {/* How to get credentials — help box */}
+              {selectedHelp && (
+                <div className="p-4 rounded-xl space-y-2.5" style={{ background: "#F0FDF4", border: "1px solid #BBF7D0" }}>
+                  <div className="flex items-center gap-1.5">
+                    <Info className="w-3.5 h-3.5 text-green-700 flex-shrink-0" />
+                    <p className="text-xs font-semibold text-green-800">Where to find your credentials</p>
+                  </div>
+                  <ol className="space-y-1 pl-1">
+                    {selectedHelp.steps.map((step, i) => (
+                      <li key={i} className="flex gap-2 text-xs text-green-800">
+                        <span className="font-bold flex-shrink-0">{i + 1}.</span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  {selectedHelp.link && (
+                    <a href={selectedHelp.link} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 underline mt-1">
+                      {selectedHelp.linkLabel} <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5">Display Name</label>
                 <input value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} required
                   placeholder={`e.g. My ${selectedProviderDef?.label} Account`}
                   className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400" />
+                <p className="text-xs text-gray-400 mt-1">A name to identify this account in AXQEN (only visible to you)</p>
               </div>
 
-              {selectedProviderDef?.fields.map((field) => {
-                const [key, lbl] = field.split(":");
-                const isSecret = key === "apiSecret";
-                return (
-                  <div key={key}>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1.5">{lbl}</label>
-                    <input
-                      type={isSecret ? "password" : "text"}
-                      value={form[key as keyof typeof form]}
-                      onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                      placeholder={lbl}
-                      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400"
-                    />
-                  </div>
-                );
-              })}
+              {selectedHelp?.fields.map((field) => (
+                <div key={field.key}>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">{field.label}</label>
+                  <input
+                    type={field.type ?? "text"}
+                    value={form[field.key as keyof typeof form]}
+                    onChange={(e) => setForm((f) => ({ ...f, [field.key]: e.target.value }))}
+                    placeholder={field.label}
+                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">{field.hint}</p>
+                </div>
+              ))}
 
               {form.provider === "CUSTOM" && (
-                <p className="text-xs text-gray-400">
-                  Your API must accept a POST request with order data and return a JSON with an <code className="bg-gray-100 px-1 rounded">awb</code> field.
-                </p>
+                <div className="p-3 rounded-xl text-xs text-gray-500 space-y-1" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+                  <p className="font-semibold text-gray-600">Expected response format from your API:</p>
+                  <code className="block bg-gray-100 rounded-lg px-3 py-2 text-xs font-mono text-gray-700 whitespace-pre">{`{ "awb": "TRACK123456" }`}</code>
+                  <p>Optional fields: <code className="bg-gray-100 px-1 rounded">courier</code>, <code className="bg-gray-100 px-1 rounded">tracking_url</code></p>
+                </div>
               )}
 
               <div className="flex gap-3 pt-1">
