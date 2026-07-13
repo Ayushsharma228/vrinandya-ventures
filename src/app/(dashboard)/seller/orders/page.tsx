@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Download, ShoppingCart, IndianRupee, Package, Star, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { RefreshCw, Download, ShoppingCart, IndianRupee, Package, Star, CheckCircle, XCircle, Loader2, ExternalLink } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 interface OrderItem { id: string; name: string; sku: string | null; quantity: number; price: number; }
@@ -258,6 +258,15 @@ export default function SellerOrdersPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
+                          <a
+                            href={`/track/${order.externalOrderId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Customer tracking link"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                            style={{ background: "#F0F9FF", color: "#0EA5E9" }}>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
                           {canConfirm && (
                             <button
                               onClick={() => handleConfirm(order.id)}
