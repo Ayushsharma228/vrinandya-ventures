@@ -1,20 +1,24 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ShoppingCart, Trash2, Plus, X, Loader2, CalendarDays, CheckCircle2, XCircle, Truck } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, X, Loader2, CalendarDays, CheckCircle2, XCircle, Truck, UserCheck } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
-interface Seller { id: string; name: string | null; email: string; }
+interface Seller   { id: string; name: string | null; email: string; }
+interface Supplier { id: string; name: string | null; email: string; }
 interface Order {
   id: string;
   externalOrderId: string;
   status: string;
+  supplierStatus: string | null;
+  supplierId: string | null;
   awbNumber: string | null;
   customerName: string | null;
   customerAddress: { phone?: string } | null;
   totalAmount: number;
   createdAt: string;
-  seller: { id: string; name: string | null; email: string };
+  seller:   { id: string; name: string | null; email: string };
+  supplier: { id: string; name: string | null; email: string } | null;
   items: { name: string; quantity: number }[];
 }
 
@@ -29,6 +33,109 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 const STATUSES = ["NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "RTO"];
+
+// ── Assign Supplier Modal ─────────────────────────────────────────────────
+
+function AssignSupplierModal({ order, suppliers, onClose, onSaved }: {
+  order: Order;
+  suppliers: Supplier[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [supplierId, setSupplierId]         = useState("");
+  const [dispatchDate, setDispatchDate]     = useState("");
+  const [deliveryDate, setDeliveryDate]     = useState("");
+  const [notes, setNotes]                   = useState("");
+  const [saving, setSaving]                 = useState(false);
+  const [error, setError]                   = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!supplierId) { setError("Please select a supplier"); return; }
+    setSaving(true); setError("");
+    const res = await fetch(`/api/admin/orders/${order.id}/assign-supplier`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        supplierId,
+        expectedDispatchDate: dispatchDate || undefined,
+        expectedDeliveryDate: deliveryDate || undefined,
+        notes: notes || undefined,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) { setError(data.error || "Failed to assign supplier"); setSaving(false); return; }
+    onSaved();
+    onClose();
+  }
+
+  const activeSuppliers = suppliers.filter((s) => s.id !== order.supplierId);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 className="font-bold text-gray-900">Assign Supplier</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Order #{order.externalOrderId} · {order.customerName ?? "—"}</p>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="px-4 py-3 rounded-xl text-sm bg-red-50 text-red-600 border border-red-100">{error}</div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Supplier *</label>
+            <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} required
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+              <option value="">Select supplier...</option>
+              {activeSuppliers.map((s) => (
+                <option key={s.id} value={s.id}>{s.name || s.email}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Expected Dispatch</label>
+              <input type="date" value={dispatchDate} onChange={(e) => setDispatchDate(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Expected Delivery</label>
+              <input type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Notes (optional)</label>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
+              placeholder="Instructions or notes for the supplier..."
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 resize-none" />
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">
+              Cancel
+            </button>
+            <button type="submit" disabled={saving}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl disabled:opacity-50"
+              style={{ background: "#00C67A" }}>
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Assigning...</> : <><UserCheck className="w-4 h-4" /> Assign & Create PO</>}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 // ── Add Order Modal ───────────────────────────────────────────────────────
 
@@ -194,6 +301,7 @@ function AddOrderModal({ sellers, onClose, onSaved }: {
 
 export default function AdminOrdersPage() {
   const [sellers, setSellers]             = useState<Seller[]>([]);
+  const [suppliers, setSuppliers]         = useState<Supplier[]>([]);
   const [orders, setOrders]               = useState<Order[]>([]);
   const [loading, setLoading]             = useState(true);
   const [search, setSearch]               = useState("");
@@ -207,12 +315,14 @@ export default function AdminOrdersPage() {
   const [deleting, setDeleting]           = useState(false);
   const [bulkConfirming, setBulkConfirming] = useState(false);
   const [showAddModal, setShowAddModal]   = useState(false);
+  const [assignOrder, setAssignOrder]     = useState<Order | null>(null);
   const [bulkDateModal, setBulkDateModal] = useState(false);
   const [bulkDate, setBulkDate]           = useState("");
   const [bulkSaving, setBulkSaving]       = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/sellers").then((r) => r.json()).then((d) => setSellers(d.sellers ?? []));
+    fetch("/api/admin/users?role=SUPPLIER").then((r) => r.json()).then((d) => setSuppliers(d.users ?? []));
   }, []);
 
   const fetchOrders = useCallback(async () => {
@@ -447,20 +557,21 @@ export default function AdminOrdersPage() {
                       <input type="checkbox" checked={selected.size === orders.length && orders.length > 0}
                         onChange={toggleAll} className="rounded cursor-pointer" />
                     </th>
-                    {["Order #", "Seller", "Customer", "Products", "Amount", "AWB", "Status", "Date", "Actions"].map((h) => (
+                    {["Order #", "Seller", "Customer", "Products", "Amount", "AWB", "Status", "Supplier", "Date", "Actions"].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {orders.length === 0 ? (
-                    <tr><td colSpan={10} className="py-12 text-center text-gray-400 text-sm">No orders found</td></tr>
+                    <tr><td colSpan={11} className="py-12 text-center text-gray-400 text-sm">No orders found</td></tr>
                   ) : orders.map((order) => {
-                    const isSelected = selected.has(order.id);
+                    const isSelected   = selected.has(order.id);
                     const isActing     = quickActing === order.id;
                     const isAwbActing  = awbActing === order.id;
                     const isNew        = order.status === "NEW";
                     const needsAwb     = order.status === "PROCESSING" && !order.awbNumber;
+                    const canAssign    = !order.supplierId && !["DELIVERED", "CANCELLED", "RTO"].includes(order.status);
                     return (
                       <tr key={order.id} className={`hover:bg-gray-50/50 transition-colors ${isSelected ? "bg-blue-50/30" : ""}`}>
                         <td className="px-4 py-3">
@@ -480,6 +591,21 @@ export default function AdminOrdersPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
+                          {order.supplier ? (
+                            <div>
+                              <p className="text-xs font-medium text-gray-700">{order.supplier.name ?? order.supplier.email}</p>
+                              {order.supplierStatus && (
+                                <p className="text-[10px] mt-0.5 font-medium"
+                                  style={{ color: order.supplierStatus === "DISPATCHED" ? "#15803D" : order.supplierStatus === "REJECTED" ? "#DC2626" : "#D97706" }}>
+                                  {order.supplierStatus.replace(/_/g, " ")}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-300">Unassigned</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <input
                             type="date"
                             defaultValue={order.createdAt.slice(0, 10)}
@@ -491,9 +617,17 @@ export default function AdminOrdersPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
+                            {canAssign && (
+                              <button
+                                onClick={() => setAssignOrder(order)}
+                                title="Assign supplier"
+                                className="p-1.5 rounded-lg transition-colors"
+                                style={{ color: "#00C67A", background: "#F0FDF4" }}>
+                                <UserCheck className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                             {isNew ? (
                               <>
-                                {/* Tick → PROCESSING */}
                                 <button
                                   onClick={() => handleConfirm(order)}
                                   disabled={isActing}
@@ -501,7 +635,6 @@ export default function AdminOrdersPage() {
                                   className="p-1.5 rounded-lg text-green-500 hover:bg-green-50 disabled:opacity-40 transition-colors">
                                   {isActing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                                 </button>
-                                {/* Cross → CANCELLED */}
                                 <button
                                   onClick={() => handleCancel(order)}
                                   disabled={isActing}
@@ -549,6 +682,15 @@ export default function AdminOrdersPage() {
         <AddOrderModal
           sellers={sellers}
           onClose={() => setShowAddModal(false)}
+          onSaved={fetchOrders}
+        />
+      )}
+
+      {assignOrder && (
+        <AssignSupplierModal
+          order={assignOrder}
+          suppliers={suppliers}
+          onClose={() => setAssignOrder(null)}
           onSaved={fetchOrders}
         />
       )}

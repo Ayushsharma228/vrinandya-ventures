@@ -29,8 +29,9 @@ export async function GET(req: NextRequest) {
     },
     orderBy: { createdAt: "desc" },
     include: {
-      seller: { select: { name: true, email: true } },
-      items:  { select: { name: true, quantity: true } },
+      seller:   { select: { id: true, name: true, email: true } },
+      supplier: { select: { id: true, name: true, email: true } },
+      items:    { select: { name: true, quantity: true } },
     },
   });
 
