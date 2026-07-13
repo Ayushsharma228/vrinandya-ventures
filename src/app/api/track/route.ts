@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ orderId: string }> }
-) {
-  const { orderId } = await params;
+export async function GET(req: NextRequest) {
+  const orderId = req.nextUrl.searchParams.get("id");
+  if (!orderId) return NextResponse.json({ error: "id param required" }, { status: 400 });
 
   const order = await prisma.order.findFirst({
     where: { externalOrderId: orderId },
@@ -22,9 +20,7 @@ export async function GET(
       expectedDeliveryDate: true,
       dispatchedAt: true,
       createdAt: true,
-      items: {
-        select: { name: true, quantity: true, price: true },
-      },
+      items: { select: { name: true, quantity: true, price: true } },
       timeline: {
         orderBy: { createdAt: "asc" },
         select: { event: true, details: true, createdAt: true, actorRole: true },
@@ -33,6 +29,5 @@ export async function GET(
   });
 
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
-
   return NextResponse.json({ order });
 }

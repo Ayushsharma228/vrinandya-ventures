@@ -260,7 +260,7 @@ export default function SellerOrdersPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
                           <a
-                            href={`/track/${order.externalOrderId}`}
+                            href={`/track?id=${order.externalOrderId}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             title="Open tracking page"
@@ -271,7 +271,7 @@ export default function SellerOrdersPage() {
                           <button
                             title="Copy tracking link"
                             onClick={() => {
-                              const url = `${window.location.origin}/track/${order.externalOrderId}`;
+                              const url = `${window.location.origin}/track?id=${order.externalOrderId}`;
                               navigator.clipboard.writeText(url);
                               setCopiedId(order.id);
                               setTimeout(() => setCopiedId(null), 2000);
