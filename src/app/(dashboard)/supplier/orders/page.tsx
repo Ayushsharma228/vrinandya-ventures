@@ -66,14 +66,16 @@ const NEXT_ACTION: Record<string, { action: string; label: string; color: string
 };
 
 export default function SupplierOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string | null>(null);
-  const [actioning, setActioning] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Order | null>(null);
+  const [orders, setOrders]         = useState<Order[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [activeTab, setActiveTab]   = useState<string | null>(null);
+  const [actioning, setActioning]   = useState<string | null>(null);
+  const [bulkActioning, setBulkActioning] = useState(false);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  const [selected, setSelected]     = useState<Order | null>(null);
   const [rejectNote, setRejectNote] = useState("");
   const [dispatchData, setDispatchData] = useState({ trackingNo: "", courier: "" });
-  const [showReject, setShowReject] = useState<string | null>(null);
+  const [showReject, setShowReject]   = useState<string | null>(null);
   const [showDispatch, setShowDispatch] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
@@ -82,6 +84,7 @@ export default function SupplierOrdersPage() {
       const res = await fetch("/api/supplier/orders");
       const data = await res.json();
       setOrders(data.orders ?? []);
+      setCheckedIds(new Set());
     } finally {
       setLoading(false);
     }
@@ -118,6 +121,38 @@ export default function SupplierOrdersPage() {
   const filteredOrders = activeTab
     ? orders.filter((o) => o.supplierStatus === activeTab)
     : orders;
+
+  const checkedOrders     = filteredOrders.filter((o) => checkedIds.has(o.id));
+  const checkedAssigned   = checkedOrders.filter((o) => o.supplierStatus === "ASSIGNED").length;
+  const checkedAccepted   = checkedOrders.filter((o) => o.supplierStatus === "ACCEPTED").length;
+  const checkedProcessing = checkedOrders.filter((o) => o.supplierStatus === "PROCESSING").length;
+  const checkedPacked     = checkedOrders.filter((o) => o.supplierStatus === "PACKED").length;
+
+  const runBulkAction = async (action: string, forStatus: string) => {
+    const targets = filteredOrders
+      .filter((o) => checkedIds.has(o.id) && o.supplierStatus === forStatus)
+      .map((o) => o.id);
+    if (!targets.length) return;
+    setBulkActioning(true);
+    await Promise.allSettled(targets.map((id) =>
+      fetch(`/api/supplier/orders/${id}/action`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      })
+    ));
+    await fetchOrders();
+    setBulkActioning(false);
+  };
+
+  function toggleCheck(id: string) {
+    setCheckedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+  function toggleAll() {
+    setCheckedIds(checkedIds.size === filteredOrders.length && filteredOrders.length > 0
+      ? new Set()
+      : new Set(filteredOrders.map((o) => o.id)));
+  }
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
@@ -169,6 +204,53 @@ export default function SupplierOrdersPage() {
 
         {/* Orders table */}
         <div className="card overflow-hidden">
+          {/* Bulk action toolbar */}
+          {checkedIds.size > 0 && (
+            <div className="px-4 py-3 flex items-center gap-2 flex-wrap"
+              style={{ background: "rgba(0,198,122,0.06)", borderBottom: "1px solid rgba(0,198,122,0.15)" }}>
+              <span className="text-xs font-semibold" style={{ color: "var(--text-500)" }}>
+                {checkedIds.size} selected
+              </span>
+              {checkedAssigned > 0 && (
+                <button onClick={() => runBulkAction("ACCEPT", "ASSIGNED")} disabled={bulkActioning}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
+                  style={{ background: "#00C67A" }}>
+                  {bulkActioning ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+                  Accept ({checkedAssigned})
+                </button>
+              )}
+              {checkedAccepted > 0 && (
+                <button onClick={() => runBulkAction("MARK_PROCESSING", "ACCEPTED")} disabled={bulkActioning}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
+                  style={{ background: "#8B5CF6" }}>
+                  {bulkActioning ? <RefreshCw className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                  Mark Processing ({checkedAccepted})
+                </button>
+              )}
+              {checkedProcessing > 0 && (
+                <button onClick={() => runBulkAction("MARK_PACKED", "PROCESSING")} disabled={bulkActioning}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
+                  style={{ background: "#0EA5E9" }}>
+                  {bulkActioning ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Package className="w-3 h-3" />}
+                  Mark Packed ({checkedProcessing})
+                </button>
+              )}
+              {checkedPacked > 0 && (
+                <button onClick={() => runBulkAction("READY_TO_SHIP", "PACKED")} disabled={bulkActioning}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
+                  style={{ background: "#F97316" }}>
+                  {bulkActioning ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Truck className="w-3 h-3" />}
+                  Ready to Ship ({checkedPacked})
+                </button>
+              )}
+              <button onClick={() => setCheckedIds(new Set())}
+                className="ml-auto text-xs font-medium px-2 py-1 rounded-lg"
+                style={{ color: "var(--text-400)" }}>
+                Clear
+              </button>
+            </div>
+          )}
+
           {loading ? (
             <div className="py-16 flex items-center justify-center">
               <RefreshCw className="w-6 h-6 animate-spin" style={{ color: "var(--text-300)" }} />
@@ -183,6 +265,11 @@ export default function SupplierOrdersPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
+                    <th className="px-4 py-3 w-10">
+                      <input type="checkbox"
+                        checked={checkedIds.size === filteredOrders.length && filteredOrders.length > 0}
+                        onChange={toggleAll} className="rounded cursor-pointer" />
+                    </th>
                     {["Order", "Customer", "Items", "Amount", "Status", "Expected Dispatch", "Actions"].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
                         style={{ color: "var(--text-400)" }}>{h}</th>
@@ -194,8 +281,13 @@ export default function SupplierOrdersPage() {
                     const badge = order.supplierStatus ? STATUS_BADGE[order.supplierStatus] : null;
                     const nextAction = order.supplierStatus ? NEXT_ACTION[order.supplierStatus] : null;
                     const isActioning = actioning === order.id;
+                    const isChecked = checkedIds.has(order.id);
                     return (
-                      <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
+                      <tr key={order.id} className={`hover:bg-gray-50/50 transition-colors ${isChecked ? "bg-green-50/30" : ""}`}>
+                        <td className="px-4 py-3.5">
+                          <input type="checkbox" checked={isChecked} onChange={() => toggleCheck(order.id)}
+                            className="rounded cursor-pointer" />
+                        </td>
                         <td className="px-4 py-3.5">
                           <p className="font-mono text-xs font-semibold" style={{ color: "var(--green-500)" }}>
                             #{order.externalOrderId}
