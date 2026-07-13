@@ -300,6 +300,9 @@ export default function SupplierOrdersPage() {
                           <p className="text-sm font-medium" style={{ color: "var(--text-900)" }}>{order.customerName ?? "—"}</p>
                           <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>
                             {(order.customerAddress as any)?.city ?? ""}
+                            {(order.customerAddress as any)?.phone && (
+                              <span className="ml-1 font-mono">· {(order.customerAddress as any).phone}</span>
+                            )}
                           </p>
                         </td>
                         <td className="px-4 py-3.5">
@@ -382,15 +385,34 @@ export default function SupplierOrdersPage() {
               <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
             </div>
             <div className="px-6 py-4 space-y-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Customer</p>
-                <p className="text-sm font-medium text-gray-900">{selected.customerName ?? "—"}</p>
-                {selected.customerAddress && (
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {[(selected.customerAddress as any).address1, (selected.customerAddress as any).city,
-                      (selected.customerAddress as any).province, (selected.customerAddress as any).zip]
-                      .filter(Boolean).join(", ")}
-                  </p>
+              <div className="p-4 rounded-xl" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Delivery Address</p>
+                <p className="text-sm font-semibold text-gray-900">{selected.customerName ?? "—"}</p>
+                {selected.customerAddress && (() => {
+                  const addr = selected.customerAddress as Record<string, string>;
+                  const line = [
+                    addr.address || addr.address1,
+                    addr.city,
+                    addr.state || addr.province,
+                    addr.pincode || addr.zip,
+                  ].filter(Boolean).join(", ");
+                  const phone = addr.phone;
+                  return (
+                    <>
+                      {line && <p className="text-sm text-gray-700 mt-1">{line}</p>}
+                      {phone && (
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                            style={{ background: "#ECFDF5", color: "#059669" }}>
+                            📞 {phone}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+                {!selected.customerAddress && (
+                  <p className="text-xs text-red-500 mt-1">No address on file — contact admin</p>
                 )}
               </div>
               <div>
