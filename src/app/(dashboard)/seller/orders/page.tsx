@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Download, ShoppingCart, IndianRupee, Package, Star, CheckCircle, XCircle, Loader2, ExternalLink } from "lucide-react";
+import { RefreshCw, Download, ShoppingCart, IndianRupee, Package, Star, CheckCircle, XCircle, Loader2, ExternalLink, Copy, CopyCheck } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 interface OrderItem { id: string; name: string; sku: string | null; quantity: number; price: number; }
@@ -44,7 +44,8 @@ export default function SellerOrdersPage() {
   const [to] = useState(formatDate(today));
   const [confirming, setConfirming] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
-  const [syncError, setSyncError] = useState("");
+  const [copiedId, setCopiedId]     = useState<string | null>(null);
+  const [syncError, setSyncError]   = useState("");
 
   const fetchOrders = useCallback(async () => {
     const params = new URLSearchParams({ from, to });
@@ -262,11 +263,25 @@ export default function SellerOrdersPage() {
                             href={`/track/${order.externalOrderId}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            title="Customer tracking link"
+                            title="Open tracking page"
                             className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
                             style={{ background: "#F0F9FF", color: "#0EA5E9" }}>
                             <ExternalLink className="w-3.5 h-3.5" />
                           </a>
+                          <button
+                            title="Copy tracking link"
+                            onClick={() => {
+                              const url = `${window.location.origin}/track/${order.externalOrderId}`;
+                              navigator.clipboard.writeText(url);
+                              setCopiedId(order.id);
+                              setTimeout(() => setCopiedId(null), 2000);
+                            }}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                            style={{ background: copiedId === order.id ? "#F0FDF4" : "#F8FAFC", color: copiedId === order.id ? "#16A34A" : "#6B7280" }}>
+                            {copiedId === order.id
+                              ? <CopyCheck className="w-3.5 h-3.5" />
+                              : <Copy className="w-3.5 h-3.5" />}
+                          </button>
                           {canConfirm && (
                             <button
                               onClick={() => handleConfirm(order.id)}
