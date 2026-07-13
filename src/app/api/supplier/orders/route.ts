@@ -9,25 +9,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const status = req.nextUrl.searchParams.get("status");
-    const shippedOnly = req.nextUrl.searchParams.get("shippedOnly") === "1";
-    const SHIPPED_STATUSES = ["SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED"];
+    const supplierStatus = req.nextUrl.searchParams.get("supplierStatus");
 
     const orders = await prisma.order.findMany({
       where: {
-        ...(shippedOnly
-          ? { status: { in: SHIPPED_STATUSES as any } }
-          : status ? { status: status as any } : {}),
-        items: {
-          some: { product: { supplierId: session.user.id } },
-        },
+        supplierId: session.user.id,
+        ...(supplierStatus ? { supplierStatus: supplierStatus as never } : {}),
       },
       orderBy: { createdAt: "desc" },
       include: {
         seller: { select: { name: true } },
         items: {
-          where: { product: { supplierId: session.user.id } },
-          include: { product: { select: { name: true } } },
+          include: { product: { select: { name: true, sku: true, images: true } } },
         },
       },
     });
