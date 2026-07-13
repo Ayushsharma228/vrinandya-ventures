@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   ShoppingCart, CheckCircle, XCircle, Clock, Package,
-  Truck, AlertCircle, RefreshCw, ChevronRight,
+  Truck, AlertCircle, RefreshCw, ChevronRight, Loader2, Zap,
 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
@@ -77,6 +77,11 @@ export default function SupplierOrdersPage() {
   const [dispatchData, setDispatchData] = useState({ trackingNo: "", courier: "" });
   const [showReject, setShowReject]   = useState<string | null>(null);
   const [showDispatch, setShowDispatch] = useState<string | null>(null);
+  const [shippingProviders, setShippingProviders] = useState<{ id: string; label: string; provider: string }[]>([]);
+  const [loadingProviders, setLoadingProviders]   = useState(false);
+  const [selectedProviderId, setSelectedProviderId] = useState("");
+  const [autoDispatching, setAutoDispatching]       = useState(false);
+  const [autoDispatchError, setAutoDispatchError]   = useState("");
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -143,6 +148,41 @@ export default function SupplierOrdersPage() {
     ));
     await fetchOrders();
     setBulkActioning(false);
+  };
+
+  const openDispatch = async (orderId: string) => {
+    setShowDispatch(orderId);
+    setAutoDispatchError("");
+    setLoadingProviders(true);
+    try {
+      const res = await fetch("/api/supplier/shipping-providers");
+      const d = await res.json();
+      const active = (d.providers ?? []).filter((p: { isActive: boolean }) => p.isActive);
+      setShippingProviders(active);
+      if (active.length > 0) setSelectedProviderId(active[0].id);
+    } finally {
+      setLoadingProviders(false);
+    }
+  };
+
+  const handleAutoDispatch = async () => {
+    if (!showDispatch || !selectedProviderId) return;
+    setAutoDispatching(true);
+    setAutoDispatchError("");
+    try {
+      const res = await fetch(`/api/supplier/orders/${showDispatch}/create-shipment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ providerId: selectedProviderId }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setAutoDispatchError(d.error || "Shipment creation failed"); return; }
+      setShowDispatch(null);
+      setShippingProviders([]);
+      await fetchOrders();
+    } finally {
+      setAutoDispatching(false);
+    }
   };
 
   function toggleCheck(id: string) {
@@ -351,7 +391,7 @@ export default function SupplierOrdersPage() {
                               </>
                             )}
                             {order.supplierStatus === "READY_TO_SHIP" && (
-                              <button onClick={() => setShowDispatch(order.id)} disabled={isActioning}
+                              <button onClick={() => openDispatch(order.id)} disabled={isActioning}
                                 className="px-2 py-1 rounded-lg text-xs font-semibold text-white"
                                 style={{ background: "#00C67A" }}>
                                 Dispatch
@@ -480,34 +520,86 @@ export default function SupplierOrdersPage() {
       {/* Dispatch Modal */}
       {showDispatch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6">
-            <h3 className="font-semibold text-gray-900 mb-1">Mark as Dispatched</h3>
-            <p className="text-sm text-gray-500 mb-4">Enter tracking details. Order status will update to Shipped.</p>
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Tracking Number</label>
-                <input value={dispatchData.trackingNo}
-                  onChange={(e) => setDispatchData((d) => ({ ...d, trackingNo: e.target.value }))}
-                  className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
-                  placeholder="e.g. DTDC1234567890" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Courier Partner</label>
-                <input value={dispatchData.courier}
-                  onChange={(e) => setDispatchData((d) => ({ ...d, courier: e.target.value }))}
-                  className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
-                  placeholder="e.g. Delhivery, DTDC, Bluedart..." />
-              </div>
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="px-6 py-4 flex items-center justify-between border-b">
+              <h3 className="font-semibold text-gray-900">Mark as Dispatched</h3>
+              <button onClick={() => { setShowDispatch(null); setShippingProviders([]); setAutoDispatchError(""); }}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
             </div>
-            <div className="flex gap-2 mt-4">
-              <button onClick={() => { setShowDispatch(null); setDispatchData({ trackingNo: "", courier: "" }); }}
-                className="flex-1 px-4 py-2 rounded-xl text-sm font-medium border text-gray-600">Cancel</button>
-              <button onClick={() => runAction(showDispatch, "DISPATCH", dispatchData)}
-                disabled={actioning === showDispatch}
-                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-                style={{ background: "#00C67A" }}>
-                Confirm Dispatch
-              </button>
+            <div className="px-6 py-5 space-y-5">
+              {autoDispatchError && (
+                <div className="px-4 py-3 rounded-xl text-sm bg-red-50 text-red-600 border border-red-100 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  {autoDispatchError}
+                </div>
+              )}
+
+              {loadingProviders ? (
+                <div className="py-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-gray-300" /></div>
+              ) : shippingProviders.length > 0 ? (
+                <>
+                  {/* Auto section */}
+                  <div className="p-4 rounded-xl border-2 space-y-3" style={{ borderColor: "rgba(0,198,122,0.3)", background: "#F0FDF4" }}>
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4" style={{ color: "#15803D" }} />
+                      <p className="text-sm font-semibold text-green-800">Auto-Create Shipment</p>
+                    </div>
+                    <p className="text-xs text-green-700">AXQEN will call your shipping provider's API to create the shipment and fetch the AWB automatically.</p>
+                    <select value={selectedProviderId} onChange={(e) => setSelectedProviderId(e.target.value)}
+                      className="w-full px-3 py-2.5 text-sm border border-green-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 bg-white">
+                      {shippingProviders.map((p) => (
+                        <option key={p.id} value={p.id}>{p.label} ({p.provider})</option>
+                      ))}
+                    </select>
+                    <button onClick={handleAutoDispatch} disabled={autoDispatching || !selectedProviderId}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+                      style={{ background: "#00C67A" }}>
+                      {autoDispatching ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating shipment...</> : <><Zap className="w-4 h-4" /> Auto-Dispatch</>}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 border-t border-gray-200" />
+                    <span className="text-xs font-medium text-gray-400">OR enter manually</span>
+                    <div className="flex-1 border-t border-gray-200" />
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-gray-400 text-center">
+                  No shipping provider connected.{" "}
+                  <a href="/supplier/profile" className="underline text-green-600">Add one in Profile → Shipping</a> to enable auto-dispatch.
+                </p>
+              )}
+
+              {/* Manual section */}
+              <div className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Manual Entry</p>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Tracking Number</label>
+                  <input value={dispatchData.trackingNo}
+                    onChange={(e) => setDispatchData((d) => ({ ...d, trackingNo: e.target.value }))}
+                    className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+                    placeholder="e.g. DTDC1234567890" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Courier Partner</label>
+                  <input value={dispatchData.courier}
+                    onChange={(e) => setDispatchData((d) => ({ ...d, courier: e.target.value }))}
+                    className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+                    placeholder="e.g. Delhivery, DTDC, Bluedart..." />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button onClick={() => { setShowDispatch(null); setShippingProviders([]); setDispatchData({ trackingNo: "", courier: "" }); setAutoDispatchError(""); }}
+                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium border text-gray-600">Cancel</button>
+                <button onClick={() => runAction(showDispatch, "DISPATCH", dispatchData)}
+                  disabled={actioning === showDispatch || (!dispatchData.trackingNo && !dispatchData.courier)}
+                  className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+                  style={{ background: "#00C67A" }}>
+                  {actioning === showDispatch ? "..." : "Confirm Manual"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

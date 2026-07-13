@@ -1,16 +1,203 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { User, Mail, Phone, Building2, FileText, CreditCard, Lock, Save, CheckCircle2, AlertCircle } from "lucide-react";
+import { User, Mail, Phone, Building2, FileText, CreditCard, Lock, Save, CheckCircle2, AlertCircle, Truck, Plus, Trash2, X, Loader2 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 const TABS = [
   { id: "personal", label: "Personal Info",    icon: User },
   { id: "business", label: "Business Details", icon: Building2 },
   { id: "bank",     label: "Bank Details",     icon: CreditCard },
+  { id: "shipping", label: "Shipping",         icon: Truck },
   { id: "password", label: "Password",         icon: Lock },
 ];
+
+const PROVIDERS = [
+  { value: "SHIPROCKET", label: "Shiprocket",  fields: ["apiKey:Email", "apiSecret:Password"] },
+  { value: "DELHIVERY",  label: "Delhivery",   fields: ["apiKey:API Token"] },
+  { value: "CUSTOM",     label: "Custom API",  fields: ["apiKey:API Key", "baseUrl:API Endpoint URL"] },
+];
+
+type ShippingProvider = { id: string; provider: string; label: string; apiKey: string | null; baseUrl: string | null; isActive: boolean };
+
+function ShippingTab() {
+  const [providers, setProviders]   = useState<ShippingProvider[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [showAdd, setShowAdd]       = useState(false);
+  const [deleting, setDeleting]     = useState<string | null>(null);
+  const [toggling, setToggling]     = useState<string | null>(null);
+  const [addError, setAddError]     = useState("");
+  const [adding, setAdding]         = useState(false);
+  const [form, setForm]             = useState({ provider: "SHIPROCKET", label: "", apiKey: "", apiSecret: "", baseUrl: "" });
+
+  const fetchProviders = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch("/api/supplier/shipping-providers");
+    const d = await res.json();
+    setProviders(d.providers ?? []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchProviders(); }, [fetchProviders]);
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    setAddError(""); setAdding(true);
+    const res = await fetch("/api/supplier/shipping-providers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    const d = await res.json();
+    if (!res.ok) { setAddError(d.error || "Failed"); setAdding(false); return; }
+    setShowAdd(false);
+    setForm({ provider: "SHIPROCKET", label: "", apiKey: "", apiSecret: "", baseUrl: "" });
+    await fetchProviders();
+    setAdding(false);
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Remove this shipping provider?")) return;
+    setDeleting(id);
+    await fetch("/api/supplier/shipping-providers", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+    await fetchProviders();
+    setDeleting(null);
+  }
+
+  async function handleToggle(p: ShippingProvider) {
+    setToggling(p.id);
+    await fetch("/api/supplier/shipping-providers", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: p.id, isActive: !p.isActive }) });
+    await fetchProviders();
+    setToggling(null);
+  }
+
+  const selectedProviderDef = PROVIDERS.find((p) => p.value === form.provider);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-semibold" style={{ color: "var(--text-900)" }}>Connected Shipping Accounts</h2>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>When dispatching, AXQEN will call your shipping provider's API to auto-create the shipment and fetch the AWB.</p>
+        </div>
+        <button onClick={() => setShowAdd(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+          style={{ background: "var(--green-500)" }}>
+          <Plus className="w-4 h-4" /> Add Provider
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="py-10 flex justify-center"><Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--text-300)" }} /></div>
+      ) : providers.length === 0 ? (
+        <div className="border-2 border-dashed rounded-2xl py-12 flex flex-col items-center gap-3 text-center px-6"
+          style={{ borderColor: "var(--border)" }}>
+          <Truck className="w-10 h-10" style={{ color: "var(--border)" }} />
+          <p className="text-sm font-medium" style={{ color: "var(--text-600)" }}>No shipping accounts connected</p>
+          <p className="text-xs" style={{ color: "var(--text-400)" }}>Add Shiprocket, Delhivery, or your own shipping API to auto-generate AWBs when dispatching.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {providers.map((p) => (
+            <div key={p.id} className="flex items-center justify-between px-5 py-4 rounded-2xl"
+              style={{ border: "1px solid var(--border)", background: p.isActive ? "white" : "#FAFAFA" }}>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: p.isActive ? "#F0FDF4" : "#F3F4F6" }}>
+                  <Truck className="w-5 h-5" style={{ color: p.isActive ? "#16A34A" : "#9CA3AF" }} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>{p.label}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>
+                    {p.provider}{p.apiKey ? ` · Key: ${p.apiKey}` : ""}
+                    {p.baseUrl ? ` · ${p.baseUrl}` : ""}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => handleToggle(p)} disabled={toggling === p.id}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                  style={{ background: p.isActive ? "#FFF7ED" : "#F0FDF4", color: p.isActive ? "#D97706" : "#16A34A" }}>
+                  {toggling === p.id ? "..." : p.isActive ? "Disable" : "Enable"}
+                </button>
+                <button onClick={() => handleDelete(p.id)} disabled={deleting === p.id}
+                  className="p-2 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors">
+                  {deleting === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add Provider Modal */}
+      {showAdd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="px-6 py-4 flex items-center justify-between border-b">
+              <h3 className="font-semibold text-gray-900">Add Shipping Provider</h3>
+              <button onClick={() => setShowAdd(false)}><X className="w-5 h-5 text-gray-400" /></button>
+            </div>
+            <form onSubmit={handleAdd} className="px-6 py-5 space-y-4">
+              {addError && <div className="px-4 py-3 rounded-xl text-sm bg-red-50 text-red-600 border border-red-100">{addError}</div>}
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Provider Type</label>
+                <select value={form.provider} onChange={(e) => setForm((f) => ({ ...f, provider: e.target.value }))}
+                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 bg-white">
+                  {PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Display Name</label>
+                <input value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} required
+                  placeholder={`e.g. My ${selectedProviderDef?.label} Account`}
+                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400" />
+              </div>
+
+              {selectedProviderDef?.fields.map((field) => {
+                const [key, lbl] = field.split(":");
+                const isSecret = key === "apiSecret";
+                return (
+                  <div key={key}>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1.5">{lbl}</label>
+                    <input
+                      type={isSecret ? "password" : "text"}
+                      value={form[key as keyof typeof form]}
+                      onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                      placeholder={lbl}
+                      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400"
+                    />
+                  </div>
+                );
+              })}
+
+              {form.provider === "CUSTOM" && (
+                <p className="text-xs text-gray-400">
+                  Your API must accept a POST request with order data and return a JSON with an <code className="bg-gray-100 px-1 rounded">awb</code> field.
+                </p>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setShowAdd(false)}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="submit" disabled={adding}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl disabled:opacity-50"
+                  style={{ background: "var(--green-500)" }}>
+                  {adding ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : <><Plus className="w-4 h-4" /> Connect</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SupplierProfilePage() {
   const { data: session } = useSession();
@@ -152,13 +339,17 @@ export default function SupplierProfilePage() {
               </div>
             )}
 
-            <div className="mt-6 pt-5 flex items-center gap-3" style={{ borderTop: "1px solid var(--border)" }}>
-              <button onClick={handleSave} disabled={saving}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-60"
-                style={{ background: saved ? "#16A34A" : "var(--green-500)" }}>
-                {saved ? <><CheckCircle2 className="w-4 h-4" /> Saved!</> : saving ? "Saving..." : <><Save className="w-4 h-4" /> Save Changes</>}
-              </button>
-            </div>
+            {activeTab === "shipping" && <ShippingTab />}
+
+            {activeTab !== "shipping" && (
+              <div className="mt-6 pt-5 flex items-center gap-3" style={{ borderTop: "1px solid var(--border)" }}>
+                <button onClick={handleSave} disabled={saving}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-60"
+                  style={{ background: saved ? "#16A34A" : "var(--green-500)" }}>
+                  {saved ? <><CheckCircle2 className="w-4 h-4" /> Saved!</> : saving ? "Saving..." : <><Save className="w-4 h-4" /> Save Changes</>}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

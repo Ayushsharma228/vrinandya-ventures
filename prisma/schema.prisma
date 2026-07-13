@@ -203,8 +203,25 @@ model User {
   purchaseOrdersAsSeller   PurchaseOrder[]      @relation("SellerPOs")
   supplierInventory        InventoryItem[]      @relation("SupplierInventory")
   supplierTransactions     SupplierTransaction[] @relation("SupplierTransactions")
+  shippingProviders        SupplierShippingProvider[]
 
   @@map("users")
+}
+
+model SupplierShippingProvider {
+  id         String   @id @default(cuid())
+  supplierId String
+  supplier   User     @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  provider   String   // SHIPROCKET | DELHIVERY | CUSTOM
+  label      String
+  apiKey     String?
+  apiSecret  String?
+  baseUrl    String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("supplier_shipping_providers")
 }
 
 model Lead {
