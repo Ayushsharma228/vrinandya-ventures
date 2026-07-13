@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ShoppingCart, Trash2, Plus, X, Loader2, CalendarDays, CheckCircle2, XCircle, Truck, UserCheck } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, X, Loader2, CalendarDays, CheckCircle2, XCircle, UserCheck } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 interface Seller   { id: string; name: string | null; email: string; }
@@ -308,17 +308,18 @@ export default function AdminOrdersPage() {
   const [sellerFilter, setSellerFilter]   = useState("");
   const [statusFilter, setStatusFilter]   = useState("");
   const [dateInputs, setDateInputs]       = useState<Record<string, string>>({});
-  const [quickActing, setQuickActing]     = useState<string | null>(null);
-  const [awbActing, setAwbActing]         = useState<string | null>(null);
-  const [bulkAwbing, setBulkAwbing]       = useState(false);
-  const [selected, setSelected]           = useState<Set<string>>(new Set());
-  const [deleting, setDeleting]           = useState(false);
+  const [quickActing, setQuickActing]       = useState<string | null>(null);
+  const [selected, setSelected]             = useState<Set<string>>(new Set());
+  const [deleting, setDeleting]             = useState(false);
   const [bulkConfirming, setBulkConfirming] = useState(false);
-  const [showAddModal, setShowAddModal]   = useState(false);
-  const [assignOrder, setAssignOrder]     = useState<Order | null>(null);
-  const [bulkDateModal, setBulkDateModal] = useState(false);
-  const [bulkDate, setBulkDate]           = useState("");
-  const [bulkSaving, setBulkSaving]       = useState(false);
+  const [showAddModal, setShowAddModal]     = useState(false);
+  const [assignOrder, setAssignOrder]       = useState<Order | null>(null);
+  const [bulkAssignModal, setBulkAssignModal] = useState(false);
+  const [bulkAssignSupplierId, setBulkAssignSupplierId] = useState("");
+  const [bulkAssigning, setBulkAssigning]   = useState(false);
+  const [bulkDateModal, setBulkDateModal]   = useState(false);
+  const [bulkDate, setBulkDate]             = useState("");
+  const [bulkSaving, setBulkSaving]         = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/sellers").then((r) => r.json()).then((d) => setSellers(d.sellers ?? []));
@@ -381,42 +382,27 @@ export default function AdminOrdersPage() {
     setBulkConfirming(false);
   }
 
-  // Get AWB for a single PROCESSING order
-  async function handleGetAwb(order: Order) {
-    setAwbActing(order.id);
-    const res = await fetch("/api/admin/deliveries/create-awb", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId: order.id }),
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      alert(`AWB error: ${data.error}`);
-    }
-    setAwbActing(null);
-    await fetchOrders();
-  }
-
-  // Bulk get AWB for selected PROCESSING orders without AWB
-  async function handleBulkGetAwb() {
+  // Bulk assign supplier to all selected unassigned orders
+  async function handleBulkAssign() {
+    if (!bulkAssignSupplierId) return;
     const targets = Array.from(selected).filter(id => {
       const o = orders.find(o => o.id === id);
-      return o?.status === "PROCESSING" && !o.awbNumber;
+      return o && !o.supplierId && !["DELIVERED", "CANCELLED", "RTO"].includes(o.status);
     });
-    if (targets.length === 0) { alert("No PROCESSING orders without AWB selected"); return; }
-    setBulkAwbing(true);
-    const results = await Promise.allSettled(targets.map(orderId =>
-      fetch("/api/admin/deliveries/create-awb", {
+    if (targets.length === 0) { alert("No unassigned orders selected"); return; }
+    setBulkAssigning(true);
+    await Promise.allSettled(targets.map(orderId =>
+      fetch(`/api/admin/orders/${orderId}/assign-supplier`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
-      }).then(r => r.json())
+        body: JSON.stringify({ supplierId: bulkAssignSupplierId }),
+      })
     ));
-    const failed = results.filter(r => r.status === "rejected" || (r.status === "fulfilled" && r.value?.error));
-    if (failed.length > 0) alert(`${failed.length} order(s) failed to get AWB`);
     setSelected(new Set());
+    setBulkAssignModal(false);
+    setBulkAssignSupplierId("");
     await fetchOrders();
-    setBulkAwbing(false);
+    setBulkAssigning(false);
   }
 
   async function handleDelete(orderIds: string[]) {
@@ -454,10 +440,10 @@ export default function AdminOrdersPage() {
     setSelected(selected.size === orders.length ? new Set() : new Set(orders.map((o) => o.id)));
   }
 
-  const newSelectedCount = Array.from(selected).filter(id => orders.find(o => o.id === id)?.status === "NEW").length;
-  const awbSelectedCount = Array.from(selected).filter(id => {
+  const newSelectedCount          = Array.from(selected).filter(id => orders.find(o => o.id === id)?.status === "NEW").length;
+  const unassignedSelectedCount   = Array.from(selected).filter(id => {
     const o = orders.find(o => o.id === id);
-    return o?.status === "PROCESSING" && !o.awbNumber;
+    return o && !o.supplierId && !["DELIVERED", "CANCELLED", "RTO"].includes(o.status);
   }).length;
 
   return (
@@ -519,14 +505,13 @@ export default function AdminOrdersPage() {
                     {bulkConfirming ? "Confirming..." : `Confirm New (${newSelectedCount})`}
                   </button>
                 )}
-                {awbSelectedCount > 0 && (
+                {unassignedSelectedCount > 0 && (
                   <button
-                    onClick={handleBulkGetAwb}
-                    disabled={bulkAwbing}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
-                    style={{ background: "#FFF7ED", color: "#C2410C", border: "1px solid #FED7AA" }}>
-                    <Truck className="w-3.5 h-3.5" />
-                    {bulkAwbing ? "Getting AWB..." : `Get AWB (${awbSelectedCount})`}
+                    onClick={() => { setBulkAssignSupplierId(""); setBulkAssignModal(true); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                    style={{ background: "#F0FDF4", color: "#15803D", border: "1px solid #BBF7D0" }}>
+                    <UserCheck className="w-3.5 h-3.5" />
+                    Assign Supplier ({unassignedSelectedCount})
                   </button>
                 )}
                 <button
@@ -557,21 +542,19 @@ export default function AdminOrdersPage() {
                       <input type="checkbox" checked={selected.size === orders.length && orders.length > 0}
                         onChange={toggleAll} className="rounded cursor-pointer" />
                     </th>
-                    {["Order #", "Seller", "Customer", "Products", "Amount", "AWB", "Status", "Supplier", "Date", "Actions"].map((h) => (
+                    {["Order #", "Seller", "Customer", "Products", "Amount", "Status", "Supplier", "Date", "Actions"].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {orders.length === 0 ? (
-                    <tr><td colSpan={11} className="py-12 text-center text-gray-400 text-sm">No orders found</td></tr>
+                    <tr><td colSpan={10} className="py-12 text-center text-gray-400 text-sm">No orders found</td></tr>
                   ) : orders.map((order) => {
-                    const isSelected   = selected.has(order.id);
-                    const isActing     = quickActing === order.id;
-                    const isAwbActing  = awbActing === order.id;
-                    const isNew        = order.status === "NEW";
-                    const needsAwb     = order.status === "PROCESSING" && !order.awbNumber;
-                    const canAssign    = !order.supplierId && !["DELIVERED", "CANCELLED", "RTO"].includes(order.status);
+                    const isSelected = selected.has(order.id);
+                    const isActing   = quickActing === order.id;
+                    const isNew      = order.status === "NEW";
+                    const canAssign  = !order.supplierId && !["DELIVERED", "CANCELLED", "RTO"].includes(order.status);
                     return (
                       <tr key={order.id} className={`hover:bg-gray-50/50 transition-colors ${isSelected ? "bg-blue-50/30" : ""}`}>
                         <td className="px-4 py-3">
@@ -584,7 +567,6 @@ export default function AdminOrdersPage() {
                           {order.items.map((i) => `${i.name} ×${i.quantity}`).join(", ") || "—"}
                         </td>
                         <td className="px-4 py-3 text-sm font-semibold text-gray-800 whitespace-nowrap">₹{order.totalAmount.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-xs text-gray-500 font-mono">{order.awbNumber || "—"}</td>
                         <td className="px-4 py-3">
                           <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-600"}`}>
                             {order.status}
@@ -644,27 +626,13 @@ export default function AdminOrdersPage() {
                                 </button>
                               </>
                             ) : (
-                              <>
-                                {needsAwb && (
-                                  <button
-                                    onClick={() => handleGetAwb(order)}
-                                    disabled={isAwbActing}
-                                    title="Get AWB from Delhivery"
-                                    className="p-1.5 rounded-lg transition-colors disabled:opacity-40"
-                                    style={{ color: "#C2410C", background: "#FFF7ED" }}>
-                                    {isAwbActing
-                                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                      : <Truck className="w-3.5 h-3.5" />}
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => handleDelete([order.id])}
-                                  disabled={deleting}
-                                  title="Delete order"
-                                  className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </>
+                              <button
+                                onClick={() => handleDelete([order.id])}
+                                disabled={deleting}
+                                title="Delete order"
+                                className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             )}
                           </div>
                         </td>
@@ -693,6 +661,43 @@ export default function AdminOrdersPage() {
           onClose={() => setAssignOrder(null)}
           onSaved={fetchOrders}
         />
+      )}
+
+      {bulkAssignModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-bold text-gray-900">Assign Supplier</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Assign {unassignedSelectedCount} order{unassignedSelectedCount !== 1 ? "s" : ""} to a supplier</p>
+              </div>
+              <button onClick={() => setBulkAssignModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Supplier</label>
+            <select value={bulkAssignSupplierId} onChange={(e) => setBulkAssignSupplierId(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 mb-4 bg-white">
+              <option value="">Select supplier...</option>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>{s.name || s.email}</option>
+              ))}
+            </select>
+            <div className="flex gap-2">
+              <button onClick={() => setBulkAssignModal(false)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">
+                Cancel
+              </button>
+              <button onClick={handleBulkAssign} disabled={bulkAssigning || !bulkAssignSupplierId}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl disabled:opacity-50"
+                style={{ background: "#00C67A" }}>
+                {bulkAssigning
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Assigning...</>
+                  : <><UserCheck className="w-4 h-4" /> Assign {unassignedSelectedCount} Orders</>}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {bulkDateModal && (
