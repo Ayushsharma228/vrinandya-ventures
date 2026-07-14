@@ -22,14 +22,35 @@ const SELECT = {
 };
 
 export async function GET(req: NextRequest) {
-  const ref = req.nextUrl.searchParams.get("id")?.trim();
+  const ref      = req.nextUrl.searchParams.get("id")?.trim();
+  const sellerId = req.nextUrl.searchParams.get("sellerId")?.trim();
+
   if (!ref) return NextResponse.json({ error: "id param required" }, { status: 400 });
 
-  // 1. Try exact match by internal DB id (CUID — from the seller's copy-link button)
+  // When a sellerId is provided (store-scoped lookup from the 2-step tracking flow),
+  // skip the global CUID search and only look within that seller's orders.
+  if (sellerId) {
+    const withHash    = ref.startsWith("#") ? ref : `#${ref}`;
+    const withoutHash = ref.startsWith("#") ? ref.slice(1) : ref;
+
+    const order = await prisma.order.findFirst({
+      where: {
+        sellerId,
+        externalOrderId: { in: [withHash, withoutHash] },
+      },
+      select: SELECT,
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    return NextResponse.json({ order });
+  }
+
+  // No sellerId — this is a direct CUID link (from seller's copy-link button).
   const byId = await prisma.order.findUnique({ where: { id: ref }, select: SELECT });
   if (byId) return NextResponse.json({ order: byId });
 
-  // 2. Shopify stores order names as "#1039" — normalise so both "1039" and "#1039" work
+  // Fallback: try externalOrderId search (older links).
   const withHash    = ref.startsWith("#") ? ref : `#${ref}`;
   const withoutHash = ref.startsWith("#") ? ref.slice(1) : ref;
 
@@ -43,6 +64,6 @@ export async function GET(req: NextRequest) {
   if (byExtId.length === 0) return NextResponse.json({ error: "Order not found" }, { status: 404 });
   if (byExtId.length === 1) return NextResponse.json({ order: byExtId[0] });
 
-  // Multiple stores with the same order number — return list for disambiguation
-  return NextResponse.json({ multiple: true, orders: byExtId });
+  // Multiple stores matched — signal the UI to show the store-picker step.
+  return NextResponse.json({ needsStore: true });
 }
