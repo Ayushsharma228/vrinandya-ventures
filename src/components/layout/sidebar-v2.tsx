@@ -61,6 +61,12 @@ const adminGroups: NavGroup[] = [
     ],
   },
   {
+    label: "Analytics",
+    items: [
+      { label: "Analytics",         href: "/admin/analytics",   icon: BarChart2 },
+    ],
+  },
+  {
     label: "Sales",
     items: [
       { label: "CRM",               href: "/admin/crm",         icon: UserCheck },
@@ -101,8 +107,14 @@ const sellerGroups: NavGroup[] = [
   {
     label: "Finance",
     items: [
-      { label: "Wallet",            href: "/seller/wallet",     icon: Wallet },
+      { label: "Wallet",            href: "/seller/wallet",      icon: Wallet },
       { label: "Settlements",       href: "/seller/settlements", icon: Receipt },
+    ],
+  },
+  {
+    label: "Analytics",
+    items: [
+      { label: "Analytics",         href: "/seller/analytics",  icon: BarChart2 },
     ],
   },
   {
