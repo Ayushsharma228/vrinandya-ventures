@@ -52,10 +52,14 @@ interface SupplierPayment {
 function fmt(n: number) { return `₹${Math.abs(n).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`; }
 
 const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }> = {
-  PENDING:  { bg: "#FFF7ED", color: "#D97706", label: "Pending" },
-  APPROVED: { bg: "#EFF6FF", color: "#2563EB", label: "Approved" },
-  PAID:     { bg: "#F0FDF4", color: "#15803D", label: "Paid" },
-  CANCELLED:{ bg: "#FEF2F2", color: "#DC2626", label: "Cancelled" },
+  PENDING:    { bg: "#FFF7ED", color: "#D97706", label: "Pending" },
+  PROCESSING: { bg: "#EFF6FF", color: "#2563EB", label: "Processing" },
+  APPROVED:   { bg: "#EFF6FF", color: "#2563EB", label: "Approved" },
+  SETTLED:    { bg: "#F5F3FF", color: "#7C3AED", label: "Settled" },
+  PAID:       { bg: "#F0FDF4", color: "#15803D", label: "Paid" },
+  CANCELLED:  { bg: "#FEF2F2", color: "#DC2626", label: "Cancelled" },
+  REVERSED:   { bg: "#FEF2F2", color: "#DC2626", label: "Reversed" },
+  DISPUTED:   { bg: "#FFF7ED", color: "#B45309", label: "Disputed" },
 };
 
 const TABS = ["Overview", "Settlements", "Supplier Payments"] as const;
@@ -240,19 +244,38 @@ export default function AdminFinancePage() {
         {/* Settlements Tab */}
         {tab === "Settlements" && (
           <div className="card overflow-hidden">
-            <div className="px-5 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
+            <div className="px-5 py-3 flex items-center gap-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)" }}>
               <Filter className="w-4 h-4" style={{ color: "var(--text-400)" }} />
               <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
                 className="text-xs rounded-lg px-3 py-1.5 border"
                 style={{ background: "var(--bg-card)", color: "var(--text-900)", borderColor: "var(--border)" }}>
                 <option value="">All Status</option>
-                {["PENDING","PROCESSING","SETTLED","PAID"].map(s => <option key={s} value={s}>{s}</option>)}
+                {["PENDING","PROCESSING","SETTLED","PAID","REVERSED","DISPUTED"].map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
               </select>
               {list && (
-                <span className="ml-auto text-xs" style={{ color: "var(--text-400)" }}>
+                <span className="text-xs" style={{ color: "var(--text-400)" }}>
                   {list.total} settlements · ₹{list.summary.grossRevenue.toLocaleString("en-IN")} gross
                 </span>
               )}
+              <div className="ml-auto flex items-center gap-2">
+                <a href="/api/admin/finance/export?type=settlements"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                  style={{ border: "1px solid var(--border)", color: "var(--text-400)" }}>
+                  <Download className="w-3.5 h-3.5" /> Settlements CSV
+                </a>
+                <a href="/api/admin/finance/export?type=supplier-payments"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                  style={{ border: "1px solid var(--border)", color: "var(--text-400)" }}>
+                  <Download className="w-3.5 h-3.5" /> Supplier CSV
+                </a>
+                <a href="/api/admin/finance/export?type=ledger"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                  style={{ border: "1px solid var(--border)", color: "var(--text-400)" }}>
+                  <Download className="w-3.5 h-3.5" /> Ledger CSV
+                </a>
+              </div>
             </div>
             {loading ? (
               <div className="p-8 flex justify-center">

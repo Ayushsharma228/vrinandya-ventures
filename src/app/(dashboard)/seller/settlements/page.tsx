@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  Receipt, TrendingUp, ChevronLeft, ChevronRight, RefreshCw, IndianRupee,
+  Receipt, TrendingUp, ChevronLeft, ChevronRight, RefreshCw, IndianRupee, Download,
 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
@@ -40,6 +40,8 @@ const STATUS_BADGE: Record<string, { bg: string; color: string }> = {
   PROCESSING: { bg: "#EFF6FF", color: "#2563EB" },
   SETTLED:    { bg: "#F5F3FF", color: "#7C3AED" },
   PAID:       { bg: "#F0FDF4", color: "#15803D" },
+  REVERSED:   { bg: "#FEF2F2", color: "#DC2626" },
+  DISPUTED:   { bg: "#FFF7ED", color: "#B45309" },
 };
 
 export default function SellerSettlementsPage() {
@@ -88,20 +90,25 @@ export default function SellerSettlementsPage() {
 
       <div className="px-4 md:px-8 py-6 space-y-6">
         <div className="card overflow-hidden">
-          <div className="px-5 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
+          <div className="px-5 py-3 flex items-center gap-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)" }}>
             <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
               className="text-xs rounded-lg px-3 py-1.5 border"
               style={{ background: "var(--bg-card)", color: "var(--text-900)", borderColor: "var(--border)" }}>
               <option value="">All Status</option>
-              {["PENDING","PROCESSING","SETTLED","PAID"].map(st => (
+              {["PENDING","PROCESSING","SETTLED","PAID","REVERSED","DISPUTED"].map(st => (
                 <option key={st} value={st}>{st}</option>
               ))}
             </select>
             {data && (
-              <span className="ml-auto text-xs" style={{ color: "var(--text-400)" }}>
+              <span className="text-xs" style={{ color: "var(--text-400)" }}>
                 {data.total} settlements
               </span>
             )}
+            <a href="/api/seller/settlements/export"
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+              style={{ border: "1px solid var(--border)", color: "var(--text-400)" }}>
+              <Download className="w-3.5 h-3.5" /> Export CSV
+            </a>
           </div>
 
           {loading ? (
