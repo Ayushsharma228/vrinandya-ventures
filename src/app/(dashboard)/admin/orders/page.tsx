@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ShoppingCart, Trash2, Plus, X, Loader2, CalendarDays, CheckCircle2, XCircle, UserCheck } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, X, Loader2, CalendarDays, CheckCircle2, XCircle, UserCheck, Download } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 interface Seller   { id: string; name: string | null; email: string; }
@@ -14,7 +14,7 @@ interface Order {
   supplierId: string | null;
   awbNumber: string | null;
   customerName: string | null;
-  customerAddress: { phone?: string } | null;
+  customerAddress: { phone?: string; address?: string; address1?: string; city?: string; state?: string; province?: string; pincode?: string; zip?: string } | null;
   totalAmount: number;
   createdAt: string;
   seller:   { id: string; name: string | null; email: string };
@@ -433,6 +433,40 @@ export default function AdminOrdersPage() {
     setBulkSaving(false);
   }
 
+  function exportToCSV(exportOrders: Order[]) {
+    const headers = ["Order ID", "Customer Name", "Phone", "Address", "City", "State", "Pincode", "Items", "Amount (₹)", "Status"];
+    const rows = exportOrders.map((o) => {
+      const addr = o.customerAddress ?? {};
+      const phone   = addr.phone   ?? "";
+      const address = addr.address ?? addr.address1 ?? "";
+      const city    = addr.city    ?? "";
+      const state   = addr.state   ?? addr.province ?? "";
+      const pincode = addr.pincode ?? addr.zip      ?? "";
+      const items   = o.items.map((i) => `${i.name} x${i.quantity}`).join(" | ");
+      return [
+        o.externalOrderId,
+        o.customerName ?? "",
+        phone,
+        address,
+        city,
+        state,
+        pincode,
+        items,
+        o.totalAmount.toString(),
+        o.status,
+      ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",");
+    });
+
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `orders-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function toggleSelect(id: string) {
     setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   }
@@ -493,6 +527,13 @@ export default function AdminOrdersPage() {
                 Orders ({orders.length})
               </span>
             </div>
+            <button
+              onClick={() => exportToCSV(selected.size > 0 ? orders.filter((o) => selected.has(o.id)) : orders)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+              style={{ background: "#F0FDF4", color: "#16A34A", border: "1px solid #D1FAE5" }}>
+              <Download className="w-3.5 h-3.5" />
+              {selected.size > 0 ? `Export (${selected.size})` : `Export All (${orders.length})`}
+            </button>
             {selected.size > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
                 {newSelectedCount > 0 && (
