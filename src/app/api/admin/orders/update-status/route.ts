@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { generateSettlement } from "@/lib/settlement-service";
+import { reverseSettlement } from "@/lib/rto-service";
 
 const VALID_STATUSES = ["NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "RTO"];
 
@@ -27,13 +28,19 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Auto-generate settlement when order is delivered
   if (status === "DELIVERED") {
     try {
       await generateSettlement(orderId);
     } catch (err) {
-      // Log but don't fail the status update
       console.error(`Settlement generation failed for ${orderId}:`, err);
+    }
+  }
+
+  if (status === "RTO") {
+    try {
+      await reverseSettlement(orderId);
+    } catch (err) {
+      console.error(`RTO reversal failed for ${orderId}:`, err);
     }
   }
 
