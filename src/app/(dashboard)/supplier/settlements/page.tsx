@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Receipt, TrendingUp, Clock, CheckCircle, RefreshCw } from "lucide-react";
+import { Receipt, TrendingUp, Clock, CheckCircle, RefreshCw, ChevronLeft, ChevronRight, IndianRupee } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 type Transaction = {
@@ -15,6 +15,18 @@ type Transaction = {
   createdAt: string;
 };
 
+type SupplierPayment = {
+  id: string;
+  amount: number;
+  status: string;
+  dueDate: string | null;
+  paidAt: string | null;
+  referenceNo: string | null;
+  invoiceNo: string | null;
+  createdAt: string;
+  order: { id: string; externalOrderId: string; customerName: string | null; status: string } | null;
+};
+
 const TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; sign: string }> = {
   CREDIT:  { label: "Credit",  color: "#15803D", bg: "#F0FDF4", sign: "+" },
   DEBIT:   { label: "Debit",   color: "#DC2626", bg: "#FEF2F2", sign: "−" },
@@ -22,11 +34,24 @@ const TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; si
   RELEASE: { label: "Release", color: "#7C3AED", bg: "#F5F3FF", sign: "↑" },
 };
 
+const PAYMENT_BADGE: Record<string, { bg: string; color: string }> = {
+  PENDING:  { bg: "#FFF7ED", color: "#D97706" },
+  APPROVED: { bg: "#EFF6FF", color: "#2563EB" },
+  PAID:     { bg: "#F0FDF4", color: "#15803D" },
+  CANCELLED:{ bg: "#FEF2F2", color: "#DC2626" },
+};
+
 export default function SupplierSettlementsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [balance, setBalance] = useState(0);
   const [pending, setPending] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [payments, setPayments] = useState<SupplierPayment[]>([]);
+  const [payTotal, setPayTotal]   = useState(0);
+  const [payPage, setPayPage]     = useState(1);
+  const [payPages, setPayPages]   = useState(1);
+  const [payStatus, setPayStatus] = useState("");
+  const [payLoading, setPayLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -41,7 +66,22 @@ export default function SupplierSettlementsPage() {
     }
   }, []);
 
+  const fetchPayments = useCallback(async () => {
+    setPayLoading(true);
+    const params = new URLSearchParams({ page: String(payPage), limit: "15" });
+    if (payStatus) params.set("status", payStatus);
+    const r = await fetch(`/api/supplier/payments?${params}`);
+    if (r.ok) {
+      const d = await r.json();
+      setPayments(d.payments ?? []);
+      setPayTotal(d.total ?? 0);
+      setPayPages(d.pages ?? 1);
+    }
+    setPayLoading(false);
+  }, [payPage, payStatus]);
+
   useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchPayments(); }, [fetchPayments]);
 
   const totalCredits = transactions.filter((t) => t.type === "CREDIT").reduce((s, t) => s + t.amount, 0);
   const totalDebits  = transactions.filter((t) => t.type === "DEBIT").reduce((s, t) => s + t.amount, 0);
@@ -134,6 +174,113 @@ export default function SupplierSettlementsPage() {
             </div>
           </div>
         )}
+
+        {/* Per-Order Payment Tracking */}
+        <div className="mt-8">
+          <h2 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-900)" }}>
+            <IndianRupee className="w-4 h-4" style={{ color: "var(--accent)" }} />
+            Order Payment Status
+          </h2>
+          <div className="card overflow-hidden">
+            <div className="px-5 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
+              <select value={payStatus} onChange={e => { setPayStatus(e.target.value); setPayPage(1); }}
+                className="text-xs rounded-lg px-3 py-1.5 border"
+                style={{ background: "var(--bg-card)", color: "var(--text-900)", borderColor: "var(--border)" }}>
+                <option value="">All</option>
+                {["PENDING","APPROVED","PAID","CANCELLED"].map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <span className="ml-auto text-xs" style={{ color: "var(--text-400)" }}>
+                {payTotal} payment{payTotal !== 1 ? "s" : ""}
+              </span>
+            </div>
+            {payLoading ? (
+              <div className="p-6 flex justify-center">
+                <RefreshCw className="w-4 h-4 animate-spin" style={{ color: "var(--text-300)" }} />
+              </div>
+            ) : payments.length === 0 ? (
+              <div className="py-12 flex flex-col items-center gap-2">
+                <Receipt className="w-8 h-8" style={{ color: "var(--border)" }} />
+                <p className="text-sm" style={{ color: "var(--text-400)" }}>No payment records yet</p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
+                        {["Date","Order","Customer","Amount","Status","Due","Paid On","Reference"].map(h => (
+                          <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
+                            style={{ color: "var(--text-400)" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y" style={{ borderColor: "var(--border)" }}>
+                      {payments.map((p) => {
+                        const badge = PAYMENT_BADGE[p.status] ?? PAYMENT_BADGE.PENDING;
+                        return (
+                          <tr key={p.id} className="hover:bg-gray-50/50">
+                            <td className="px-4 py-3 text-xs" style={{ color: "var(--text-400)" }}>
+                              {new Date(p.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}
+                            </td>
+                            <td className="px-4 py-3 font-mono text-xs font-medium" style={{ color: "var(--text-900)" }}>
+                              {p.order?.externalOrderId ?? p.order?.id?.slice(-8) ?? "—"}
+                            </td>
+                            <td className="px-4 py-3 text-xs" style={{ color: "var(--text-500)" }}>
+                              {p.order?.customerName ?? "—"}
+                            </td>
+                            <td className="px-4 py-3 text-xs font-semibold" style={{ color: "#D97706" }}>
+                              ₹{p.amount.toLocaleString("en-IN")}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
+                                style={{ background: badge.bg, color: badge.color }}>
+                                {p.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-xs" style={{ color: "var(--text-400)" }}>
+                              {p.dueDate
+                                ? new Date(p.dueDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+                                : "—"}
+                            </td>
+                            <td className="px-4 py-3 text-xs" style={{ color: "#15803D" }}>
+                              {p.paidAt
+                                ? new Date(p.paidAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+                                : "—"}
+                            </td>
+                            <td className="px-4 py-3 text-xs font-mono" style={{ color: "var(--text-400)" }}>
+                              {p.referenceNo ?? "—"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {payPages > 1 && (
+                  <div className="px-5 py-3 flex items-center justify-between" style={{ borderTop: "1px solid var(--border)" }}>
+                    <span className="text-xs" style={{ color: "var(--text-400)" }}>
+                      Page {payPage} of {payPages}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button disabled={payPage <= 1} onClick={() => setPayPage(p => p - 1)}
+                        className="p-1 rounded-lg disabled:opacity-30"
+                        style={{ border: "1px solid var(--border)" }}>
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button disabled={payPage >= payPages} onClick={() => setPayPage(p => p + 1)}
+                        className="p-1 rounded-lg disabled:opacity-30"
+                        style={{ border: "1px solid var(--border)" }}>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

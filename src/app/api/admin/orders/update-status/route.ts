@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { generateSettlement } from "@/lib/settlement-service";
 
 const VALID_STATUSES = ["NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "RTO"];
 
@@ -25,6 +26,16 @@ export async function POST(req: NextRequest) {
       ...(orderDate ? { createdAt: new Date(orderDate) } : {}),
     },
   });
+
+  // Auto-generate settlement when order is delivered
+  if (status === "DELIVERED") {
+    try {
+      await generateSettlement(orderId);
+    } catch (err) {
+      // Log but don't fail the status update
+      console.error(`Settlement generation failed for ${orderId}:`, err);
+    }
+  }
 
   return NextResponse.json({ success: true });
 }

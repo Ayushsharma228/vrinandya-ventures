@@ -204,6 +204,7 @@ model User {
   supplierInventory        InventoryItem[]      @relation("SupplierInventory")
   supplierTransactions     SupplierTransaction[] @relation("SupplierTransactions")
   shippingProviders        SupplierShippingProvider[]
+  supplierPayments         SupplierPayment[]            @relation("SupplierPayments")
 
   @@map("users")
 }
@@ -433,6 +434,33 @@ enum SettlementStatus {
   DISPUTED
 }
 
+enum LedgerEntryType {
+  ORDER_DELIVERED
+  SETTLEMENT_GENERATED
+  WALLET_CREDITED
+  WALLET_DEBITED
+  SUPPLIER_PAYMENT_PENDING
+  SUPPLIER_PAYMENT_PAID
+  SELLER_PAYOUT
+  RTO_CHARGE
+  REFUND
+  ADJUSTMENT
+  AD_SPEND
+  PLATFORM_FEE
+}
+
+enum LedgerDirection {
+  CREDIT
+  DEBIT
+}
+
+enum SupplierPaymentStatus {
+  PENDING
+  APPROVED
+  PAID
+  CANCELLED
+}
+
 model AdSpend {
   id        String   @id @default(cuid())
   sellerId  String
@@ -453,6 +481,7 @@ model WalletTransaction {
   amount          Float
   note            String?
   orderId         String?
+  settlementId    String?      // links back to Settlement that generated this tx
   remittanceDate  DateTime?
   bankTxId        String?
   createdAt       DateTime     @default(now())
@@ -584,9 +613,10 @@ model Order {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
-  items         OrderItem[]
-  purchaseOrder PurchaseOrder?
-  timeline      OrderTimeline[]
+  items            OrderItem[]
+  purchaseOrder    PurchaseOrder?
+  timeline         OrderTimeline[]
+  supplierPayment  SupplierPayment?
 
   @@unique([sellerId, externalOrderId, source])
   @@map("orders")
@@ -681,27 +711,76 @@ model PlatformConfig {
 // ── Settlement ────────────────────────────────────────────────────────────────
 // Structured per-order settlement record (replaces free-text wallet notes)
 model Settlement {
-  id              String           @id @default(cuid())
-  orderId         String           @unique
-  sellerId        String
-  seller          User             @relation(fields: [sellerId], references: [id])
-  sellingPrice    Float
-  productCost     Float            @default(0)
-  shippingCharge  Float            @default(0)
-  packingCharge   Float            @default(0)
-  platformFee     Float            @default(0)
-  codFee          Float            @default(0)
-  rtoCharge       Float            @default(0)
-  otherDeductions Float            @default(0)
-  netPayable      Float
-  status          SettlementStatus @default(PENDING)
-  settledAt       DateTime?
-  walletTxId      String?
-  notes           String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id               String           @id @default(cuid())
+  orderId          String           @unique
+  sellerId         String
+  seller           User             @relation(fields: [sellerId], references: [id])
+  supplierId       String?          // supplier involved in this order
+  marketplace      String?          // SHOPIFY | AMAZON | FLIPKART | MEESHO
+  sellingPrice     Float
+  productCost      Float            @default(0)
+  shippingCharge   Float            @default(0)
+  packingCharge    Float            @default(0)
+  platformFee      Float            @default(0)
+  codFee           Float            @default(0)
+  rtoCharge        Float            @default(0)
+  otherDeductions  Float            @default(0)
+  marketplaceFee   Float            @default(0)  // Amazon/Flipkart platform cut
+  gstOnFees        Float            @default(0)  // 18% GST on platform commission
+  adSpend          Float            @default(0)  // attributed advertising cost
+  grossProfit      Float?           // sellingPrice - productCost
+  netProfit        Float?           // grossProfit minus all fees
+  netPayable       Float            // what seller receives (= sellerEarnings)
+  platformEarnings Float?           // platformFee - gstOnFees
+  supplierPayable  Float?           // productCost owed to supplier
+  status           SettlementStatus @default(PENDING)
+  settledAt        DateTime?
+  walletTxId       String?
+  notes            String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   @@map("settlements")
+}
+
+// ── Ledger (immutable financial event log) ────────────────────────────────────
+model LedgerEntry {
+  id            String          @id @default(cuid())
+  entryType     LedgerEntryType
+  direction     LedgerDirection
+  entityId      String          // sellerId, supplierId, or "PLATFORM"
+  entityType    String          // SELLER | SUPPLIER | PLATFORM
+  amount        Float
+  referenceId   String?         // orderId, settlementId, walletTxId
+  referenceType String?         // ORDER | SETTLEMENT | WALLET_TX | SUPPLIER_PAYMENT
+  description   String
+  metadata      Json?
+  createdAt     DateTime        @default(now())
+
+  @@index([entityId])
+  @@index([referenceId])
+  @@map("ledger_entries")
+}
+
+// ── Supplier Payment (what AXQEN owes supplier per dispatched order) ──────────
+model SupplierPayment {
+  id          String                @id @default(cuid())
+  supplierId  String
+  supplier    User                  @relation("SupplierPayments", fields: [supplierId], references: [id])
+  orderId     String                @unique
+  order       Order                 @relation(fields: [orderId], references: [id])
+  amount      Float
+  status      SupplierPaymentStatus @default(PENDING)
+  dueDate     DateTime?
+  paidAt      DateTime?
+  referenceNo String?
+  bankTxId    String?
+  invoiceNo   String?
+  notes       String?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@map("supplier_payments")
 }
 
 // ── Organization ──────────────────────────────────────────────────────────────

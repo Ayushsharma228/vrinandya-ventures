@@ -7,6 +7,7 @@ import {
   customCreateShipment,
   ShipmentInput,
 } from "@/lib/shipping-adapters";
+import { decrypt } from "@/lib/encrypt";
 
 export async function POST(
   req: NextRequest,
@@ -60,19 +61,22 @@ export async function POST(
 
   let result: { awb: string; courier: string; trackingUrl?: string };
 
+  const plainApiKey    = provider.apiKey    ? decrypt(provider.apiKey)    : null;
+  const plainApiSecret = provider.apiSecret ? decrypt(provider.apiSecret) : null;
+
   try {
     if (provider.provider === "SHIPROCKET") {
-      if (!provider.apiKey || !provider.apiSecret)
+      if (!plainApiKey || !plainApiSecret)
         return NextResponse.json({ error: "Shiprocket email/password not configured" }, { status: 400 });
-      result = await shiprocketCreateShipment(provider.apiKey, provider.apiSecret, input);
+      result = await shiprocketCreateShipment(plainApiKey, plainApiSecret, input);
     } else if (provider.provider === "DELHIVERY") {
-      if (!provider.apiKey)
+      if (!plainApiKey)
         return NextResponse.json({ error: "Delhivery API token not configured" }, { status: 400 });
-      result = await delhiveryCreateShipment(provider.apiKey, input);
+      result = await delhiveryCreateShipment(plainApiKey, input);
     } else if (provider.provider === "CUSTOM") {
-      if (!provider.apiKey || !provider.baseUrl)
+      if (!plainApiKey || !provider.baseUrl)
         return NextResponse.json({ error: "Custom provider API key/URL not configured" }, { status: 400 });
-      result = await customCreateShipment(provider.apiKey, provider.baseUrl, input);
+      result = await customCreateShipment(plainApiKey, provider.baseUrl, input);
     } else {
       return NextResponse.json({ error: "Unknown provider type" }, { status: 400 });
     }

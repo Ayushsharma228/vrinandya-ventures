@@ -101,6 +101,12 @@ export async function delhiveryCreateShipment(
     }
   } catch { /* use default */ }
 
+  const returnAddress = process.env.RETURN_ADDRESS ?? "";
+  const returnCity    = process.env.RETURN_CITY    ?? "";
+  const returnState   = process.env.RETURN_STATE   ?? "";
+  const returnPincode = process.env.RETURN_PINCODE ?? "";
+  const returnPhone   = process.env.RETURN_PHONE   ?? "";
+
   const payload = {
     shipments: [{
       name: input.customerName,
@@ -112,8 +118,12 @@ export async function delhiveryCreateShipment(
       phone: input.phone.replace(/\D/g, "").slice(-10),
       order: input.externalOrderId,
       payment_mode: "COD",
-      return_pin: "", return_city: "", return_phone: "",
-      return_add: "", return_state: "", return_country: "India",
+      return_pin:     returnPincode,
+      return_city:    returnCity,
+      return_phone:   returnPhone,
+      return_add:     returnAddress,
+      return_state:   returnState,
+      return_country: "India",
       products_desc: input.productDesc,
       hsn_code: "",
       cod_amount: input.totalAmount,

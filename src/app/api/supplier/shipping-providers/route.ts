@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { encrypt, decrypt } from "@/lib/encrypt";
 
 export async function GET(req: NextRequest) {
   const session = await getRouteSession(req);
@@ -14,11 +15,14 @@ export async function GET(req: NextRequest) {
       apiKey: true }, // apiKey shown masked on client
   });
 
-  // Mask apiKey — show only last 4 chars
-  const masked = providers.map((p) => ({
-    ...p,
-    apiKey: p.apiKey ? `${"*".repeat(Math.max(0, p.apiKey.length - 4))}${p.apiKey.slice(-4)}` : null,
-  }));
+  // Decrypt then mask — show only last 4 chars of the plaintext
+  const masked = providers.map((p) => {
+    const plain = p.apiKey ? decrypt(p.apiKey) : null;
+    return {
+      ...p,
+      apiKey: plain ? `${"*".repeat(Math.max(0, plain.length - 4))}${plain.slice(-4)}` : null,
+    };
+  });
 
   return NextResponse.json({ providers: masked });
 }
@@ -37,8 +41,8 @@ export async function POST(req: NextRequest) {
       supplierId: session.user.id,
       provider,
       label,
-      apiKey:    apiKey    || null,
-      apiSecret: apiSecret || null,
+      apiKey:    apiKey    ? encrypt(apiKey)    : null,
+      apiSecret: apiSecret ? encrypt(apiSecret) : null,
       baseUrl:   baseUrl   || null,
     },
   });

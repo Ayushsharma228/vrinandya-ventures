@@ -10,32 +10,41 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const search   = searchParams.get("search") ?? "";
-  const status   = searchParams.get("status") ?? "";
+  const search   = searchParams.get("search")   ?? "";
+  const status   = searchParams.get("status")   ?? "";
   const sellerId = searchParams.get("sellerId") ?? "";
+  const page     = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
+  const limit    = Math.min(100, parseInt(searchParams.get("limit") ?? "50"));
 
-  const orders = await prisma.order.findMany({
-    where: {
-      ...(sellerId ? { sellerId } : {}),
-      ...(status ? { status: status as never } : {}),
-      ...(search ? {
-        OR: [
-          { externalOrderId: { contains: search, mode: "insensitive" } },
-          { customerName:    { contains: search, mode: "insensitive" } },
-          { awbNumber:       { contains: search, mode: "insensitive" } },
-          { items: { some: { name: { contains: search, mode: "insensitive" } } } },
-        ],
-      } : {}),
-    },
-    orderBy: { createdAt: "desc" },
-    include: {
-      seller:   { select: { id: true, name: true, email: true } },
-      supplier: { select: { id: true, name: true, email: true } },
-      items:    { select: { name: true, quantity: true } },
-    },
-  });
+  const where = {
+    ...(sellerId ? { sellerId } : {}),
+    ...(status   ? { status: status as never } : {}),
+    ...(search   ? {
+      OR: [
+        { externalOrderId: { contains: search, mode: "insensitive" as const } },
+        { customerName:    { contains: search, mode: "insensitive" as const } },
+        { awbNumber:       { contains: search, mode: "insensitive" as const } },
+        { items: { some: { name: { contains: search, mode: "insensitive" as const } } } },
+      ],
+    } : {}),
+  };
 
-  return NextResponse.json({ orders });
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip:    (page - 1) * limit,
+      take:    limit,
+      include: {
+        seller:   { select: { id: true, name: true, email: true } },
+        supplier: { select: { id: true, name: true, email: true } },
+        items:    { select: { name: true, quantity: true } },
+      },
+    }),
+    prisma.order.count({ where }),
+  ]);
+
+  return NextResponse.json({ orders, total, page, pages: Math.ceil(total / limit), limit });
 }
 
 // PATCH — bulk date update

@@ -53,6 +53,7 @@ const adminGroups: NavGroup[] = [
   {
     label: "Finance",
     items: [
+      { label: "Finance OS",        href: "/admin/finance",     icon: TrendingUp },
       { label: "Remittance",        href: "/admin/remittance",  icon: BadgeIndianRupee },
       { label: "Meta Ads Spend",    href: "/admin/ad-spend",    icon: Megaphone },
     ],
@@ -99,6 +100,7 @@ const sellerGroups: NavGroup[] = [
     label: "Finance",
     items: [
       { label: "Wallet",            href: "/seller/wallet",     icon: Wallet },
+      { label: "Settlements",       href: "/seller/settlements", icon: Receipt },
     ],
   },
   {

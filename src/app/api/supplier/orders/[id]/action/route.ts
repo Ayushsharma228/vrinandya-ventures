@@ -61,7 +61,7 @@ export async function POST(
 
   const order = await prisma.order.findFirst({
     where: { id, supplierId: session.user.id },
-    include: { purchaseOrder: true },
+    include: { purchaseOrder: true, items: { select: { productId: true, quantity: true } } },
   });
 
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -137,6 +137,24 @@ export async function POST(
   }
 
   await prisma.$transaction(ops);
+
+  // Update inventory quantities when order is dispatched
+  if (action === "DISPATCH") {
+    try {
+      for (const item of order.items ?? []) {
+        if (!item.productId) continue;
+        await prisma.inventoryItem.updateMany({
+          where: { productId: item.productId },
+          data: {
+            availableQty: { decrement: item.quantity },
+            reservedQty:  { decrement: item.quantity },
+          },
+        });
+      }
+    } catch (err) {
+      console.error("Inventory update failed after dispatch:", err);
+    }
+  }
 
   return NextResponse.json({ success: true, supplierStatus: ACTION_TO_STATUS[action] });
 }
