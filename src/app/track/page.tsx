@@ -10,6 +10,7 @@ import {
 type TimelineEntry = { event: string; details: string | null; createdAt: string };
 
 type OrderData = {
+  id: string;
   externalOrderId: string;
   status: string;
   customerName: string | null;
@@ -20,6 +21,7 @@ type OrderData = {
   expectedDeliveryDate: string | null;
   dispatchedAt: string | null;
   createdAt: string;
+  seller: { brandName: string | null; name: string | null } | null;
   items: { name: string; quantity: number; price: number }[];
   timeline: TimelineEntry[];
 };
@@ -65,11 +67,12 @@ function TrackingContent() {
   const router = useRouter();
   const queryId = searchParams.get("id") ?? "";
 
-  const [input, setInput]       = useState(queryId);
-  const [order, setOrder]       = useState<OrderData | null>(null);
-  const [loading, setLoading]   = useState(false);
-  const [notFound, setNotFound] = useState(false);
-  const [searched, setSearched] = useState(false);
+  const [input, setInput]         = useState(queryId);
+  const [order, setOrder]         = useState<OrderData | null>(null);
+  const [multiple, setMultiple]   = useState<OrderData[]>([]);
+  const [loading, setLoading]     = useState(false);
+  const [notFound, setNotFound]   = useState(false);
+  const [searched, setSearched]   = useState(false);
 
   useEffect(() => {
     if (!queryId) return;
@@ -80,10 +83,16 @@ function TrackingContent() {
 
   async function lookup(id: string) {
     if (!id.trim()) return;
-    setLoading(true); setNotFound(false); setOrder(null); setSearched(true);
+    setLoading(true); setNotFound(false); setOrder(null); setMultiple([]); setSearched(true);
     const res = await fetch(`/api/track?id=${encodeURIComponent(id.trim())}`);
     const d = await res.json();
-    if (!res.ok || d.error) { setNotFound(true); } else { setOrder(d.order); }
+    if (!res.ok || d.error) {
+      setNotFound(true);
+    } else if (d.multiple) {
+      setMultiple(d.orders);
+    } else {
+      setOrder(d.order);
+    }
     setLoading(false);
   }
 
@@ -135,6 +144,35 @@ function TrackingContent() {
             We couldn&apos;t find order <span className="font-mono font-bold text-gray-600">#{input}</span>.
             Double-check the ID and try again.
           </p>
+        </div>
+      )}
+
+      {!loading && multiple.length > 1 && (
+        <div className="bg-white rounded-2xl overflow-hidden" style={{ border: "1px solid #E2E8F0" }}>
+          <div className="px-5 py-4 border-b border-gray-50">
+            <p className="text-sm font-semibold text-gray-900">Multiple orders found</p>
+            <p className="text-xs text-gray-400 mt-0.5">Order #{input.replace(/^#/, "")} exists across multiple stores. Select yours:</p>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {multiple.map((o) => (
+              <button key={o.id} onClick={() => { setOrder(o); setMultiple([]); }}
+                className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{o.seller?.brandName || o.seller?.name || "Store"}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {o.customerName ?? "—"} · ₹{new Intl.NumberFormat("en-IN").format(o.totalAmount)} · {new Date(o.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                  </p>
+                </div>
+                <span className="text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0"
+                  style={{
+                    background: o.status === "DELIVERED" ? "#F0FDF4" : o.status === "CANCELLED" ? "#F9FAFB" : "#EFF6FF",
+                    color:      o.status === "DELIVERED" ? "#16A34A" : o.status === "CANCELLED" ? "#6B7280" : "#3B82F6",
+                  }}>
+                  {o.status}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
