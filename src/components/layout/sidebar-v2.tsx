@@ -48,6 +48,7 @@ const adminGroups: NavGroup[] = [
     label: "Suppliers",
     items: [
       { label: "Purchase Orders",   href: "/admin/purchase-orders", icon: ClipboardList },
+      { label: "Inventory",         href: "/admin/inventory",       icon: Boxes },
     ],
   },
   {

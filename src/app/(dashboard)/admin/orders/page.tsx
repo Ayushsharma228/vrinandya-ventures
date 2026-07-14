@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ShoppingCart, Trash2, Plus, X, Loader2, CalendarDays, CheckCircle2, XCircle, UserCheck, Download } from "lucide-react";
+import Link from "next/link";
+import { ShoppingCart, Trash2, Plus, X, Loader2, CalendarDays, CheckCircle2, XCircle, UserCheck, Download, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 interface Seller   { id: string; name: string | null; email: string; }
@@ -303,6 +304,10 @@ export default function AdminOrdersPage() {
   const [sellers, setSellers]             = useState<Seller[]>([]);
   const [suppliers, setSuppliers]         = useState<Supplier[]>([]);
   const [orders, setOrders]               = useState<Order[]>([]);
+  const [totalOrders, setTotalOrders]     = useState(0);
+  const [page, setPage]                   = useState(1);
+  const [totalPages, setTotalPages]       = useState(1);
+  const PAGE_LIMIT = 50;
   const [loading, setLoading]             = useState(true);
   const [search, setSearch]               = useState("");
   const [sellerFilter, setSellerFilter]   = useState("");
@@ -332,12 +337,17 @@ export default function AdminOrdersPage() {
     if (search)       params.set("search",   search);
     if (statusFilter) params.set("status",   statusFilter);
     if (sellerFilter) params.set("sellerId", sellerFilter);
+    params.set("page",  String(page));
+    params.set("limit", String(PAGE_LIMIT));
     const res = await fetch(`/api/admin/orders?${params}`);
     const data = await res.json();
     setOrders(data.orders ?? []);
+    setTotalOrders(data.total ?? 0);
+    setTotalPages(data.pages ?? 1);
     setLoading(false);
-  }, [search, statusFilter, sellerFilter]);
+  }, [search, statusFilter, sellerFilter, page]);
 
+  useEffect(() => { setPage(1); }, [search, statusFilter, sellerFilter]);
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
   // Quick confirm: NEW → PROCESSING
@@ -524,7 +534,7 @@ export default function AdminOrdersPage() {
             <div className="flex items-center gap-2">
               <ShoppingCart className="w-4 h-4" style={{ color: "var(--text-400)" }} />
               <span className="font-semibold text-sm" style={{ color: "var(--text-900)" }}>
-                Orders ({orders.length})
+                Orders ({totalOrders})
               </span>
             </div>
             <button
@@ -573,7 +583,9 @@ export default function AdminOrdersPage() {
           </div>
 
           {loading ? (
-            <div className="py-16 text-center text-gray-400 text-sm">Loading...</div>
+            <div className="py-16 text-center text-gray-400 text-sm flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading...
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -601,7 +613,13 @@ export default function AdminOrdersPage() {
                         <td className="px-4 py-3">
                           <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(order.id)} className="rounded cursor-pointer" />
                         </td>
-                        <td className="px-4 py-3 font-mono text-xs text-blue-600 whitespace-nowrap">{order.externalOrderId}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <Link href={`/admin/orders/${order.id}`}
+                            className="flex items-center gap-1 font-mono text-xs text-blue-600 hover:underline">
+                            {order.externalOrderId}
+                            <ExternalLink className="w-2.5 h-2.5 opacity-50" />
+                          </Link>
+                        </td>
                         <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">{order.seller.name || order.seller.email}</td>
                         <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">{order.customerName || "—"}</td>
                         <td className="px-4 py-3 text-xs text-gray-500 max-w-[140px] truncate">
@@ -682,6 +700,39 @@ export default function AdminOrdersPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-5 py-3 flex items-center justify-between" style={{ borderTop: "1px solid var(--border)" }}>
+              <span className="text-xs" style={{ color: "var(--text-400)" }}>
+                Page {page} of {totalPages} · {totalOrders} orders
+              </span>
+              <div className="flex items-center gap-2">
+                <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
+                  className="p-1.5 rounded-lg disabled:opacity-30 transition-colors hover:bg-gray-100"
+                  style={{ border: "1px solid var(--border)" }}>
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const p = Math.max(1, Math.min(totalPages - 4, page - 2)) + i;
+                  return (
+                    <button key={p} onClick={() => setPage(p)}
+                      className="w-7 h-7 rounded-lg text-xs font-semibold"
+                      style={p === page
+                        ? { background: "var(--bg-sidebar)", color: "white" }
+                        : { color: "var(--text-400)" }}>
+                      {p}
+                    </button>
+                  );
+                })}
+                <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
+                  className="p-1.5 rounded-lg disabled:opacity-30 transition-colors hover:bg-gray-100"
+                  style={{ border: "1px solid var(--border)" }}>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
         </div>
