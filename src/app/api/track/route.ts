@@ -14,7 +14,6 @@ const SELECT = {
   expectedDeliveryDate: true,
   dispatchedAt: true,
   createdAt: true,
-  seller: { select: { brandName: true, name: true } },
   items: { select: { name: true, quantity: true, price: true } },
   timeline: {
     orderBy: { createdAt: "asc" as const },

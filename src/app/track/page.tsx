@@ -148,31 +148,18 @@ function TrackingContent() {
       )}
 
       {!loading && multiple.length > 1 && (
-        <div className="bg-white rounded-2xl overflow-hidden" style={{ border: "1px solid #E2E8F0" }}>
-          <div className="px-5 py-4 border-b border-gray-50">
-            <p className="text-sm font-semibold text-gray-900">Multiple orders found</p>
-            <p className="text-xs text-gray-400 mt-0.5">Order #{input.replace(/^#/, "")} exists across multiple stores. Select yours:</p>
+        <div className="py-12 flex flex-col items-center gap-3 text-center px-4">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "#FFF7ED" }}>
+            <Search className="w-5 h-5" style={{ color: "#D97706" }} />
           </div>
-          <div className="divide-y divide-gray-50">
-            {multiple.map((o) => (
-              <button key={o.id} onClick={() => { setOrder(o); setMultiple([]); }}
-                className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left">
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{o.seller?.brandName || o.seller?.name || "Store"}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {o.customerName ?? "—"} · ₹{new Intl.NumberFormat("en-IN").format(o.totalAmount)} · {new Date(o.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                  </p>
-                </div>
-                <span className="text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0"
-                  style={{
-                    background: o.status === "DELIVERED" ? "#F0FDF4" : o.status === "CANCELLED" ? "#F9FAFB" : "#EFF6FF",
-                    color:      o.status === "DELIVERED" ? "#16A34A" : o.status === "CANCELLED" ? "#6B7280" : "#3B82F6",
-                  }}>
-                  {o.status}
-                </span>
-              </button>
-            ))}
-          </div>
+          <p className="text-base font-semibold text-gray-900">Use your order tracking link</p>
+          <p className="text-sm text-gray-500 max-w-xs">
+            Order <span className="font-mono font-bold">#{input.replace(/^#/, "")}</span> exists across multiple stores.
+            Please use the exact tracking link sent to you by the store — it will take you directly to your order.
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            If you don&apos;t have the link, contact the store you ordered from.
+          </p>
         </div>
       )}
 
