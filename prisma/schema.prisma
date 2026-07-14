@@ -109,6 +109,8 @@ enum OrderStatus {
 enum OrderSource {
   SHOPIFY
   AMAZON
+  FLIPKART
+  MEESHO
   EBAY
   ETSY
   WALMART
@@ -205,6 +207,7 @@ model User {
   supplierTransactions     SupplierTransaction[] @relation("SupplierTransactions")
   shippingProviders        SupplierShippingProvider[]
   supplierPayments         SupplierPayment[]            @relation("SupplierPayments")
+  reconciliationReports    ReconciliationReport[]       @relation("ReconciliationReports")
 
   @@map("users")
 }
@@ -882,6 +885,72 @@ model SupplierTransaction {
   createdAt  DateTime       @default(now())
 
   @@map("supplier_transactions")
+}
+
+// ── Reconciliation Engine ─────────────────────────────────────────────────────
+
+enum ReconciliationStatus {
+  UPLOADED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ReconciliationEntryStatus {
+  PENDING
+  MATCHED
+  UNMATCHED
+  DISCREPANCY
+  SETTLED
+}
+
+model ReconciliationReport {
+  id              String               @id @default(cuid())
+  uploadedById    String
+  uploadedBy      User                 @relation("ReconciliationReports", fields: [uploadedById], references: [id])
+  marketplace     String               // AMAZON | FLIPKART | MEESHO
+  filename        String
+  dateFrom        DateTime?
+  dateTo          DateTime?
+  status          ReconciliationStatus @default(UPLOADED)
+  totalRows       Int                  @default(0)
+  matchedRows     Int                  @default(0)
+  unmatchedRows   Int                  @default(0)
+  discrepancyRows Int                  @default(0)
+  settledRows     Int                  @default(0)
+  errorMessage    String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  entries ReconciliationEntry[]
+
+  @@map("reconciliation_reports")
+}
+
+model ReconciliationEntry {
+  id                 String                    @id @default(cuid())
+  reportId           String
+  report             ReconciliationReport      @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  marketplaceOrderId String
+  orderId            String?
+  sellerId           String?
+  marketplace        String
+  grossAmount        Float                     @default(0)
+  marketplaceFee     Float                     @default(0)
+  tds                Float                     @default(0)
+  shippingFee        Float                     @default(0)
+  netAmount          Float                     @default(0)
+  ourNetPayable      Float?
+  discrepancyAmount  Float?
+  status             ReconciliationEntryStatus @default(PENDING)
+  discrepancyReason  String?
+  settlementId       String?
+  rawData            Json?
+  createdAt          DateTime                  @default(now())
+
+  @@index([reportId])
+  @@index([orderId])
+  @@map("reconciliation_entries")
 }
 
 model ProductVariant {

@@ -53,9 +53,10 @@ const adminGroups: NavGroup[] = [
   {
     label: "Finance",
     items: [
-      { label: "Finance OS",        href: "/admin/finance",     icon: TrendingUp },
-      { label: "Remittance",        href: "/admin/remittance",  icon: BadgeIndianRupee },
-      { label: "Meta Ads Spend",    href: "/admin/ad-spend",    icon: Megaphone },
+      { label: "Finance OS",        href: "/admin/finance",         icon: TrendingUp },
+      { label: "Reconciliation",    href: "/admin/reconciliation",  icon: CheckSquare },
+      { label: "Remittance",        href: "/admin/remittance",      icon: BadgeIndianRupee },
+      { label: "Meta Ads Spend",    href: "/admin/ad-spend",        icon: Megaphone },
     ],
   },
   {
