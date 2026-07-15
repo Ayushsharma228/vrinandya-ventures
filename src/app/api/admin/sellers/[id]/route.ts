@@ -12,7 +12,9 @@ export async function GET(
 
   const { id } = await params;
 
-  const [seller, orderStats, recentOrders, settlementAgg, recentSettlements, walletTxns, withdrawals, shopifyStore] =
+  let seller, orderStats, recentOrders, settlementAgg, recentSettlements, walletTxns, withdrawals, shopifyStore;
+  try {
+  [seller, orderStats, recentOrders, settlementAgg, recentSettlements, walletTxns, withdrawals, shopifyStore] =
     await Promise.all([
       // Full seller profile
       prisma.user.findUnique({
@@ -84,6 +86,10 @@ export async function GET(
         select: { storeUrl: true, storeName: true },
       }),
     ]);
+  } catch (err) {
+    console.error("[seller-detail]", err);
+    return NextResponse.json({ error: "Failed to load seller data" }, { status: 500 });
+  }
 
   if (!seller)
     return NextResponse.json({ error: "Seller not found" }, { status: 404 });
