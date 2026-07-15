@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { emailOnboardingComplete } from "@/lib/email";
 
 export async function GET(req: NextRequest) {
   const session = await getRouteSession(req);
@@ -70,7 +71,7 @@ export async function PATCH(req: NextRequest) {
   if (step === "kyc") {
     if (!body.aadhaarNumber)
       return NextResponse.json({ error: "Aadhaar number is required" }, { status: 400 });
-    await prisma.user.update({
+    const updated = await prisma.user.update({
       where: { id: session.user.id },
       data: {
         aadhaarNumber: body.aadhaarNumber,
@@ -78,7 +79,12 @@ export async function PATCH(req: NextRequest) {
         kycStatus:     "SUBMITTED",
         onboardingDone: true,
       },
+      select: { name: true, email: true },
     });
+    emailOnboardingComplete({
+      to:   updated.email,
+      name: updated.name ?? "Seller",
+    }).catch(() => {});
     return NextResponse.json({ ok: true });
   }
 

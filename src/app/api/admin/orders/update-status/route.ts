@@ -3,6 +3,11 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { generateSettlement } from "@/lib/settlement-service";
 import { reverseSettlement } from "@/lib/rto-service";
+import {
+  emailOrderShipped, emailOrderDelivered,
+  emailOrderRto, emailOrderCancelled,
+  emailSettlementProcessed,
+} from "@/lib/email";
 
 const VALID_STATUSES = ["NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "RTO"];
 
@@ -28,11 +33,45 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // Fetch order + seller for downstream hooks
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      externalOrderId: true, totalAmount: true, awbNumber: true, courier: true,
+      seller: { select: { name: true, email: true } },
+    },
+  });
+
   if (status === "DELIVERED") {
+    let settlementId: string | null = null;
     try {
-      await generateSettlement(orderId);
+      const result = await generateSettlement(orderId);
+      settlementId = result?.settlementId ?? null;
     } catch (err) {
       console.error(`Settlement generation failed for ${orderId}:`, err);
+    }
+    if (order?.seller.email) {
+      emailOrderDelivered({
+        to: order.seller.email,
+        name: order.seller.name ?? "Seller",
+        externalOrderId: order.externalOrderId,
+        amount: order.totalAmount,
+      }).catch(() => {});
+    }
+    if (settlementId && order?.seller.email) {
+      const settlement = await prisma.settlement.findUnique({
+        where: { id: settlementId },
+        select: { netPayable: true, status: true },
+      });
+      if (settlement) {
+        emailSettlementProcessed({
+          to: order.seller.email,
+          name: order.seller.name ?? "Seller",
+          externalOrderId: order.externalOrderId,
+          netPayable: settlement.netPayable,
+          status: settlement.status,
+        }).catch(() => {});
+      }
     }
   }
 
@@ -42,6 +81,31 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       console.error(`RTO reversal failed for ${orderId}:`, err);
     }
+    if (order?.seller.email) {
+      emailOrderRto({
+        to: order.seller.email,
+        name: order.seller.name ?? "Seller",
+        externalOrderId: order.externalOrderId,
+      }).catch(() => {});
+    }
+  }
+
+  if (status === "SHIPPED" && order?.seller.email) {
+    emailOrderShipped({
+      to: order.seller.email,
+      name: order.seller.name ?? "Seller",
+      externalOrderId: order.externalOrderId,
+      awb: order.awbNumber,
+      courier: order.courier,
+    }).catch(() => {});
+  }
+
+  if (status === "CANCELLED" && order?.seller.email) {
+    emailOrderCancelled({
+      to: order.seller.email,
+      name: order.seller.name ?? "Seller",
+      externalOrderId: order.externalOrderId,
+    }).catch(() => {});
   }
 
   return NextResponse.json({ success: true });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { emailKycApproved, emailKycRejected } from "@/lib/email";
 
 export async function PATCH(
   req: NextRequest,
@@ -16,10 +17,21 @@ export async function PATCH(
   if (!["APPROVED", "REJECTED"].includes(action))
     return NextResponse.json({ error: "action must be APPROVED or REJECTED" }, { status: 400 });
 
-  await prisma.user.update({
+  const seller = await prisma.user.update({
     where: { id },
     data:  { kycStatus: action as never },
+    select: { name: true, email: true },
   });
+
+  if (action === "APPROVED") {
+    emailKycApproved({ to: seller.email, name: seller.name ?? "Seller" }).catch(() => {});
+  } else {
+    emailKycRejected({
+      to: seller.email,
+      name: seller.name ?? "Seller",
+      reason: adminNote ?? "Please resubmit with valid documents.",
+    }).catch(() => {});
+  }
 
   // Notify seller
   await prisma.notification.create({
