@@ -14,19 +14,161 @@ const STEPS = [
   { label: "KYC",           icon: ShieldCheck },
 ];
 
-const TERMS = `Welcome to Vrinandya Ventures Dropshipping Platform.
+const TERMS = `VRINANDYA VENTURES PRIVATE LIMITED
+CLIENT SERVICE AGREEMENT
 
-By joining as a seller, you agree to:
+Registered Address: 4/210 UNT Gali, Kacheri Ghat, Taj Nagari, Agra – 282004, Uttar Pradesh
+CIN: U63112UP2025PTC239392 | GST: 09AALCV7054P1ZD
 
-1. Provide accurate business and personal information.
-2. Maintain the quality of products listed on your store.
-3. Pay applicable platform commission on every delivered order.
-4. Not engage in fraudulent orders, chargebacks, or return abuse.
-5. Keep your bank account and GST details up to date.
-6. Allow Vrinandya Ventures to deduct applicable fees, shipping, and GST from settlement payouts.
-7. Accept that RTO orders will result in settlement reversal.
+─────────────────────────────────────────
 
-Platform commission rate and fees are governed by your plan and may be updated with 7 days notice.`;
+1. DEFINITIONS
+
+(A) "SERVICES" means the specific services selected by the Client, which may include dropshipping account management, e-commerce operations, digital marketing, social media management, brand building, or any combination thereof.
+(B) "PLAN" means the specific service plan and tier selected by the Client, along with the associated service charge and inclusions.
+(C) "SERVICE CHARGE" means the fee payable by the Client to the Company for the Services, exclusive of GST unless stated otherwise.
+(D) "AD SPEND" means the advertising budget deployed on Meta (Facebook and Instagram) and/or any other advertising platform for running the Client's marketing campaigns.
+(E) "PLATFORM(S)" means the e-commerce marketplaces, websites, and advertising platforms used in connection with the Services, including but not limited to Amazon, Flipkart, Meesho, Shopify, and Meta.
+(F) "DASHBOARD" means the Company's client dashboard through which the Client may track orders, performance, and reports.
+(G) "NET PROFIT" means the amount by which the Client's total revenue exceeds the sum of: (i) product cost, (ii) shipping and logistics cost, (iii) ad spend, and (iv) the service charge, calculated cumulatively over the relevant period.
+
+─────────────────────────────────────────
+
+2. SCOPE OF SERVICES
+
+(A) The Company shall provide the Services strictly in accordance with the Plan selected. Any service not explicitly listed shall be considered outside the scope and may be provided separately, subject to additional charges.
+(B) The Company shall use commercially reasonable efforts, professional judgment, and industry-standard practices in performing the Services.
+(C) The Client acknowledges that the Services involve third-party platforms (including Meta, Amazon, Flipkart, Shopify, and courier/logistics partners) whose policies, algorithms, and performance are outside the Company's control.
+
+─────────────────────────────────────────
+
+3. ONBOARDING & PLATFORM ACCESS
+
+(A) The Client shall provide timely access to all relevant accounts, platforms, and systems required for the Company to perform the Services within 3 days of onboarding and within 3 days of any subsequent request.
+(B) The Company shall commence Services only upon receipt of the required access and the first payment.
+(C) The Client shall ensure all accounts and platforms are active, in good standing, and compliant with respective platform policies.
+
+─────────────────────────────────────────
+
+4. FEES & PAYMENT TERMS
+
+(A) The Client shall pay the Company the Service Charge in accordance with the payment schedule specified in the applicable Plan.
+(B) All amounts are exclusive of GST unless stated otherwise. GST shall be charged at the applicable rate.
+(C) The Service Charge is non-refundable once the Services have commenced, except as expressly provided under Clause 9 (Profit Guarantee).
+(D) Delayed payment beyond the due date may result in an immediate pause on all active Services.
+(E) The Company reserves the right to withhold deliverables, reports, campaign access, and dashboard access in the event of non-payment.
+
+─────────────────────────────────────────
+
+5. ADVERTISING SPEND (META ADS)
+
+(A) The Client shall be solely and entirely responsible for funding all Meta Ads spend. Ad spend shall be deposited directly into the Client's own Meta Ads account.
+(B) The Company shall not fund, advance, reimburse, or guarantee any ad spend on behalf of the Client.
+(C) The Company shall manage campaigns strictly within the ad spend budget made available by the Client. Scale and outcome are directly linked to the ad spend budget provided.
+(D) The Company shall not be liable for any restriction, suspension, or disabling of the Client's Meta Ads account by Meta.
+
+─────────────────────────────────────────
+
+6. INTELLECTUAL PROPERTY
+
+(A) All creatives, ad copies, campaign strategies, listings, content, and other deliverables developed by the Company shall remain the Company's intellectual property until full payment of the applicable Service Charge is received.
+(B) Upon receipt of full payment, the Client is granted a non-exclusive licence to use such deliverables for the Client's own business purposes.
+
+─────────────────────────────────────────
+
+7. CLIENT RESPONSIBILITIES & APPROVAL TIMELINES
+
+(A) The Client shall provide all inputs required (product details, pricing, brand preferences, images, account access) within 3 days of onboarding and within 3 days of any subsequent request.
+(B) Each deliverable carries a 48-hour approval window. If no response is received within 48 hours, the deliverable shall be deemed approved.
+(C) Delays caused by late approvals, delayed inputs, or non-cooperation of the Client shall not be counted against the Company's delivery timelines and shall not entitle the Client to any refund or compensation.
+(D) The Client shall not make unilateral changes to product pricing, listings, ad account settings, or campaign strategy without prior consultation with the Company.
+
+─────────────────────────────────────────
+
+8. GENERAL PERFORMANCE DISCLAIMER
+
+(A) Save as expressly provided under Clause 9, the Company does not guarantee any specific sales, revenue, ROAS, order volume, follower growth, or other performance outcome under any Plan.
+(B) Performance is influenced by multiple external factors including market conditions, product-market fit, pricing, competition, platform algorithms, and consumer behaviour, all outside the Company's control.
+
+─────────────────────────────────────────
+
+9. PROFIT GUARANTEE & REFUND OF SERVICE CHARGE
+
+(A) If, at the end of a continuous ad campaign period of 3 consecutive months, the Client has not achieved a positive Net Profit (as defined in Clause 1(G)), the Company shall refund the Service Charge paid for the corresponding 3-month period.
+(B) This refund is strictly limited to the Service Charge and shall not extend to ad spend, product cost, shipping, platform fees, or any other cost incurred by the Client.
+(C) This guarantee is contingent on Meta Ads campaigns having run continuously throughout the 3-month period. If the period is broken or paused for any reason attributable to the Client, the 3-month period shall be deemed reset.
+(D) This guarantee shall not apply if Net Profit is not achieved due to reasons within the Client's control, including unilateral pricing changes, non-cooperation, product unavailability, or platform account suspension not attributable to the Company.
+(E) Any claim for refund must be raised in writing within 15 days of completion of the relevant 3-month period.
+(F) This guarantee may be invoked only once during the term of this Agreement.
+
+─────────────────────────────────────────
+
+10. CONFIDENTIALITY
+
+(A) Each Party agrees to keep confidential all business information, strategies, pricing, account data, and other information disclosed during the course of this engagement.
+(B) The Company shall not disclose the Client's business data, sales data, or account information to any third party, except as required to deliver the Services or as required by law.
+(C) This obligation survives termination or expiry of this Agreement for a period of 2 years.
+
+─────────────────────────────────────────
+
+11. THIRD-PARTY DISCLAIMER
+
+The Company shall not be responsible for any disruption, restriction, suspension, policy change, or loss caused by third-party platforms including Meta, Amazon, Flipkart, Meesho, Shopify, Razorpay, courier/logistics partners, or any other third-party service provider.
+
+─────────────────────────────────────────
+
+12. REPRESENTATIONS & WARRANTIES
+
+(A) The Client represents that all information provided is true, accurate, and lawful.
+(B) The Client represents that it holds valid title to sell the products listed and has all necessary licences, registrations, and regulatory approvals.
+(C) The Client represents that the products, listings, and content do not infringe upon any third-party intellectual property rights, and agrees to indemnify the Company against any claim arising from a breach of this representation.
+
+─────────────────────────────────────────
+
+13. INDEMNIFICATION
+
+The Client shall indemnify, defend, and hold harmless the Company, its directors, officers, and employees from and against any claims, losses, damages, liabilities, penalties, and expenses arising out of any breach of the Client's representations, warranties, or obligations; any intellectual property infringement claim; or any regulatory non-compliance, false representation, or illegal product supplied by the Client.
+
+─────────────────────────────────────────
+
+14. LIMITATION OF LIABILITY
+
+(A) Save in cases of fraud, wilful misconduct, or gross negligence, and save as expressly provided under Clause 9, neither Party shall be liable to the other for any indirect, incidental, or consequential damages.
+(B) The Company's total liability shall not exceed the total Service Charge paid by the Client for the period in which the claim arises.
+
+─────────────────────────────────────────
+
+15. TERM & TERMINATION
+
+(A) This Agreement shall commence on the Effective Date and continue until terminated in accordance with this Clause.
+(B) Either Party may terminate this Agreement by providing 15 days' prior written notice, subject to any minimum engagement period.
+(C) The Company may terminate with immediate effect in the event of non-payment, abusive conduct, breach of these terms, or misuse of the Company's systems.
+(D) Termination shall not affect rights and obligations accrued prior to the date of termination.
+
+─────────────────────────────────────────
+
+16. FORCE MAJEURE
+
+Neither Party shall be liable for any failure or delay in performance caused by circumstances beyond its reasonable control, including acts of God, natural disasters, war, government action, pandemic, or disruption to platform/logistics networks.
+
+─────────────────────────────────────────
+
+18. GOVERNING LAW & JURISDICTION
+
+This Agreement shall be governed by and construed in accordance with the laws of India. The courts at Agra, Uttar Pradesh shall have exclusive jurisdiction over any matters arising out of or in connection with this Agreement.
+
+─────────────────────────────────────────
+
+19. GENERAL PROVISIONS
+
+(A) ENTIRE AGREEMENT: This Agreement constitutes the entire agreement between the Parties and supersedes all prior discussions, negotiations, and understandings.
+(B) AMENDMENT: This Agreement may only be amended by a written instrument signed by authorised representatives of both Parties.
+(C) INDEPENDENT CONTRACTORS: Nothing in this Agreement creates a partnership, joint venture, or employer-employee relationship between the Parties.
+(D) SEVERABILITY: If any provision is held invalid or unenforceable, the remaining provisions shall continue in full force and effect.
+(E) NOTICES: All notices shall be in writing and delivered via email or registered post.
+(F) WAIVER: No failure or delay by either Party in exercising any right shall operate as a waiver of such right.
+
+Email: connect@vrinandyaventures.in | Contact: +91 7060401016`;
 
 export default function OnboardingPage() {
   const { update } = useSession();
