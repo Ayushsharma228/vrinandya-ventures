@@ -78,14 +78,18 @@ export default function SellerDetailPage({ params }: { params: Promise<{ id: str
   const router  = useRouter();
   const [data,    setData]    = useState<SellerDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState("");
   const [tab,     setTab]     = useState("overview");
 
   useEffect(() => {
     setLoading(true);
     fetch(`/api/admin/sellers/${id}`)
-      .then(r => r.json())
-      .then(d => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(async r => {
+        const d = await r.json();
+        if (!r.ok) { setError(d.error ?? `Error ${r.status}`); setLoading(false); return; }
+        setData(d); setLoading(false);
+      })
+      .catch(e => { setError(e.message ?? "Failed to load"); setLoading(false); });
   }, [id]);
 
   if (loading) {
@@ -96,10 +100,11 @@ export default function SellerDetailPage({ params }: { params: Promise<{ id: str
     );
   }
 
-  if (!data?.seller) {
+  if (error || !data?.seller) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-page)" }}>
-        <p style={{ color: "var(--text-400)" }}>Seller not found.</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3" style={{ background: "var(--bg-page)" }}>
+        <p className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>{error || "Seller not found"}</p>
+        <button onClick={() => router.back()} className="text-xs underline" style={{ color: "var(--text-400)" }}>Go back</button>
       </div>
     );
   }
