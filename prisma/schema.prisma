@@ -210,6 +210,7 @@ model User {
   supplierPayments         SupplierPayment[]            @relation("SupplierPayments")
   reconciliationReports    ReconciliationReport[]       @relation("ReconciliationReports")
   contentVersions          ListingContentVersion[]      @relation("ContentVersionCreator")
+  aiEmployeeConversations  AIEmployeeConversation[]     @relation("AIEmployeeConversations")
 
   @@map("users")
 }
@@ -1183,4 +1184,170 @@ model ListingAnalytics {
   updatedAt            DateTime           @updatedAt
 
   @@map("listing_analytics")
+}
+
+// ── AI Workforce Foundation ───────────────────────────────────────────────────
+
+enum AIEmployeeStatus {
+  IDLE
+  BUSY
+  OFFLINE
+  ERROR
+}
+
+enum AITaskStatus {
+  PENDING
+  PROCESSING
+  WAITING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AITaskSource {
+  AUTOMATION_ENGINE
+  ADMIN
+  SELLER
+  SUPPLIER
+  SCHEDULED
+  MARKETPLACE
+}
+
+enum AIMemoryType {
+  SELLER
+  SUPPLIER
+  ORDER
+  LISTING
+  FINANCE
+  CONVERSATION
+  PREFERENCE
+  TASK
+  NOTE
+}
+
+model AIEmployee {
+  id          String           @id @default(cuid())
+  slug        String           @unique
+  name        String
+  role        String
+  description String?
+  avatar      String?
+  status      AIEmployeeStatus @default(IDLE)
+  permissions Json
+  tools       String[]
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  tasks         AITask[]
+  memories      AIMemory[]
+  activities    AIActivity[]
+  conversations AIEmployeeConversation[]
+
+  @@map("ai_employees")
+}
+
+model AITool {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  module      String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@map("ai_tools")
+}
+
+model AITask {
+  id          String       @id @default(cuid())
+  employeeId  String
+  employee    AIEmployee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type        String
+  title       String
+  description String?
+  status      AITaskStatus @default(PENDING)
+  priority    Int          @default(5)
+  input       Json?
+  output      Json?
+  error       String?
+  source      AITaskSource @default(ADMIN)
+  sourceId    String?
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  history    AITaskHistory[]
+  activities AIActivity[]
+
+  @@index([employeeId, status])
+  @@index([status, createdAt])
+  @@map("ai_tasks")
+}
+
+model AITaskHistory {
+  id         String       @id @default(cuid())
+  taskId     String
+  task       AITask       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  fromStatus AITaskStatus
+  toStatus   AITaskStatus
+  note       String?
+  createdAt  DateTime     @default(now())
+
+  @@map("ai_task_history")
+}
+
+model AIMemory {
+  id         String       @id @default(cuid())
+  employeeId String
+  employee   AIEmployee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type       AIMemoryType
+  key        String
+  value      Json
+  expiresAt  DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@unique([employeeId, type, key])
+  @@index([employeeId, type])
+  @@map("ai_memories")
+}
+
+model AIEmployeeConversation {
+  id         String     @id @default(cuid())
+  employeeId String
+  employee   AIEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User       @relation("AIEmployeeConversations", fields: [userId], references: [id])
+  messages   Json       @default("[]")
+  metadata   Json?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([employeeId, userId])
+  @@map("ai_employee_conversations")
+}
+
+model AIActivity {
+  id         String     @id @default(cuid())
+  employeeId String
+  employee   AIEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  taskId     String?
+  task       AITask?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  toolName   String?
+  action     String
+  reason     String?
+  result     Json?
+  error      String?
+  duration   Int?
+  userId     String?
+  orderId    String?
+  sellerId   String?
+  supplierId String?
+  createdAt  DateTime   @default(now())
+
+  @@index([employeeId, createdAt])
+  @@index([createdAt])
+  @@map("ai_activities")
 }

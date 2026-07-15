@@ -10,7 +10,7 @@ import {
   LogOut, Truck, Store, ListChecks, CheckSquare,
   Wallet, BadgeIndianRupee, User, Megaphone, AlertTriangle, UserCheck,
   Menu, X, ClipboardList, BarChart2, Boxes, Receipt, TrendingUp, Settings2, ShieldCheck, BanknoteIcon,
-  MonitorDot, Zap, Layers,
+  MonitorDot, Zap, Layers, Bot,
 } from "lucide-react";
 
 interface NavItem {
@@ -41,6 +41,7 @@ const adminGroups: NavGroup[] = [
       { label: "Listing OS",        href: "/admin/listing-os",  icon: Layers },
       { label: "Listing Requests",  href: "/admin/listings",    icon: ListChecks },
       { label: "Automation",        href: "/admin/automation",  icon: Zap },
+      { label: "AI Workforce",      href: "/admin/ai-workforce", icon: Bot },
     ],
   },
   {
