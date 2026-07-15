@@ -3,6 +3,7 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { emailKycApproved, emailKycRejected } from "@/lib/email";
 import { dispatchEvent } from "@/lib/automation/engine";
+import { ensureSellerActivation, updateActivation } from "@/lib/activation/engine";
 
 export async function PATCH(
   req: NextRequest,
@@ -50,6 +51,15 @@ export async function PATCH(
   dispatchEvent({ type: action === "APPROVED" ? "KYC_APPROVED" : "KYC_REJECTED",
                   entityId: id, entityType: "SELLER",
                   payload: { sellerId: id, action }, actorId: session.user.id });
+
+  if (action === "APPROVED") {
+    setImmediate(async () => {
+      try {
+        await ensureSellerActivation(id);
+        await updateActivation(id);
+      } catch {}
+    });
+  }
 
   return NextResponse.json({ ok: true });
 }

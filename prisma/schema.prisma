@@ -211,6 +211,7 @@ model User {
   reconciliationReports    ReconciliationReport[]       @relation("ReconciliationReports")
   contentVersions          ListingContentVersion[]      @relation("ContentVersionCreator")
   aiEmployeeConversations  AIEmployeeConversation[]     @relation("AIEmployeeConversations")
+  sellerActivation         SellerActivation?            @relation("SellerActivation")
 
   @@map("users")
 }
@@ -1350,4 +1351,80 @@ model AIActivity {
   @@index([employeeId, createdAt])
   @@index([createdAt])
   @@map("ai_activities")
+}
+
+// ── Seller Activation Engine ──────────────────────────────────────────────────
+
+enum ActivationStage {
+  ACCOUNT_CREATED
+  AGREEMENT_SIGNED
+  KYC_APPROVED
+  BANK_VERIFIED
+  SHOPIFY_CONNECTED
+  PRODUCTS_IMPORTED
+  LISTING_REQUESTED
+  FIRST_LISTING_LIVE
+  FIRST_ORDER_RECEIVED
+  ACTIVATED
+  STALLED
+  BLOCKED
+}
+
+model SellerActivation {
+  id       String          @id @default(cuid())
+  sellerId String          @unique
+  seller   User            @relation("SellerActivation", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  currentStage  ActivationStage @default(ACCOUNT_CREATED)
+  activationPct Int             @default(0)
+  healthScore   Int             @default(0)
+  healthLabel   String          @default("Critical")
+  estimatedDays Int?
+  activatedAt   DateTime?
+  lastActivityAt DateTime?
+
+  // Checklist — computed and stored for fast reads
+  accountCreated      Boolean @default(true)
+  agreementSigned     Boolean @default(false)
+  businessFilled      Boolean @default(false)
+  bankFilled          Boolean @default(false)
+  kycApproved         Boolean @default(false)
+  shopifyConnected    Boolean @default(false)
+  productsImported    Boolean @default(false)
+  listingRequested    Boolean @default(false)
+  firstListingLive    Boolean @default(false)
+  firstOrderReceived  Boolean @default(false)
+  firstOrderDelivered Boolean @default(false)
+  walletActive        Boolean @default(false)
+
+  // Milestone timestamps
+  agreementAt     DateTime?
+  kycApprovedAt   DateTime?
+  shopifyAt       DateTime?
+  productsAt      DateTime?
+  listingLiveAt   DateTime?
+  firstOrderAt    DateTime?
+  firstDeliveryAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  timeline SellerTimeline[]
+
+  @@index([currentStage])
+  @@index([activationPct])
+  @@map("seller_activations")
+}
+
+model SellerTimeline {
+  id           String           @id @default(cuid())
+  activationId String
+  activation   SellerActivation @relation(fields: [activationId], references: [id], onDelete: Cascade)
+  event        String
+  description  String
+  metadata     Json?
+  createdAt    DateTime         @default(now())
+
+  @@index([activationId, createdAt])
+  @@map("seller_timelines")
 }

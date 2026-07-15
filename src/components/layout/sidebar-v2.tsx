@@ -10,7 +10,7 @@ import {
   LogOut, Truck, Store, ListChecks, CheckSquare,
   Wallet, BadgeIndianRupee, User, Megaphone, AlertTriangle, UserCheck,
   Menu, X, ClipboardList, BarChart2, Boxes, Receipt, TrendingUp, Settings2, ShieldCheck, BanknoteIcon,
-  MonitorDot, Zap, Layers, Bot,
+  MonitorDot, Zap, Layers, Bot, Activity,
 } from "lucide-react";
 
 interface NavItem {
@@ -40,7 +40,8 @@ const adminGroups: NavGroup[] = [
       { label: "NDR",               href: "/admin/ndr",         icon: AlertTriangle },
       { label: "Listing OS",        href: "/admin/listing-os",  icon: Layers },
       { label: "Listing Requests",  href: "/admin/listings",    icon: ListChecks },
-      { label: "Automation",        href: "/admin/automation",  icon: Zap },
+      { label: "Automation",        href: "/admin/automation",   icon: Zap },
+      { label: "Seller Activation", href: "/admin/activation",   icon: Activity },
       { label: "AI Workforce",      href: "/admin/ai-workforce", icon: Bot },
     ],
   },
@@ -111,6 +112,12 @@ const sellerGroups: NavGroup[] = [
       { label: "Delivery",          href: "/seller/deliveries", icon: Truck },
       { label: "NDR Management",    href: "/seller/ndr",        icon: AlertTriangle },
       { label: "My Listings",       href: "/seller/listings",   icon: ListChecks },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { label: "Activation",        href: "/seller/activation",  icon: Activity },
     ],
   },
   {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { OrderSource } from "@prisma/client";
+import { ensureSellerActivation, updateActivation } from "@/lib/activation/engine";
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,6 +40,13 @@ export async function POST(req: NextRequest) {
         },
       });
     }
+
+    setImmediate(async () => {
+      try {
+        await ensureSellerActivation(session.user.id);
+        await updateActivation(session.user.id);
+      } catch {}
+    });
 
     return NextResponse.json({ message: "Listing request sent to admin", listingId: listing.id });
   } catch (error) {

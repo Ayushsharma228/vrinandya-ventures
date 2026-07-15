@@ -3,6 +3,7 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { dispatchEvent } from "@/lib/automation/engine";
 import { generateSettlement } from "@/lib/settlement-service";
+import { ensureSellerActivation, updateActivation } from "@/lib/activation/engine";
 import { reverseSettlement } from "@/lib/rto-service";
 import {
   emailOrderShipped, emailOrderDelivered, emailOrderRto,
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     where:  { id: { in: orderIds } },
     select: {
       id: true, externalOrderId: true, totalAmount: true,
-      awbNumber: true, courier: true,
+      awbNumber: true, courier: true, sellerId: true,
       seller: { select: { name: true, email: true } },
     },
   });
@@ -87,6 +88,19 @@ export async function POST(req: NextRequest) {
   });
 
   await Promise.allSettled(sideEffects);
+
+  // Trigger activation update for sellers with DELIVERED orders
+  if (status === "DELIVERED") {
+    const sellerIds = [...new Set(orders.map(o => o.sellerId).filter(Boolean))] as string[];
+    for (const sid of sellerIds) {
+      setImmediate(async () => {
+        try {
+          await ensureSellerActivation(sid);
+          await updateActivation(sid);
+        } catch {}
+      });
+    }
+  }
 
   // Dispatch automation events (fire-and-forget)
   for (const oid of orderIds) {

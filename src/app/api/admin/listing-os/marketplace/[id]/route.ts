@@ -3,6 +3,7 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { validateListing } from "@/lib/listing/validation";
+import { ensureSellerActivation, updateActivation } from "@/lib/activation/engine";
 
 const VALID_STATUSES = [
   "DRAFT", "CONTENT_PENDING", "IN_REVIEW", "AWAITING_SELLER",
@@ -72,6 +73,23 @@ export async function PATCH(
         : {}),
     },
   });
+
+  // Trigger activation update when listing goes LIVE
+  if (body.status === "LIVE" && listing.listingRequestId) {
+    const lrForActivation = await prisma.listingRequest.findUnique({
+      where: { id: listing.listingRequestId },
+      select: { sellerId: true },
+    });
+    if (lrForActivation?.sellerId) {
+      const sid = lrForActivation.sellerId;
+      setImmediate(async () => {
+        try {
+          await ensureSellerActivation(sid);
+          await updateActivation(sid);
+        } catch {}
+      });
+    }
+  }
 
   // Notify seller when listing goes LIVE or is REJECTED
   if (body.status === "LIVE" || body.status === "REJECTED") {

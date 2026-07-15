@@ -3,6 +3,7 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { emailOnboardingComplete } from "@/lib/email";
 import { dispatchEvent } from "@/lib/automation/engine";
+import { ensureSellerActivation, updateActivation } from "@/lib/activation/engine";
 
 export async function GET(req: NextRequest) {
   const session = await getRouteSession(req);
@@ -31,11 +32,21 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json();
   const { step } = body;
 
+  const triggerActivationUpdate = () => {
+    setImmediate(async () => {
+      try {
+        await ensureSellerActivation(session.user.id);
+        await updateActivation(session.user.id);
+      } catch {}
+    });
+  };
+
   if (step === "agreement") {
     await prisma.user.update({
       where: { id: session.user.id },
       data: { agreementAccepted: true, agreementAcceptedAt: new Date() },
     });
+    triggerActivationUpdate();
     return NextResponse.json({ ok: true });
   }
 
@@ -51,6 +62,7 @@ export async function PATCH(req: NextRequest) {
         pincode:      body.pincode      || null,
       },
     });
+    triggerActivationUpdate();
     return NextResponse.json({ ok: true });
   }
 
@@ -66,6 +78,7 @@ export async function PATCH(req: NextRequest) {
         bankIfsc:    body.bankIfsc.toUpperCase(),
       },
     });
+    triggerActivationUpdate();
     return NextResponse.json({ ok: true });
   }
 
@@ -88,6 +101,7 @@ export async function PATCH(req: NextRequest) {
     }).catch(() => {});
     dispatchEvent({ type: "SELLER_ONBOARDED", entityId: session.user.id, entityType: "SELLER",
                     payload: { sellerId: session.user.id } });
+    triggerActivationUpdate();
     return NextResponse.json({ ok: true });
   }
 

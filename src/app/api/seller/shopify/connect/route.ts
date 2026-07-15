@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { encrypt } from "@/lib/encrypt";
+import { ensureSellerActivation, updateActivation } from "@/lib/activation/engine";
 
 export async function POST(req: NextRequest) {
   const session = await getRouteSession(req);
@@ -34,6 +35,13 @@ export async function POST(req: NextRequest) {
     update: { storeUrl, storeName, accessToken: encrypt(accessToken) },
     create: { sellerId: session.user.id, storeUrl, storeName, accessToken: encrypt(accessToken) },
     select: { id: true, storeName: true, storeUrl: true, createdAt: true },
+  });
+
+  setImmediate(async () => {
+    try {
+      await ensureSellerActivation(session.user.id);
+      await updateActivation(session.user.id);
+    } catch {}
   });
 
   return NextResponse.json({ store });
