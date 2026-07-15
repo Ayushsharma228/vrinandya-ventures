@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, Bell,
   LogOut, Truck, Store, ListChecks, CheckSquare,
   Wallet, BadgeIndianRupee, User, Megaphone, AlertTriangle, UserCheck,
-  Menu, X, ClipboardList, BarChart2, Boxes, Receipt, TrendingUp, Settings2,
+  Menu, X, ClipboardList, BarChart2, Boxes, Receipt, TrendingUp, Settings2, ShieldCheck,
 } from "lucide-react";
 
 interface NavItem {
@@ -76,6 +76,7 @@ const adminGroups: NavGroup[] = [
     label: "Settings",
     items: [
       { label: "Platform Config",   href: "/admin/config",      icon: Settings2 },
+      { label: "KYC Approvals",     href: "/admin/kyc",         icon: ShieldCheck },
       { label: "Sellers",           href: "/admin/sellers",     icon: Store },
       { label: "Users",             href: "/admin/users",       icon: Users },
       { label: "Notifications",     href: "/admin/notifications", icon: Bell },
