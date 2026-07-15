@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { PageHero } from "@/components/layout/page-hero";
 import {
   Users, CheckCircle2, XCircle, Clock, RefreshCw,
-  ExternalLink, ShoppingCart, Store, BadgeCheck, Ban, Calendar, X,
+  ExternalLink, ShoppingCart, Store, BadgeCheck, Ban, Calendar, X, Eye,
 } from "lucide-react";
 
 interface Seller {
@@ -40,6 +41,7 @@ const KYC_STYLE: Record<string, { label: string; color: string }> = {
 };
 
 export default function AdminSellersPage() {
+  const router = useRouter();
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -282,6 +284,11 @@ export default function AdminSellersPage() {
                         {/* Actions */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
+                            <button onClick={() => router.push(`/admin/sellers/${s.id}`)}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold"
+                              style={{ background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}>
+                              <Eye className="w-3.5 h-3.5" /> View
+                            </button>
                             {s.accountStatus !== "ACTIVE" && (
                               <button
                                 onClick={() => handleAction(s.id, "activate")}
