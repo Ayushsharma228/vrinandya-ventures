@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  RefreshCw, TrendingUp, ShoppingCart, Truck, BarChart2, Users,
-  Calendar, BadgeIndianRupee, ArrowUpRight,
+  RefreshCw, TrendingUp, ShoppingCart, Truck, Users,
+  Calendar, BadgeIndianRupee, ArrowUpRight, BanknoteIcon,
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -41,11 +41,13 @@ interface TopSeller {
 }
 
 interface AnalyticsData {
-  period:          { from: string | null; to: string | null };
-  orders:          OrdersData;
-  settlements:     SettlementsData;
-  topSellers:      TopSeller[];
-  supplierPayments:{ totalPaid: number; count: number };
+  period:              { from: string | null; to: string | null };
+  orders:              OrdersData;
+  settlements:         SettlementsData;
+  topSellers:          TopSeller[];
+  supplierPayments:    { totalPaid: number; count: number };
+  activeSellers:       number;
+  pendingWithdrawals:  { count: number; amount: number };
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
@@ -124,8 +126,6 @@ export default function AdminAnalyticsPage() {
     ? Math.round((o.deliveredOrders / o.totalOrders) * 100)
     : 0;
 
-  // unique seller count from topSellers (best available in this window)
-  const activeSellers = data?.topSellers.length ?? 0;
 
   // settlement funnel for pie
   const funnelPieData = s
@@ -140,10 +140,10 @@ export default function AdminAnalyticsPage() {
         cards={
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Total GMV",          value: inr(s?.grossRevenue ?? 0),   color: "#00C67A" },
-              { label: "Platform Earnings",   value: inr(s?.platformEarnings ?? 0), color: "#3B82F6" },
-              { label: "Settled Orders",      value: String(s?.count ?? 0),       color: "#8B5CF6" },
-              { label: "Active Sellers",      value: String(activeSellers),        color: "#F59E0B" },
+              { label: "Total GMV",           value: inr(s?.grossRevenue ?? 0),       color: "#00C67A" },
+              { label: "Platform Earnings",   value: inr(s?.platformEarnings ?? 0),   color: "#3B82F6" },
+              { label: "Active Sellers",      value: String(data?.activeSellers ?? 0), color: "#8B5CF6" },
+              { label: "Pending Payouts",     value: String(data?.pendingWithdrawals.count ?? 0), color: "#F59E0B" },
             ].map(({ label, value, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
                 style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
@@ -198,25 +198,31 @@ export default function AdminAnalyticsPage() {
         ) : !data ? null : (
           <>
             {/* ── KPI tiles ──────────────────────────────────────────────── */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <KpiCard label="Total Orders"    value={String(o?.totalOrders ?? 0)}
                 sub={`${o?.activeOrders ?? 0} active`}
                 icon={<ShoppingCart className="w-5 h-5" style={{ color: "#3B82F6" }} />} />
               <KpiCard label="Delivery Rate"   value={`${deliveryRate}%`}
                 sub={`${o?.deliveredOrders ?? 0} delivered`} subColor="#00C67A"
                 icon={<Truck className="w-5 h-5" style={{ color: "#00C67A" }} />} />
-              <KpiCard label="RTO Orders"      value={String(o?.rtoOrders ?? 0)}
-                sub={`${o && o.totalOrders > 0 ? Math.round((o.rtoOrders / o.totalOrders) * 100) : 0}% rate`} subColor="#F59E0B"
+              <KpiCard label="RTO Rate"        value={`${o && o.totalOrders > 0 ? Math.round((o.rtoOrders / o.totalOrders) * 100) : 0}%`}
+                sub={`${o?.rtoOrders ?? 0} orders`} subColor="#F59E0B"
                 icon={<TrendingUp className="w-5 h-5" style={{ color: "#F59E0B" }} />} />
+              <KpiCard label="Active Sellers"  value={String(data.activeSellers)}
+                sub="KYC approved"
+                icon={<Users className="w-5 h-5" style={{ color: "#8B5CF6" }} />} />
               <KpiCard label="Platform Fees"   value={inr(s?.platformFee ?? 0)}
                 sub={`+GST ${inr(s?.gstOnFees ?? 0)}`} subColor="#8B5CF6"
                 icon={<BadgeIndianRupee className="w-5 h-5" style={{ color: "#8B5CF6" }} />} />
               <KpiCard label="Net to Sellers"  value={inr(s?.netPayable ?? 0)}
-                sub="After fees & GST"
+                sub="After all deductions"
                 icon={<ArrowUpRight className="w-5 h-5" style={{ color: "#3B82F6" }} />} />
               <KpiCard label="Supplier Paid"   value={inr(data.supplierPayments.totalPaid)}
                 sub={`${data.supplierPayments.count} payments`}
                 icon={<Users className="w-5 h-5" style={{ color: "#F59E0B" }} />} />
+              <KpiCard label="Pending Payouts" value={inr(data.pendingWithdrawals.amount)}
+                sub={`${data.pendingWithdrawals.count} requests`} subColor="#EF4444"
+                icon={<BanknoteIcon className="w-5 h-5" style={{ color: "#EF4444" }} />} />
             </div>
 
             {/* ── Order trend chart ──────────────────────────────────────── */}

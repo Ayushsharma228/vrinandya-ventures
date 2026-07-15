@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { dispatchEvent } from "@/lib/automation/engine";
 
 export async function GET(req: NextRequest) {
   const session = await getRouteSession(req);
@@ -82,6 +83,9 @@ export async function POST(req: NextRequest) {
       data:    { withdrawalId: request.id },
     },
   });
+
+  dispatchEvent({ type: "WITHDRAWAL_REQUESTED", entityId: request.id, entityType: "WITHDRAWAL",
+                  payload: { sellerId, amount }, actorId: sellerId });
 
   return NextResponse.json({ ok: true, request });
 }

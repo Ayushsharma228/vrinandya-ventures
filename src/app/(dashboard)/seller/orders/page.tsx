@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { RefreshCw, Download, ShoppingCart, IndianRupee, Package, Star, CheckCircle, XCircle, Loader2, ExternalLink, Copy, CopyCheck } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
@@ -46,6 +47,10 @@ export default function SellerOrdersPage() {
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [copiedId, setCopiedId]     = useState<string | null>(null);
   const [syncError, setSyncError]   = useState("");
+  const [showImport, setShowImport] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting]   = useState(false);
+  const [importResult, setImportResult] = useState<{ created: number; skipped: number; errors: { row: number; message: string }[] } | null>(null);
 
   const fetchOrders = useCallback(async () => {
     const params = new URLSearchParams({ from, to });
@@ -99,6 +104,32 @@ export default function SellerOrdersPage() {
     setCancelling(null);
   }
 
+  function downloadTemplate() {
+    const csv = [
+      "order_id,customer_name,phone,address,city,state,pincode,product_name,sku,quantity,unit_price,total_amount,courier,awb,status,order_date",
+      "ORD-001,Rahul Sharma,9876543210,123 MG Road,Mumbai,Maharashtra,400001,Blue T-Shirt,SKU-001,2,499,998,Delhivery,AWB123,,2024-01-15",
+      "ORD-002,Priya Singh,8765432109,45 Park Street,Delhi,Delhi,110001,Red Kurta,,1,799,799,,,,",
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = "order-import-template.csv"; a.click();
+  }
+
+  async function handleImport() {
+    if (!importFile) return;
+    setImporting(true); setImportResult(null);
+    const text = await importFile.text();
+    const res  = await fetch("/api/seller/orders/import", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: text,
+    });
+    const data = await res.json();
+    setImportResult(data);
+    setImporting(false);
+    if (data.created > 0) fetchOrders();
+  }
+
   function handleExport() {
     const csv = [
       ["Order #", "Name", "Phone", "Products", "Address", "Qty", "Amount", "Status", "Date"].join(","),
@@ -127,6 +158,7 @@ export default function SellerOrdersPage() {
   ];
 
   return (
+    <>
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
       <PageHero
         title="Store Orders"
@@ -142,6 +174,11 @@ export default function SellerOrdersPage() {
               style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
               <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               {refreshing ? "Syncing..." : "Refresh Orders"}
+            </button>
+            <button onClick={() => { setShowImport(true); setImportResult(null); setImportFile(null); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+              style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+              <Download className="w-4 h-4 rotate-180" /> Import CSV
             </button>
             <button onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
@@ -225,8 +262,11 @@ export default function SellerOrdersPage() {
                   const canCancel = order.status !== "CANCELLED" && order.status !== "DELIVERED";
                   return (
                     <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-4 py-3 font-semibold" style={{ color: "var(--green-500)" }}>
-                        #{order.externalOrderId}
+                      <td className="px-4 py-3 font-semibold">
+                        <Link href={`/seller/orders/${order.id}`}
+                          className="hover:underline" style={{ color: "var(--green-500)" }}>
+                          #{order.externalOrderId}
+                        </Link>
                       </td>
                       <td className="px-4 py-3">
                         <p className="font-medium text-xs" style={{ color: "var(--text-900)" }}>{order.customerName || "—"}</p>
@@ -317,5 +357,101 @@ export default function SellerOrdersPage() {
         </div>
       </div>
     </div>
+
+    {/* Import CSV Modal */}
+    {showImport && (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="rounded-2xl w-full max-w-lg shadow-2xl" style={{ background: "var(--bg-card)" }}>
+          <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
+            <div>
+              <h2 className="font-bold" style={{ color: "var(--text-900)" }}>Import Orders from CSV</h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>
+                Upload a CSV file to bulk-create orders
+              </p>
+            </div>
+            <button onClick={() => setShowImport(false)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg"
+              style={{ background: "var(--bg-muted)" }}>
+              <XCircle className="w-4 h-4" style={{ color: "var(--text-400)" }} />
+            </button>
+          </div>
+
+          <div className="p-6 space-y-4">
+            {/* Template download */}
+            <div className="rounded-xl p-4 flex items-center justify-between"
+              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Download Template</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>
+                  Required columns: order_id, product_name. Others are optional.
+                </p>
+              </div>
+              <button onClick={downloadTemplate}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                style={{ background: "var(--bg-card)", color: "var(--accent)", border: "1px solid var(--border)" }}>
+                <Download className="w-3.5 h-3.5" /> Template
+              </button>
+            </div>
+
+            {/* File picker */}
+            <div>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-400)" }}>
+                Select CSV File
+              </label>
+              <input type="file" accept=".csv,text/csv"
+                onChange={e => { setImportFile(e.target.files?.[0] ?? null); setImportResult(null); }}
+                className="w-full text-sm rounded-xl px-3 py-2 border outline-none"
+                style={{ borderColor: "var(--border)", background: "var(--bg-muted)", color: "var(--text-900)" }} />
+              {importFile && (
+                <p className="text-xs mt-1" style={{ color: "var(--text-400)" }}>
+                  {importFile.name} · {(importFile.size / 1024).toFixed(1)} KB
+                </p>
+              )}
+            </div>
+
+            {/* Result */}
+            {importResult && (
+              <div className="rounded-xl p-4 space-y-2"
+                style={{ background: importResult.created > 0 ? "#F0FDF4" : "#FEF2F2",
+                         border: `1px solid ${importResult.created > 0 ? "#BBF7D0" : "#FECACA"}` }}>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-bold" style={{ color: "#15803D" }}>
+                    ✓ {importResult.created} created
+                  </span>
+                  {importResult.skipped > 0 && (
+                    <span className="text-sm" style={{ color: "#D97706" }}>
+                      {importResult.skipped} skipped
+                    </span>
+                  )}
+                </div>
+                {importResult.errors.length > 0 && (
+                  <div className="space-y-1 mt-2">
+                    {importResult.errors.map((e, i) => (
+                      <p key={i} className="text-xs" style={{ color: "#DC2626" }}>
+                        Row {e.row}: {e.message}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-1">
+              <button onClick={() => setShowImport(false)}
+                className="px-4 py-2 rounded-xl text-sm font-medium"
+                style={{ background: "var(--bg-muted)", color: "var(--text-400)" }}>
+                Close
+              </button>
+              <button onClick={handleImport} disabled={!importFile || importing}
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+                style={{ background: "var(--green-500)" }}>
+                {importing ? "Importing..." : "Import Orders"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

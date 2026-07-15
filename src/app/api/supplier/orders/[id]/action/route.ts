@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { dispatchEvent } from "@/lib/automation/engine";
 
 type Action =
   | "ACCEPT"
@@ -154,6 +155,14 @@ export async function POST(
     } catch (err) {
       console.error("Inventory update failed after dispatch:", err);
     }
+  }
+
+  if (action === "ACCEPT") {
+    dispatchEvent({ type: "SUPPLIER_ACCEPTED", entityId: id, entityType: "ORDER",
+                    payload: { supplierId: session.user.id }, actorId: session.user.id });
+  } else if (action === "REJECT") {
+    dispatchEvent({ type: "SUPPLIER_REJECTED", entityId: id, entityType: "ORDER",
+                    payload: { supplierId: session.user.id, reason: note }, actorId: session.user.id });
   }
 
   return NextResponse.json({ success: true, supplierStatus: ACTION_TO_STATUS[action] });

@@ -622,6 +622,7 @@ model Order {
   purchaseOrder    PurchaseOrder?
   timeline         OrderTimeline[]
   supplierPayment  SupplierPayment?
+  sla              OrderSla?
 
   @@unique([sellerId, externalOrderId, source])
   @@map("orders")
@@ -994,4 +995,67 @@ model WithdrawalRequest {
 
   @@index([sellerId])
   @@map("withdrawal_requests")
+}
+
+// ── Automation Engine ─────────────────────────────────────────────────────────
+
+model AutomationRule {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  event       String
+  conditions  Json?
+  actions     Json
+  params      Json?
+  enabled     Boolean  @default(true)
+  isSystem    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  logs        AutomationLog[]
+
+  @@index([event])
+  @@map("automation_rules")
+}
+
+model AutomationLog {
+  id         String          @id @default(cuid())
+  ruleId     String?
+  rule       AutomationRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  event      String
+  entityType String?
+  entityId   String?
+  action     String
+  result     String          // SUCCESS | FAILED | SKIPPED
+  details    Json?
+  createdAt  DateTime        @default(now())
+
+  @@index([event])
+  @@index([entityId])
+  @@index([createdAt])
+  @@map("automation_logs")
+}
+
+model OrderSla {
+  id                 String    @id @default(cuid())
+  orderId            String    @unique
+  order              Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  assignmentDeadline DateTime?
+  acceptanceDeadline DateTime?
+  packingDeadline    DateTime?
+  dispatchDeadline   DateTime?
+  assignedAt         DateTime?
+  acceptedAt         DateTime?
+  packedAt           DateTime?
+  dispatchedAt       DateTime?
+  deliveredAt        DateTime?
+  assignmentBreached Boolean   @default(false)
+  acceptanceBreached Boolean   @default(false)
+  packingBreached    Boolean   @default(false)
+  dispatchBreached   Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([assignmentBreached])
+  @@index([acceptanceBreached])
+  @@map("order_slas")
 }

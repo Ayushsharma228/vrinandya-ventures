@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, ShoppingCart, Truck, AlertTriangle, XCircle, TrendingUp, Calendar } from "lucide-react";
+import { RefreshCw, ShoppingCart, Truck, AlertTriangle, XCircle, TrendingUp, Calendar, Wallet, BadgeIndianRupee } from "lucide-react";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
 
@@ -23,12 +23,24 @@ interface AnalyticsData {
   topProducts: { name: string; sku: string; orders: number; units: number; delPct: number; rtoPct: number }[];
   productDistribution: { name: string; value: number }[];
   store: { storeUrl: string; storeName: string } | null;
+  earnings: {
+    totalGMV: number;
+    totalFees: number;
+    totalEarned: number;
+    totalRtoCharge: number;
+    settledCount: number;
+    earningsTrend: { date: string; gmv: number; earned: number; count: number }[];
+  };
+  wallet: { balance: number; upcoming: number };
 }
 
 const PIE_COLORS = ["#3b5bdb", "#40c057", "#fd7e14", "#ae3ec9", "#f03e3e"];
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+}
+function inr(n: number) {
+  return "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 }
 
 function toISODate(d: Date) { return d.toISOString().split("T")[0]; }
@@ -198,6 +210,59 @@ export default function SellerAnalyticsPage() {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Earnings summary */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <BadgeIndianRupee className="w-4 h-4 text-green-500" />
+              <h2 className="font-semibold text-gray-900">Your Earnings</h2>
+              <span className="text-xs text-gray-400 ml-1">({data?.earnings?.settledCount ?? 0} settled orders in period)</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+              {[
+                { label: "Gross Revenue",  value: inr(data?.earnings?.totalGMV ?? 0),      color: "text-blue-600" },
+                { label: "Platform Fees",  value: inr(data?.earnings?.totalFees ?? 0),     color: "text-purple-600" },
+                { label: "RTO Charges",    value: inr(data?.earnings?.totalRtoCharge ?? 0), color: "text-orange-500" },
+                { label: "Net Earned",     value: inr(data?.earnings?.totalEarned ?? 0),   color: "text-green-600" },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
+                  <p className="text-xs text-gray-500 mb-1">{label}</p>
+                  <p className={`text-lg font-bold ${color}`}>{value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-4 mb-5">
+              <div className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Wallet Balance</p>
+                  <p className="text-lg font-bold text-gray-900">{inr(data?.wallet?.balance ?? 0)}</p>
+                </div>
+                <Wallet className="w-5 h-5 text-gray-300" />
+              </div>
+              <div className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Upcoming Credits</p>
+                  <p className="text-lg font-bold text-green-600">{inr(data?.wallet?.upcoming ?? 0)}</p>
+                </div>
+                <TrendingUp className="w-5 h-5 text-green-300" />
+              </div>
+            </div>
+            {(data?.earnings?.earningsTrend?.length ?? 0) > 0 && (
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={data!.earnings.earningsTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="date" tickFormatter={fmt} tick={{ fontSize: 10, fill: "#9ca3af" }} />
+                  <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip labelFormatter={(v) => fmt(v as string)}
+                    formatter={(val: unknown) => [inr(Number(val))]}
+                    contentStyle={{ fontSize: 12 }} />
+                  <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="gmv"    fill="#3b5bdb" name="GMV"       radius={[2,2,0,0]} />
+                  <Bar dataKey="earned" fill="#40c057" name="Net Earned" radius={[2,2,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           {/* Charts */}

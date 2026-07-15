@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { emailKycApproved, emailKycRejected } from "@/lib/email";
+import { dispatchEvent } from "@/lib/automation/engine";
 
 export async function PATCH(
   req: NextRequest,
@@ -45,6 +46,10 @@ export async function PATCH(
       data: { action, adminNote },
     },
   });
+
+  dispatchEvent({ type: action === "APPROVED" ? "KYC_APPROVED" : "KYC_REJECTED",
+                  entityId: id, entityType: "SELLER",
+                  payload: { sellerId: id, action }, actorId: session.user.id });
 
   return NextResponse.json({ ok: true });
 }

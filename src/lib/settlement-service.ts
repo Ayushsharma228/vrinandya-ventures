@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { walletService } from "@/lib/wallet-service";
 import { ledgerService } from "@/lib/ledger-service";
+import { dispatchEvent } from "@/lib/automation/engine";
 
 // ── Config helpers ────────────────────────────────────────────────────────────
 
@@ -193,6 +194,9 @@ export async function generateSettlement(orderId: string): Promise<{ settlementI
       metadata:  { settlementId: settlement.id },
     },
   });
+
+  dispatchEvent({ type: "SETTLEMENT_GENERATED", entityId: settlement.id, entityType: "SETTLEMENT",
+                  payload: { orderId, sellerId: order.sellerId, netPayable: breakdown.netPayable } });
 
   return { settlementId: settlement.id };
 }

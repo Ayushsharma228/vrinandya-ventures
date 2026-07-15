@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { dispatchEvent } from "@/lib/automation/engine";
 
 export async function PATCH(
   req: NextRequest,
@@ -53,6 +54,9 @@ export async function PATCH(
         data:    { withdrawalId: id, amount: withdrawal.amount },
       },
     });
+    dispatchEvent({ type: "WITHDRAWAL_APPROVED", entityId: id, entityType: "WITHDRAWAL",
+                    payload: { sellerId: withdrawal.sellerId, amount: withdrawal.amount },
+                    actorId: session.user.id });
   } else {
     await prisma.withdrawalRequest.update({
       where: { id },

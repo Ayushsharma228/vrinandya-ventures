@@ -325,6 +325,8 @@ export default function AdminOrdersPage() {
   const [bulkDateModal, setBulkDateModal]   = useState(false);
   const [bulkDate, setBulkDate]             = useState("");
   const [bulkSaving, setBulkSaving]         = useState(false);
+  const [bulkStatus, setBulkStatus]         = useState("");
+  const [bulkUpdating, setBulkUpdating]     = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/sellers").then((r) => r.json()).then((d) => setSellers(d.sellers ?? []));
@@ -441,6 +443,21 @@ export default function AdminOrdersPage() {
     setBulkDate("");
     await fetchOrders();
     setBulkSaving(false);
+  }
+
+  async function handleBulkStatusUpdate() {
+    if (!bulkStatus) return;
+    if (!confirm(`Set ${selected.size} order(s) to ${bulkStatus}?`)) return;
+    setBulkUpdating(true);
+    await fetch("/api/admin/orders/bulk-update-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderIds: Array.from(selected), status: bulkStatus }),
+    });
+    setSelected(new Set());
+    setBulkStatus("");
+    await fetchOrders();
+    setBulkUpdating(false);
   }
 
   function exportToCSV(exportOrders: Order[]) {
@@ -572,6 +589,21 @@ export default function AdminOrdersPage() {
                   <CalendarDays className="w-3.5 h-3.5" />
                   Set Date ({selected.size})
                 </button>
+                <select value={bulkStatus} onChange={e => setBulkStatus(e.target.value)}
+                  className="px-2 py-1.5 rounded-lg text-xs border outline-none"
+                  style={{ borderColor: "var(--border)", color: "var(--text-900)", background: "var(--bg-card)" }}>
+                  <option value="">Set status...</option>
+                  {["PROCESSING","SHIPPED","IN_TRANSIT","DELIVERED","RTO","CANCELLED"].map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                {bulkStatus && (
+                  <button onClick={handleBulkStatusUpdate} disabled={bulkUpdating}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
+                    style={{ background: "#F0FDF4", color: "#16A34A", border: "1px solid #BBF7D0" }}>
+                    {bulkUpdating ? "Updating..." : `Apply to ${selected.size}`}
+                  </button>
+                )}
                 <button onClick={() => handleDelete(Array.from(selected))} disabled={deleting}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
                   style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>

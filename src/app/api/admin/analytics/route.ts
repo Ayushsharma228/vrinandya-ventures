@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   } : {};
 
   // ── Parallel queries ─────────────────────────────────────────────────────
-  const [orders, settlements, sellerRows, supplierPaymentAgg] = await Promise.all([
+  const [orders, settlements, sellerRows, supplierPaymentAgg, activeSellers, pendingWd] = await Promise.all([
     prisma.order.findMany({
       where: dateWhere,
       select: { status: true, totalAmount: true, createdAt: true, sellerId: true },
@@ -48,6 +48,12 @@ export async function GET(req: NextRequest) {
       where:  dateWhere,
       _sum:   { amount: true },
       _count: { id: true },
+    }),
+    prisma.user.count({ where: { role: "SELLER", accountStatus: "ACTIVE" } }),
+    prisma.withdrawalRequest.aggregate({
+      where: { status: "PENDING" },
+      _count: { id: true },
+      _sum:   { amount: true },
     }),
   ]);
 
@@ -163,6 +169,11 @@ export async function GET(req: NextRequest) {
     supplierPayments: {
       totalPaid: supplierPaymentAgg._sum.amount ?? 0,
       count:     supplierPaymentAgg._count.id,
+    },
+    activeSellers,
+    pendingWithdrawals: {
+      count:  pendingWd._count.id ?? 0,
+      amount: pendingWd._sum.amount ?? 0,
     },
   });
 }

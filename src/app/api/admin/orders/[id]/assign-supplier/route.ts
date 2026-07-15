@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { dispatchEvent } from "@/lib/automation/engine";
 
 function generatePONumber(): string {
   const date = new Date();
@@ -99,6 +100,9 @@ export async function POST(
       },
     }),
   ]);
+
+  dispatchEvent({ type: "SUPPLIER_ASSIGNED", entityId: id, entityType: "ORDER",
+                  payload: { supplierId, poNumber }, actorId: session.user.id });
 
   return NextResponse.json({ success: true, order: updatedOrder, po });
 }

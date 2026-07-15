@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { emailOnboardingComplete } from "@/lib/email";
+import { dispatchEvent } from "@/lib/automation/engine";
 
 export async function GET(req: NextRequest) {
   const session = await getRouteSession(req);
@@ -85,6 +86,8 @@ export async function PATCH(req: NextRequest) {
       to:   updated.email,
       name: updated.name ?? "Seller",
     }).catch(() => {});
+    dispatchEvent({ type: "SELLER_ONBOARDED", entityId: session.user.id, entityType: "SELLER",
+                    payload: { sellerId: session.user.id } });
     return NextResponse.json({ ok: true });
   }
 
