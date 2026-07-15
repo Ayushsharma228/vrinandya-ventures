@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ProductStatus } from "@prisma/client";
+import { computeOptimizationScore } from "@/lib/listing/optimization";
 
 export async function DELETE(req: NextRequest) {
   try {
@@ -70,6 +71,30 @@ export async function PATCH(req: NextRequest) {
         data: { productId: product.id },
       },
     });
+
+    // Auto-create ListingContent draft when product is approved
+    if (status === "APPROVED") {
+      prisma.listingContent.upsert({
+        where:  { productId: product.id },
+        create: {
+          productId:    product.id,
+          title:        product.name,
+          description:  product.description ?? null,
+          category:     product.category    ?? null,
+          hsn:          product.hsn         ?? null,
+          gstRate:      product.gstRate     ?? null,
+          optimizationScore: computeOptimizationScore({
+            title:      product.name,
+            description: product.description,
+            category:   product.category,
+            hsn:        product.hsn,
+            gstRate:    product.gstRate,
+            imageCount: product.images?.length ?? 0,
+          }),
+        },
+        update: {},
+      }).catch(() => {});
+    }
 
     return NextResponse.json({ message: `Product ${status.toLowerCase()} successfully` });
   } catch (error) {

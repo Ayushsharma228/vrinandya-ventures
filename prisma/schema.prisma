@@ -209,6 +209,7 @@ model User {
   shippingProviders        SupplierShippingProvider[]
   supplierPayments         SupplierPayment[]            @relation("SupplierPayments")
   reconciliationReports    ReconciliationReport[]       @relation("ReconciliationReports")
+  contentVersions          ListingContentVersion[]      @relation("ContentVersionCreator")
 
   @@map("users")
 }
@@ -557,6 +558,7 @@ model Product {
   orderItems      OrderItem[]
   inventory       InventoryItem?
   variants        ProductVariant[]
+  listingContent  ListingContent?
 
   @@map("products")
 }
@@ -573,6 +575,8 @@ model ListingRequest {
   listedUrl String?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+
+  marketplaceListing MarketplaceListing?
 
   @@map("listing_requests")
 }
@@ -1058,4 +1062,125 @@ model OrderSla {
   @@index([assignmentBreached])
   @@index([acceptanceBreached])
   @@map("order_slas")
+}
+
+// ── Listing Operating System ───────────────────────────────────────────────────
+
+enum MarketplaceListingStatus {
+  DRAFT
+  CONTENT_PENDING
+  IN_REVIEW
+  AWAITING_SELLER
+  AWAITING_MARKETPLACE
+  APPROVED
+  LIVE
+  REJECTED
+  OPTIMIZATION_REQUIRED
+}
+
+model ListingContent {
+  id                String    @id @default(cuid())
+  productId         String    @unique
+  product           Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  title             String?
+  bullets           String[]
+  description       String?
+  specifications    Json?
+  keywords          String[]
+  searchTerms       String[]
+  category          String?
+  hsn               String?
+  gstRate           Float?
+  brand             String?
+  attributes        Json?
+  optimizationScore Int       @default(0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  versions            ListingContentVersion[]
+  marketplaceListings MarketplaceListing[]
+
+  @@map("listing_contents")
+}
+
+model ListingContentVersion {
+  id               String         @id @default(cuid())
+  listingContentId String
+  listingContent   ListingContent @relation(fields: [listingContentId], references: [id], onDelete: Cascade)
+  version          Int
+  title            String?
+  bullets          String[]
+  description      String?
+  specifications   Json?
+  keywords         String[]
+  searchTerms      String[]
+  category         String?
+  hsn              String?
+  gstRate          Float?
+  brand            String?
+  attributes       Json?
+  changeNote       String?
+  createdById      String?
+  createdBy        User?          @relation("ContentVersionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt        DateTime       @default(now())
+
+  @@unique([listingContentId, version])
+  @@map("listing_content_versions")
+}
+
+model MarketplaceListing {
+  id                 String                   @id @default(cuid())
+  listingContentId   String
+  listingContent     ListingContent           @relation(fields: [listingContentId], references: [id], onDelete: Cascade)
+  listingRequestId   String?                  @unique
+  listingRequest     ListingRequest?          @relation(fields: [listingRequestId], references: [id], onDelete: SetNull)
+  platform           OrderSource
+  status             MarketplaceListingStatus @default(DRAFT)
+  templateSnapshot   Json?
+  validationResult   Json?
+  optimizationScore  Int                      @default(0)
+  adminNote          String?
+  rejectionReason    String?
+  listingUrl         String?
+  submittedAt        DateTime?
+  approvedAt         DateTime?
+  liveAt             DateTime?
+  rejectedAt         DateTime?
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  analytics ListingAnalytics?
+
+  @@index([platform, status])
+  @@map("marketplace_listings")
+}
+
+model MarketplaceTemplate {
+  id                   String      @id @default(cuid())
+  platform             OrderSource @unique
+  requiredFields       Json
+  imageRequirements    Json?
+  titleMaxLength       Int         @default(200)
+  descriptionMaxLength Int         @default(2000)
+  bulletsCount         Int         @default(5)
+  isActive             Boolean     @default(true)
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  @@map("marketplace_templates")
+}
+
+model ListingAnalytics {
+  id                   String             @id @default(cuid())
+  marketplaceListingId String             @unique
+  marketplaceListing   MarketplaceListing @relation(fields: [marketplaceListingId], references: [id], onDelete: Cascade)
+  optimizationScore    Int                @default(0)
+  listingTimeHours     Float?
+  impressions          Int                @default(0)
+  clicks               Int                @default(0)
+  conversions          Int                @default(0)
+  rejectionCount       Int                @default(0)
+  updatedAt            DateTime           @updatedAt
+
+  @@map("listing_analytics")
 }
