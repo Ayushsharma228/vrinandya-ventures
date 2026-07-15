@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { onNewLead } from "@/lib/ai-workforce/arya/hooks";
 
 export async function GET(req: NextRequest) {
   const session = await getRouteSession(req);
@@ -86,6 +87,9 @@ export async function POST(req: NextRequest) {
     },
     include: { assignedTo: { select: { id: true, name: true } } },
   });
+
+  // Fire-and-forget: Arya qualifies every new lead automatically
+  setImmediate(() => { onNewLead(lead.id, lead.name).catch(() => {}); });
 
   return NextResponse.json({ lead });
 }

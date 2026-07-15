@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { onBulkLeadsImported } from "@/lib/ai-workforce/arya/hooks";
 
 const FORM_IDS = ["2038602106739692"]; // 10 July form
 
@@ -104,6 +105,7 @@ export async function POST(req: NextRequest) {
   let found = 0;
   const errors: string[] = [];
   let sampleFields: string[] = [];
+  const importedLeadIds: string[] = [];
 
   for (let i = 0; i < FORM_IDS.length; i++) {
     const { leads, error } = formResults[i];
@@ -122,7 +124,7 @@ export async function POST(req: NextRequest) {
       const notes = buildNotes(lead.field_data) || null;
 
       try {
-        await prisma.lead.create({
+        const created = await prisma.lead.create({
           data: {
             metaLeadId:  lead.id,
             name,
@@ -134,12 +136,18 @@ export async function POST(req: NextRequest) {
             createdAt:   new Date(lead.created_time),
           },
         });
+        importedLeadIds.push(created.id);
         imported++;
       } catch {
         // unique constraint on metaLeadId → already exists
         skipped++;
       }
     }
+  }
+
+  // Fire-and-forget: Arya qualifies all newly imported leads (staggered)
+  if (importedLeadIds.length > 0) {
+    setImmediate(() => { onBulkLeadsImported(importedLeadIds).catch(() => {}); });
   }
 
   return NextResponse.json({ imported, skipped, found, errors, sampleFields });
