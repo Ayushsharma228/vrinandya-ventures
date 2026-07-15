@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Wallet, TrendingUp, TrendingDown, Clock, CheckCircle2, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, Clock, CheckCircle2, ArrowUpRight, ArrowDownRight, BanknoteIcon, XCircle } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 interface Transaction {
@@ -13,6 +13,15 @@ interface WalletData {
   upcomingAmount: number; upcoming: Transaction[]; paid: Transaction[];
   transactions: Transaction[];
 }
+interface WithdrawalRequest {
+  id: string; amount: number; status: string; adminNote: string | null;
+  bankAccount: string; createdAt: string; processedAt: string | null;
+}
+const WD_BADGE: Record<string, { color: string }> = {
+  PENDING:  { color: "#F59E0B" },
+  APPROVED: { color: "#00C67A" },
+  REJECTED: { color: "#EF4444" },
+};
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.abs(n));
@@ -21,13 +30,37 @@ function fmt(n: number) {
 const TABS = ["All", "Upcoming", "Paid", "Deductions"];
 
 export default function SellerWalletPage() {
-  const [data, setData] = useState<WalletData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("All");
+  const [data,       setData]       = useState<WalletData | null>(null);
+  const [loading,    setLoading]    = useState(true);
+  const [tab,        setTab]        = useState("All");
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
+  const [wdAmount,   setWdAmount]   = useState("");
+  const [wdLoading,  setWdLoading]  = useState(false);
+  const [wdError,    setWdError]    = useState("");
+  const [wdSuccess,  setWdSuccess]  = useState(false);
 
   useEffect(() => {
     fetch("/api/seller/wallet").then(r => r.json()).then(d => { setData(d); setLoading(false); });
+    fetch("/api/seller/wallet/withdraw").then(r => r.json()).then(d => setWithdrawals(d.requests ?? []));
   }, []);
+
+  async function submitWithdrawal(e: React.FormEvent) {
+    e.preventDefault();
+    const amt = parseFloat(wdAmount);
+    if (!amt || amt <= 0) { setWdError("Enter a valid amount"); return; }
+    setWdLoading(true); setWdError(""); setWdSuccess(false);
+    const res = await fetch("/api/seller/wallet/withdraw", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: amt }),
+    });
+    const json = await res.json();
+    if (!res.ok) { setWdError(json.error ?? "Failed"); }
+    else {
+      setWdSuccess(true); setWdAmount("");
+      setWithdrawals(prev => [json.request, ...prev]);
+    }
+    setWdLoading(false);
+  }
 
   const allTx = data?.transactions ?? [];
   const upcoming = data?.upcoming ?? [];
@@ -109,6 +142,73 @@ export default function SellerWalletPage() {
       />
 
       <div className="px-4 md:px-8 py-6 space-y-6">
+        {/* Request Payout */}
+        <div className="card p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <BanknoteIcon className="w-5 h-5" style={{ color: "#00C67A" }} />
+            <h2 className="text-sm font-bold" style={{ color: "var(--text-900)" }}>Request Payout</h2>
+          </div>
+          <form onSubmit={submitWithdrawal} className="flex items-center gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-[180px]">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold"
+                style={{ color: "var(--text-400)" }}>₹</span>
+              <input
+                type="number" min="1" step="1" value={wdAmount}
+                onChange={e => { setWdAmount(e.target.value); setWdError(""); setWdSuccess(false); }}
+                placeholder="Enter amount"
+                className="w-full pl-7 pr-4 py-2.5 rounded-xl text-sm border outline-none"
+                style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }}
+              />
+            </div>
+            <button type="submit" disabled={wdLoading}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+              style={{ background: "#00C67A" }}>
+              {wdLoading ? "Submitting…" : "Request Payout"}
+            </button>
+          </form>
+          {wdError   && <p className="text-xs mt-2" style={{ color: "#EF4444" }}>{wdError}</p>}
+          {wdSuccess && <p className="text-xs mt-2" style={{ color: "#00C67A" }}>Payout request submitted! Admin will process it shortly.</p>}
+          <p className="text-xs mt-3" style={{ color: "var(--text-400)" }}>
+            Payouts are transferred to your registered bank account. Only settled (paid) wallet balance is eligible.
+          </p>
+        </div>
+
+        {/* Withdrawal history */}
+        {withdrawals.length > 0 && (
+          <div className="card overflow-hidden">
+            <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
+              <h2 className="text-sm font-bold" style={{ color: "var(--text-900)" }}>Payout Request History</h2>
+            </div>
+            <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+              {withdrawals.map(wd => {
+                const badge = WD_BADGE[wd.status] ?? WD_BADGE.PENDING;
+                return (
+                  <div key={wd.id} className="px-5 py-3.5 flex items-center gap-4">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: "rgba(0,198,122,0.1)" }}>
+                      {wd.status === "APPROVED"
+                        ? <CheckCircle2 className="w-4 h-4" style={{ color: "#00C67A" }} />
+                        : wd.status === "REJECTED"
+                        ? <XCircle className="w-4 h-4" style={{ color: "#EF4444" }} />
+                        : <Clock className="w-4 h-4" style={{ color: "#F59E0B" }} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium" style={{ color: "var(--text-900)" }}>
+                        Withdrawal Request — ₹{fmt(wd.amount)}
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>
+                        {new Date(wd.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        {wd.adminNote ? ` · ${wd.adminNote}` : ""}
+                      </p>
+                    </div>
+                    <span className="text-xs font-bold" style={{ color: badge.color }}>{wd.status}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Transaction history */}
         <div className="card overflow-hidden">
           <div className="px-5 py-3 flex items-center gap-1" style={{ borderBottom: "1px solid var(--border)" }}>

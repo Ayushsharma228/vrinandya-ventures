@@ -186,6 +186,7 @@ model User {
   orders              Order[]              @relation("SellerOrders")
   listingRequests     ListingRequest[]
   notifications       Notification[]
+  withdrawalRequests  WithdrawalRequest[] @relation("SellerWithdrawals")
   suppliedProducts    Product[]
   warehouses          Warehouse[]
   remittances         Remittance[]
@@ -968,4 +969,29 @@ model ProductVariant {
   updatedAt  DateTime @updatedAt
 
   @@map("product_variants")
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model WithdrawalRequest {
+  id          String           @id @default(cuid())
+  sellerId    String
+  seller      User             @relation("SellerWithdrawals", fields: [sellerId], references: [id], onDelete: Cascade)
+  amount      Float
+  status      WithdrawalStatus @default(PENDING)
+  adminNote   String?
+  bankHolder  String
+  bankAccount String
+  bankIfsc    String
+  walletTxId  String?
+  processedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([sellerId])
+  @@map("withdrawal_requests")
 }

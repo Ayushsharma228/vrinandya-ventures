@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, Bell,
   LogOut, Truck, Store, ListChecks, CheckSquare,
   Wallet, BadgeIndianRupee, User, Megaphone, AlertTriangle, UserCheck,
-  Menu, X, ClipboardList, BarChart2, Boxes, Receipt, TrendingUp, Settings2, ShieldCheck,
+  Menu, X, ClipboardList, BarChart2, Boxes, Receipt, TrendingUp, Settings2, ShieldCheck, BanknoteIcon,
 } from "lucide-react";
 
 interface NavItem {
@@ -57,6 +57,7 @@ const adminGroups: NavGroup[] = [
       { label: "Finance OS",        href: "/admin/finance",         icon: TrendingUp },
       { label: "Reconciliation",    href: "/admin/reconciliation",  icon: CheckSquare },
       { label: "Remittance",        href: "/admin/remittance",      icon: BadgeIndianRupee },
+      { label: "Payout Requests",   href: "/admin/withdrawals",     icon: BanknoteIcon },
       { label: "Meta Ads Spend",    href: "/admin/ad-spend",        icon: Megaphone },
     ],
   },
