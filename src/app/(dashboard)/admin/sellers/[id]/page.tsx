@@ -26,7 +26,7 @@ interface SellerDetail {
   recentSettlements: { id: string; orderId: string; status: string; sellingPrice: number; netPayable: number; createdAt: string }[];
   wallet: { balance: number; upcomingAmount: number; transactions: { id: string; type: string; amount: number; note: string | null; bankTxId: string | null; remittanceDate: string | null; createdAt: string }[] };
   withdrawals: { id: string; amount: number; status: string; adminNote: string | null; bankAccount: string; createdAt: string }[];
-  shopifyStore: { storeUrl: string; storeName: string | null; isActive: boolean } | null;
+  shopifyStore: { storeUrl: string; storeName: string | null } | null;
 }
 
 const TABS = [

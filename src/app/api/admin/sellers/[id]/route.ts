@@ -81,7 +81,7 @@ export async function GET(
       // Shopify store
       prisma.shopifyStore.findFirst({
         where:  { sellerId: id },
-        select: { storeUrl: true, storeName: true, isActive: true },
+        select: { storeUrl: true, storeName: true },
       }),
     ]);
 
