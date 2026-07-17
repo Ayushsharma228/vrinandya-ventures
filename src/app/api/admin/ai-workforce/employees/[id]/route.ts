@@ -13,7 +13,10 @@ export async function GET(
 
   const { id } = await params;
 
-  const employee = await prisma.aIEmployee.findUnique({ where: { id } });
+  // Support lookup by slug or by id
+  const employee = await prisma.aIEmployee.findFirst({
+    where: { OR: [{ id }, { slug: id }] },
+  });
   if (!employee) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const today = new Date();
@@ -60,10 +63,13 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
 
+  const target = await prisma.aIEmployee.findFirst({ where: { OR: [{ id }, { slug: id }] }, select: { id: true } });
+  if (!target) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
   const allowed: Record<string, unknown> = {};
   if (typeof body.isActive  === "boolean") allowed.isActive  = body.isActive;
   if (typeof body.status    === "string")  allowed.status    = body.status;
 
-  const employee = await prisma.aIEmployee.update({ where: { id }, data: allowed });
+  const employee = await prisma.aIEmployee.update({ where: { id: target.id }, data: allowed });
   return NextResponse.json({ employee });
 }

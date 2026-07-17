@@ -246,7 +246,7 @@ export default function AIWorkforcePage() {
                   {emp.isActive ? "Active" : "Inactive"}
                 </span>
                 <button
-                  onClick={() => window.location.href = `/admin/ai-workforce/${emp.id}`}
+                  onClick={() => window.location.href = `/admin/ai-workforce/${emp.slug}`}
                   className="flex items-center gap-1 text-xs"
                   style={{ color: "var(--text-400)" }}
                 >
