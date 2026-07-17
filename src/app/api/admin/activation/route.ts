@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ActivationStage } from "@prisma/client";
+import { ensureSellerActivation, updateActivation } from "@/lib/activation/engine";
 
 export async function GET(req: NextRequest) {
   const session = await getRouteSession(req);
@@ -79,4 +80,28 @@ export async function GET(req: NextRequest) {
       inactiveSellers,
     },
   });
+}
+
+// POST /api/admin/activation — seed activation records for all sellers
+export async function POST(req: NextRequest) {
+  const session = await getRouteSession(req);
+  if (!session || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const sellers = await prisma.user.findMany({
+    where: { role: "SELLER" },
+    select: { id: true },
+  });
+
+  let seeded = 0;
+  for (const seller of sellers) {
+    try {
+      await ensureSellerActivation(seller.id);
+      await updateActivation(seller.id);
+      seeded++;
+    } catch {}
+  }
+
+  return NextResponse.json({ ok: true, seeded });
 }

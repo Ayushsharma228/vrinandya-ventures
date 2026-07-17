@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Activity, RefreshCw, Users, CheckCircle2, TrendingUp, AlertTriangle, ChevronRight, Search, Filter } from "lucide-react";
+import { Activity, RefreshCw, Users, CheckCircle2, TrendingUp, AlertTriangle, ChevronRight, Search, Zap } from "lucide-react";
 import Link from "next/link";
 
 interface SellerActivationRow {
@@ -92,6 +92,7 @@ export default function AdminActivationPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   const load = useCallback(async (f = filter, p = page) => {
     setLoading(true);
@@ -120,14 +121,30 @@ export default function AdminActivationPage() {
           <h1 className="text-2xl font-bold" style={{ color: "var(--text-900)" }}>Seller Activation</h1>
           <p className="text-sm mt-0.5" style={{ color: "var(--text-400)" }}>Track and manage seller onboarding journeys</p>
         </div>
-        <button
-          onClick={async () => { setRefreshing(true); await load(); setRefreshing(false); }}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-          style={{ border: "1px solid var(--border)", color: "var(--text-400)" }}
-        >
-          <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={async () => {
+              setSeeding(true);
+              await fetch("/api/admin/activation", { method: "POST" });
+              await load();
+              setSeeding(false);
+            }}
+            disabled={seeding}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            style={{ border: "1px solid var(--border)", color: "var(--text-400)" }}
+          >
+            <Zap className={`w-4 h-4 ${seeding ? "animate-pulse" : ""}`} />
+            {seeding ? "Seeding..." : "Seed All Sellers"}
+          </button>
+          <button
+            onClick={async () => { setRefreshing(true); await load(); setRefreshing(false); }}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+            style={{ border: "1px solid var(--border)", color: "var(--text-400)" }}
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* KPIs */}

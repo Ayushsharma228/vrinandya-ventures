@@ -14,7 +14,15 @@ export async function GET(
 
   const { sellerId } = await params;
 
-  await ensureSellerActivation(sellerId);
+  // Verify seller exists
+  const sellerUser = await prisma.user.findUnique({ where: { id: sellerId }, select: { id: true, role: true } });
+  if (!sellerUser) return NextResponse.json({ error: "Seller not found" }, { status: 404 });
+
+  // Ensure activation record exists and is up to date
+  try {
+    await ensureSellerActivation(sellerId);
+    await updateActivation(sellerId);
+  } catch {}
 
   const [activation, seller, timeline] = await Promise.all([
     prisma.sellerActivation.findUnique({ where: { sellerId } }),
@@ -33,8 +41,6 @@ export async function GET(
       orderBy: { createdAt: "asc" },
     }),
   ]);
-
-  if (!activation) return NextResponse.json({ error: "Seller not found" }, { status: 404 });
 
   return NextResponse.json({ activation, seller, timeline });
 }
