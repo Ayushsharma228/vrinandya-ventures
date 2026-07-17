@@ -10,7 +10,7 @@ import {
   LogOut, Truck, Store, ListChecks, CheckSquare,
   Wallet, BadgeIndianRupee, User, Megaphone, AlertTriangle, UserCheck,
   Menu, X, ClipboardList, BarChart2, Boxes, Receipt, TrendingUp, Settings2, ShieldCheck, BanknoteIcon,
-  MonitorDot, Zap, Layers, Bot, Activity,
+  MonitorDot, Zap, Layers, Bot, Activity, MessageCircle,
 } from "lucide-react";
 
 interface NavItem {
@@ -78,6 +78,7 @@ const adminGroups: NavGroup[] = [
     label: "Sales",
     items: [
       { label: "CRM",               href: "/admin/crm",         icon: UserCheck },
+      { label: "WhatsApp",          href: "/admin/whatsapp",    icon: MessageCircle },
     ],
   },
   {

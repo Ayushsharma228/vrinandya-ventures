@@ -281,6 +281,7 @@ model Lead {
   tasks                Task[]
   scoreDetail          LeadScoreDetail?
   calendarEvents       CalendarEvent[]
+  waConversations      WAConversation[]
 
   @@map("leads")
 }
@@ -1427,4 +1428,53 @@ model SellerTimeline {
 
   @@index([activationId, createdAt])
   @@map("seller_timelines")
+}
+
+// ── WhatsApp AI Agent ────────────────────────────────────────────────────────
+
+enum WAConversationStatus {
+  ACTIVE
+  QUALIFIED
+  HANDED_OFF
+  CLOSED
+  OPTED_OUT
+}
+
+enum WAMessageRole {
+  USER
+  ASSISTANT
+}
+
+model WAConversation {
+  id          String                @id @default(cuid())
+  waId        String                @unique  // WhatsApp phone number (e.g. 919876543210)
+  phoneNumber String
+  name        String?
+  status      WAConversationStatus  @default(ACTIVE)
+  leadId      String?
+  lead        Lead?                 @relation(fields: [leadId], references: [id])
+  metadata    Json?
+  lastMessageAt DateTime?
+  qualifiedAt   DateTime?
+  handedOffAt   DateTime?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  messages    WAMessage[]
+
+  @@index([status])
+  @@index([waId])
+  @@map("wa_conversations")
+}
+
+model WAMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   WAConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           WAMessageRole
+  content        String
+  waMessageId    String?        // Meta's message ID
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId, createdAt])
+  @@map("wa_messages")
 }
