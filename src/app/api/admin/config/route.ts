@@ -6,7 +6,7 @@ const DEFAULTS: Record<string, { value: string; label: string; description: stri
   COMMISSION_RATE:      { value: "5",  label: "Commission Rate",         description: "Platform commission charged on every order (% of selling price)", unit: "%" },
   GST_ON_FEES_RATE:    { value: "18", label: "GST on Fees",             description: "GST applied on platform commission", unit: "%" },
   DEFAULT_SHIPPING_CHARGE: { value: "50", label: "Default Shipping Charge", description: "Shipping charge deducted when order has no explicit value", unit: "₹" },
-  DEFAULT_PACKING_CHARGE:  { value: "20", label: "Default Packing Charge",  description: "Packing charge deducted when order has no explicit value", unit: "₹" },
+  DEFAULT_PACKING_CHARGE:  { value: "20", label: "Default Platform Charge", description: "Platform charge auto-filled on remittance when order has no explicit value", unit: "₹" },
   REMITTANCE_DAYS:     { value: "7",  label: "Remittance Days",         description: "Days after delivery before seller wallet credit is remitted", unit: "days" },
 };
 

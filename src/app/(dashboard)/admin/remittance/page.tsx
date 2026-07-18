@@ -107,6 +107,7 @@ export default function AdminRemittancePage() {
   // Pending
   const [orders, setOrders] = useState<Order[]>([]);
   const [charges, setCharges] = useState<Record<string, ChargeRow>>({});
+  const [defaults, setDefaults] = useState({ platformCharge: 20, shippingCharge: 50 });
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [remittanceDate, setRemittanceDate] = useState("");
@@ -134,10 +135,23 @@ export default function AdminRemittancePage() {
     const res = await fetch(`/api/admin/remittance?sellerId=${sellerId}`);
     const data = await res.json();
     const fetched: Order[] = data.orders ?? [];
+    const cfgDefaults = data.defaults ?? { platformCharge: 20, shippingCharge: 50 };
     setOrders(fetched);
+    setDefaults(cfgDefaults);
     const rows: Record<string, ChargeRow> = {};
     fetched.forEach((o) => {
-      rows[o.id] = { orderId: o.id, productCost: o.productCost?.toString() ?? "", shippingCharge: o.shippingCharge?.toString() ?? "", packingCharge: o.packingCharge?.toString() ?? "", rtoCharge: o.rtoCharge?.toString() ?? "", include: true };
+      const isRTO = o.status === "RTO";
+      rows[o.id] = {
+        orderId: o.id,
+        productCost:   o.productCost    != null ? o.productCost.toString()   : "",
+        shippingCharge: isRTO ? "0"
+          : o.shippingCharge != null ? o.shippingCharge.toString()
+          : cfgDefaults.shippingCharge.toString(),
+        packingCharge: o.packingCharge  != null ? o.packingCharge.toString()
+          : cfgDefaults.platformCharge.toString(),
+        rtoCharge:     o.rtoCharge     != null ? o.rtoCharge.toString()     : "",
+        include: true,
+      };
     });
     setCharges(rows); setLoading(false);
   }, [sellerId]);
@@ -366,6 +380,9 @@ export default function AdminRemittancePage() {
                   <div className="flex items-center gap-2">
                     <Calculator className="w-4 h-4 text-gray-400" />
                     <span className="font-semibold text-sm text-gray-900">Orders Pending Remittance ({orders.length})</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 font-medium">
+                      Platform ₹{defaults.platformCharge} · Shipping ₹{defaults.shippingCharge} (auto-filled)
+                    </span>
                   </div>
                   <button onClick={toggleAll} className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800">
                     {allSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}

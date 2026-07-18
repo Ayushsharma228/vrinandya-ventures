@@ -45,21 +45,29 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ history });
   }
 
-  // Default: pending unremitted orders
-  const orders = await prisma.order.findMany({
-    where: {
-      sellerId,
-      remittedAt: null,
-      OR: [
-        { status: "DELIVERED" },
-        { status: "RTO" },
-      ],
-    },
-    include: { items: { select: { name: true, quantity: true } } },
-    orderBy: { createdAt: "desc" },
-  });
+  // Default: pending unremitted orders + platform config defaults
+  const [orders, configRows] = await Promise.all([
+    prisma.order.findMany({
+      where: {
+        sellerId,
+        remittedAt: null,
+        OR: [{ status: "DELIVERED" }, { status: "RTO" }],
+      },
+      include: { items: { select: { name: true, quantity: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.platformConfig.findMany({
+      where: { key: { in: ["DEFAULT_PACKING_CHARGE", "DEFAULT_SHIPPING_CHARGE"] } },
+    }),
+  ]);
 
-  return NextResponse.json({ orders });
+  const configMap = Object.fromEntries(configRows.map((r) => [r.key, parseFloat(r.value)]));
+  const defaults = {
+    platformCharge: configMap["DEFAULT_PACKING_CHARGE"]  ?? 20,
+    shippingCharge: configMap["DEFAULT_SHIPPING_CHARGE"] ?? 50,
+  };
+
+  return NextResponse.json({ orders, defaults });
 }
 
 // POST: create remittance (upcoming — not yet paid)
