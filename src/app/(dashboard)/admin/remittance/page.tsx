@@ -383,7 +383,7 @@ export default function AdminRemittancePage() {
                         <th className="px-3 py-3 text-right text-xs font-semibold text-gray-500">Order Amt</th>
                         <th className="px-3 py-3 text-right text-xs font-semibold text-purple-600">Product Cost</th>
                         <th className="px-3 py-3 text-right text-xs font-semibold text-blue-600">Shipping</th>
-                        <th className="px-3 py-3 text-right text-xs font-semibold text-orange-500">Packing</th>
+                        <th className="px-3 py-3 text-right text-xs font-semibold text-orange-500">Platform</th>
                         <th className="px-3 py-3 text-right text-xs font-semibold text-red-500">RTO</th>
                         <th className="px-3 py-3 text-right text-xs font-semibold text-green-600">Net</th>
                       </tr>

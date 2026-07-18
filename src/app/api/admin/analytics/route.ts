@@ -20,10 +20,10 @@ export async function GET(req: NextRequest) {
   } : {};
 
   // ── Parallel queries ─────────────────────────────────────────────────────
-  const [orders, settlements, sellerRows, supplierPaymentAgg, activeSellers, pendingWd, leadStages, waStatuses, activationStages] = await Promise.all([
+  const [orders, settlements, sellerRows, supplierPaymentAgg, activeSellers, pendingWd, leadStages, waStatuses, activationStages, walletCreditAgg, orderChargeAgg] = await Promise.all([
     prisma.order.findMany({
       where: dateWhere,
-      select: { status: true, totalAmount: true, createdAt: true, sellerId: true },
+      select: { status: true, totalAmount: true, createdAt: true, sellerId: true, packingCharge: true, productCost: true, shippingCharge: true },
       orderBy: { createdAt: "asc" },
     }),
     prisma.settlement.findMany({
@@ -58,6 +58,17 @@ export async function GET(req: NextRequest) {
     prisma.lead.groupBy({ by: ["pipelineStage"], _count: { id: true } }),
     prisma.wAConversation.groupBy({ by: ["status"], _count: { id: true } }),
     prisma.sellerActivation.groupBy({ by: ["currentStage"], _count: { id: true }, orderBy: { _count: { currentStage: "desc" } } }),
+    // Net paid to sellers via wallet remittances (CREDIT = money sent to seller)
+    prisma.walletTransaction.aggregate({
+      where: { type: "CREDIT", ...dateWhere },
+      _sum:   { amount: true },
+      _count: { id: true },
+    }),
+    // Platform charges (packingCharge) + product cost aggregate from orders
+    prisma.order.aggregate({
+      where: dateWhere,
+      _sum: { packingCharge: true, productCost: true, shippingCharge: true, totalAmount: true },
+    }),
   ]);
 
   // ── Order trend (daily) ──────────────────────────────────────────────────
@@ -153,6 +164,26 @@ export async function GET(req: NextRequest) {
   const waByStatus     = Object.fromEntries(waStatuses.map(w => [w.status, w._count.id]));
   const activationByStage = Object.fromEntries(activationStages.map(a => [a.currentStage, a._count.id]));
 
+  // ── Remittance / order-based financials ──────────────────────────────────
+  const totalPlatformCharges = orderChargeAgg._sum.packingCharge ?? 0;
+  const totalProductCost     = orderChargeAgg._sum.productCost    ?? 0;
+  const totalShipping        = orderChargeAgg._sum.shippingCharge ?? 0;
+  const totalGMV             = orderChargeAgg._sum.totalAmount    ?? 0;
+  const netPaidToSellers     = walletCreditAgg._sum.amount        ?? 0;
+  const remittanceCount      = walletCreditAgg._count.id;
+
+  // Revenue trend per day (from orders)
+  const revenueTrendMap = new Map<string, { gmv: number; platformCharges: number; productCost: number }>();
+  for (const o of orders) {
+    const day = o.createdAt.toISOString().slice(0, 10);
+    const cur = revenueTrendMap.get(day) ?? { gmv: 0, platformCharges: 0, productCost: 0 };
+    cur.gmv            += o.totalAmount;
+    cur.platformCharges += o.packingCharge ?? 0;
+    cur.productCost    += o.productCost    ?? 0;
+    revenueTrendMap.set(day, cur);
+  }
+  const revenueTrend = Array.from(revenueTrendMap.entries()).map(([date, v]) => ({ date, ...v }));
+
   return NextResponse.json({
     period: { from: from ?? null, to: to ?? null },
     orders: {
@@ -189,5 +220,14 @@ export async function GET(req: NextRequest) {
     leads: { total: totalLeads, qualified: qualifiedLeads, byStage: leadByStage },
     whatsapp: waByStatus,
     activation: activationByStage,
+    remittances: {
+      netPaidToSellers,
+      count: remittanceCount,
+      platformCharges: totalPlatformCharges,
+      productCost: totalProductCost,
+      shipping: totalShipping,
+      gmv: totalGMV,
+      revenueTrend,
+    },
   });
 }

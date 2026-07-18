@@ -52,6 +52,11 @@ interface AnalyticsData {
   leads:               { total: number; qualified: number; byStage: Record<string, number> };
   whatsapp:            Record<string, number>;
   activation:          Record<string, number>;
+  remittances:         {
+    netPaidToSellers: number; count: number; platformCharges: number;
+    productCost: number; shipping: number; gmv: number;
+    revenueTrend: { date: string; gmv: number; platformCharges: number; productCost: number }[];
+  };
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
@@ -144,10 +149,10 @@ export default function AdminAnalyticsPage() {
         cards={
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Total GMV",           value: inr(s?.grossRevenue ?? 0),       color: "#00C67A" },
-              { label: "Platform Earnings",   value: inr(s?.platformEarnings ?? 0),   color: "#3B82F6" },
-              { label: "Active Sellers",      value: String(data?.activeSellers ?? 0), color: "#8B5CF6" },
-              { label: "Pending Payouts",     value: String(data?.pendingWithdrawals.count ?? 0), color: "#F59E0B" },
+              { label: "Total GMV",           value: inr(data?.remittances?.gmv ?? s?.grossRevenue ?? 0),              color: "#00C67A" },
+              { label: "Platform Charges",    value: inr(data?.remittances?.platformCharges ?? s?.platformFee ?? 0),   color: "#3B82F6" },
+              { label: "Active Sellers",      value: String(data?.activeSellers ?? 0),                                  color: "#8B5CF6" },
+              { label: "Pending Payouts",     value: String(data?.pendingWithdrawals.count ?? 0),                       color: "#F59E0B" },
             ].map(({ label, value, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
                 style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
@@ -215,11 +220,11 @@ export default function AdminAnalyticsPage() {
               <KpiCard label="Active Sellers"  value={String(data.activeSellers)}
                 sub="KYC approved"
                 icon={<Users className="w-5 h-5" style={{ color: "#8B5CF6" }} />} />
-              <KpiCard label="Platform Fees"   value={inr(s?.platformFee ?? 0)}
-                sub={`+GST ${inr(s?.gstOnFees ?? 0)}`} subColor="#8B5CF6"
+              <KpiCard label="Platform Charges" value={inr(data.remittances?.platformCharges ?? 0)}
+                sub={`Product cost ${inr(data.remittances?.productCost ?? 0)}`} subColor="#8B5CF6"
                 icon={<BadgeIndianRupee className="w-5 h-5" style={{ color: "#8B5CF6" }} />} />
-              <KpiCard label="Net to Sellers"  value={inr(s?.netPayable ?? 0)}
-                sub="After all deductions"
+              <KpiCard label="Net to Sellers"  value={inr(data.remittances?.netPaidToSellers ?? 0)}
+                sub={`${data.remittances?.count ?? 0} remittances done`}
                 icon={<ArrowUpRight className="w-5 h-5" style={{ color: "#3B82F6" }} />} />
               <KpiCard label="Supplier Paid"   value={inr(data.supplierPayments.totalPaid)}
                 sub={`${data.supplierPayments.count} payments`}
@@ -259,13 +264,13 @@ export default function AdminAnalyticsPage() {
               {/* Revenue trend */}
               <div className="card p-5">
                 <h2 className="text-sm font-semibold mb-4" style={{ color: "var(--text-900)" }}>
-                  Revenue Trend <span className="text-xs font-normal ml-1" style={{ color: "var(--text-400)" }}>(settled orders)</span>
+                  Revenue Trend <span className="text-xs font-normal ml-1" style={{ color: "var(--text-400)" }}>(from orders)</span>
                 </h2>
-                {(s?.trend?.length ?? 0) === 0 ? (
-                  <div className="h-52 flex items-center justify-center text-sm" style={{ color: "var(--text-400)" }}>No settlement data</div>
+                {(data.remittances?.revenueTrend?.length ?? 0) === 0 ? (
+                  <div className="h-52 flex items-center justify-center text-sm" style={{ color: "var(--text-400)" }}>No data</div>
                 ) : (
                   <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={s!.trend}>
+                    <BarChart data={data.remittances.revenueTrend}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis dataKey="date" tickFormatter={fmt} tick={{ fontSize: 10, fill: "var(--text-400)" }} />
                       <YAxis tick={{ fontSize: 10, fill: "var(--text-400)" }} tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`} />
@@ -274,9 +279,9 @@ export default function AdminAnalyticsPage() {
                         formatter={(val: unknown) => [inr(Number(val))]}
                         contentStyle={{ fontSize: 12, background: "var(--bg-card)", border: "1px solid var(--border)" }} />
                       <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
-                      <Bar dataKey="grossRevenue"     fill="#3B82F6" name="GMV"              radius={[2,2,0,0]} />
-                      <Bar dataKey="platformEarnings" fill="#00C67A" name="Platform Earnings" radius={[2,2,0,0]} />
-                      <Bar dataKey="netPayable"       fill="#8B5CF6" name="Net to Seller"    radius={[2,2,0,0]} />
+                      <Bar dataKey="gmv"             fill="#3B82F6" name="GMV"               radius={[2,2,0,0]} />
+                      <Bar dataKey="platformCharges" fill="#F59E0B" name="Platform Charges"  radius={[2,2,0,0]} />
+                      <Bar dataKey="productCost"     fill="#8B5CF6" name="Product Cost"      radius={[2,2,0,0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
