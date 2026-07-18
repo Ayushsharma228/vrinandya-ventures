@@ -208,3 +208,56 @@ export async function emailOnboardingComplete(opts: { to: string; name: string }
     `),
   );
 }
+
+export async function emailNdrAlert(opts: {
+  to: string; name: string; externalOrderId: string;
+  ndrReason: string; ndrAttempts: number; awbNumber?: string | null;
+}): Promise<void> {
+  const isHighAttempts = opts.ndrAttempts >= 3;
+  await send(
+    opts.to,
+    `Action Required: Delivery Failed — Order #${opts.externalOrderId}`,
+    base(`
+      ${h2("Delivery attempt failed")}
+      ${p(`Hi ${opts.name}, a delivery attempt for order <strong>#${opts.externalOrderId}</strong> has failed.`)}
+      ${badge("NDR", "#EF4444")}
+      ${kv([
+        ["Order ID",    `#${opts.externalOrderId}`],
+        ...(opts.awbNumber ? [["AWB", opts.awbNumber] as [string,string]] : []),
+        ["Reason",      opts.ndrReason],
+        ["Attempts",    String(opts.ndrAttempts)],
+      ])}
+      ${hr()}
+      ${isHighAttempts
+        ? p(`<strong style="color:#EF4444">⚠️ This order has had ${opts.ndrAttempts} failed attempts.</strong> Please decide immediately whether to re-attempt or initiate RTO.`)
+        : p("Please log in and choose to re-attempt delivery with updated address, or initiate a return (RTO).")
+      }
+      ${p(`Take action now in your ${link("NDR Dashboard", "/seller/ndr")}.`)}
+    `),
+  );
+}
+
+export async function emailNdrActionedByAdmin(opts: {
+  to: string; name: string; externalOrderId: string; action: string;
+}): Promise<void> {
+  const isRto = opts.action === "RTO";
+  await send(
+    opts.to,
+    `NDR Update — Order #${opts.externalOrderId} ${isRto ? "marked for RTO" : "re-attempt scheduled"}`,
+    base(`
+      ${h2(`NDR actioned by platform`)}
+      ${p(`Hi ${opts.name}, the platform has taken action on the failed delivery for order <strong>#${opts.externalOrderId}</strong>.`)}
+      ${badge(isRto ? "RTO" : "RE-ATTEMPT", isRto ? "#F59E0B" : "#3B82F6")}
+      ${kv([
+        ["Order ID", `#${opts.externalOrderId}`],
+        ["Action",   isRto ? "Return to Origin (RTO)" : "Re-attempt Delivery"],
+      ])}
+      ${hr()}
+      ${isRto
+        ? p("The order is being returned to origin. Any settlement will be adjusted accordingly.")
+        : p("A re-attempt has been scheduled with the courier. You will be notified when delivered.")
+      }
+      ${p(`View full order in your ${link("Orders Dashboard", "/seller/orders")}.`)}
+    `),
+  );
+}

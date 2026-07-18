@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { emailNdrAlert } from "@/lib/email";
 
 const NDR_KEYWORDS = [
   "undelivered", "delivery attempt", "ndr", "failed delivery",
@@ -28,7 +29,10 @@ export async function GET(req: NextRequest) {
       status: { notIn: ["DELIVERED", "CANCELLED", "RTO"] },
       ndrActionTaken: null,
     },
-    select: { id: true, awbNumber: true, ndrAttempts: true },
+    select: {
+      id: true, awbNumber: true, ndrAttempts: true, externalOrderId: true,
+      seller: { select: { name: true, email: true } },
+    },
   });
 
   if (orders.length === 0) return NextResponse.json({ found: 0 });
@@ -55,14 +59,27 @@ export async function GET(req: NextRequest) {
     const statusStr = statusObj?.Status ?? "";
     if (!isNDR(statusStr)) continue;
 
+    const newAttempts = (order.ndrAttempts ?? 0) + 1;
+    const ndrReason = statusObj?.Instructions || "Delivery attempt failed";
     await prisma.order.update({
       where: { id: order.id },
       data: {
         ndrStatus: statusStr,
-        ndrReason: statusObj?.Instructions || "Delivery attempt failed",
-        ndrAttempts: (order.ndrAttempts ?? 0) + 1,
+        ndrReason,
+        ndrAttempts: newAttempts,
       },
     });
+    // Notify seller (fire-and-forget)
+    if (order.seller?.email) {
+      emailNdrAlert({
+        to:              order.seller.email,
+        name:            order.seller.name ?? "Seller",
+        externalOrderId: order.externalOrderId,
+        ndrReason,
+        ndrAttempts:     newAttempts,
+        awbNumber:       order.awbNumber,
+      }).catch(() => {});
+    }
     found++;
   }
 
