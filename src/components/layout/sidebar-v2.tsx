@@ -54,8 +54,9 @@ const adminGroups: NavGroup[] = [
   {
     label: "Suppliers",
     items: [
-      { label: "Purchase Orders",   href: "/admin/purchase-orders", icon: ClipboardList },
-      { label: "Inventory",         href: "/admin/inventory",       icon: Boxes },
+      { label: "Purchase Orders",   href: "/admin/purchase-orders",    icon: ClipboardList },
+      { label: "Supplier Payables", href: "/admin/supplier-payables",  icon: BadgeIndianRupee },
+      { label: "Inventory",         href: "/admin/inventory",          icon: Boxes },
     ],
   },
   {
