@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Package, User, Truck, Receipt, Clock,
   CheckCircle2, XCircle, AlertTriangle, RefreshCw,
-  MapPin, Phone, Tag, ChevronRight, UserCheck, Loader2,
+  MapPin, Phone, Tag, ChevronRight, UserCheck, Loader2, Plus,
 } from "lucide-react";
 
 interface OrderItem { id: string; name: string; quantity: number; price: number; productId: string | null; }
@@ -18,6 +18,8 @@ interface Settlement {
   shippingCharge: number; packingCharge: number; codFee: number; adSpend: number;
   grossProfit: number | null; netProfit: number | null; createdAt: string;
 }
+interface Supplier { id: string; name: string | null; email: string; phone: string | null; businessName: string | null; }
+
 interface OrderDetail {
   id: string; externalOrderId: string; source: string; status: string;
   supplierStatus: string | null; supplierNote: string | null;
@@ -91,6 +93,15 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   const [statusChanging, setStatusChanging] = useState(false);
   const [newStatus, setNewStatus]   = useState("");
 
+  // Supplier assignment
+  const [suppliers, setSuppliers]           = useState<Supplier[]>([]);
+  const [assignSupplierId, setAssignSupplierId] = useState("");
+  const [assignDispatch, setAssignDispatch] = useState("");
+  const [assignDelivery, setAssignDelivery] = useState("");
+  const [assignNotes, setAssignNotes]       = useState("");
+  const [assigning, setAssigning]           = useState(false);
+  const [assignError, setAssignError]       = useState("");
+
   const fetchOrder = useCallback(async () => {
     setLoading(true);
     const r = await fetch(`/api/admin/orders/${id}`);
@@ -104,6 +115,35 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   }, [id]);
 
   useEffect(() => { fetchOrder(); }, [fetchOrder]);
+
+  useEffect(() => {
+    fetch("/api/admin/suppliers")
+      .then(r => r.json())
+      .then(d => setSuppliers(d.suppliers ?? []));
+  }, []);
+
+  async function handleAssignSupplier() {
+    if (!assignSupplierId) return;
+    setAssigning(true); setAssignError("");
+    const res = await fetch(`/api/admin/orders/${id}/assign-supplier`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        supplierId: assignSupplierId,
+        expectedDispatchDate: assignDispatch || undefined,
+        expectedDeliveryDate: assignDelivery || undefined,
+        notes: assignNotes || undefined,
+      }),
+    });
+    if (res.ok) {
+      await fetchOrder();
+      setAssignSupplierId(""); setAssignDispatch(""); setAssignDelivery(""); setAssignNotes("");
+    } else {
+      const d = await res.json();
+      setAssignError(d.error ?? "Assignment failed");
+    }
+    setAssigning(false);
+  }
 
   async function handleStatusChange() {
     if (!order || newStatus === order.status) return;
@@ -271,7 +311,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
                   <Row label="Platform Fee"    value={fmt(settlement.platformFee)} />
                   <Row label="GST on Fee (18%)"value={fmt(settlement.gstOnFees)} />
                   <Row label="Shipping"        value={fmt(settlement.shippingCharge)} />
-                  <Row label="Packing"         value={fmt(settlement.packingCharge)} />
+                  <Row label="Platform Charges" value={fmt(settlement.packingCharge)} />
                   <Row label="COD Fee"         value={fmt(settlement.codFee)} />
                   <Row label="Ad Spend"        value={fmt(settlement.adSpend)} />
                 </div>
@@ -367,12 +407,57 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
               )}
             </Section>
           ) : (
-            <div className="card p-5 flex flex-col items-center gap-2 text-center">
-              <UserCheck className="w-6 h-6" style={{ color: "var(--text-300)" }} />
-              <p className="text-xs" style={{ color: "var(--text-400)" }}>No supplier assigned</p>
-              <p className="text-xs" style={{ color: "var(--text-300)" }}>
-                Use the Orders list to assign a supplier
-              </p>
+            <div className="card overflow-hidden">
+              <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
+                <Plus className="w-4 h-4" style={{ color: "var(--accent)" }} />
+                <h3 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Assign Supplier</h3>
+              </div>
+              <div className="p-5 space-y-3">
+                <div>
+                  <label className="text-xs mb-1 block" style={{ color: "var(--text-400)" }}>Supplier *</label>
+                  <select value={assignSupplierId} onChange={e => setAssignSupplierId(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border"
+                    style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }}>
+                    <option value="">— select supplier —</option>
+                    {suppliers.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.businessName ?? s.name ?? s.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs mb-1 block" style={{ color: "var(--text-400)" }}>Expected Dispatch</label>
+                    <input type="date" value={assignDispatch} onChange={e => setAssignDispatch(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-lg border"
+                      style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }} />
+                  </div>
+                  <div>
+                    <label className="text-xs mb-1 block" style={{ color: "var(--text-400)" }}>Expected Delivery</label>
+                    <input type="date" value={assignDelivery} onChange={e => setAssignDelivery(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-lg border"
+                      style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }} />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs mb-1 block" style={{ color: "var(--text-400)" }}>Notes (optional)</label>
+                  <input type="text" value={assignNotes} onChange={e => setAssignNotes(e.target.value)}
+                    placeholder="Special instructions for supplier…"
+                    className="w-full px-3 py-2 text-xs rounded-lg border"
+                    style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }} />
+                </div>
+                {assignError && (
+                  <p className="text-xs text-red-500">{assignError}</p>
+                )}
+                <button onClick={handleAssignSupplier} disabled={!assignSupplierId || assigning}
+                  className="w-full py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-40 flex items-center justify-center gap-2"
+                  style={{ background: "var(--accent)" }}>
+                  {assigning
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Assigning…</>
+                    : <><UserCheck className="w-4 h-4" /> Assign Supplier & Create PO</>}
+                </button>
+              </div>
             </div>
           )}
 
