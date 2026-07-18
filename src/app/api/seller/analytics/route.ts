@@ -32,8 +32,8 @@ export async function GET(req: NextRequest) {
     },
   } : {};
 
-  // Orders, settlements, wallet, store — parallel
-  const [orders, settlements, walletTxns, store] = await Promise.all([
+  // Orders, wallet, store — parallel
+  const [orders, walletTxns, store] = await Promise.all([
     prisma.order.findMany({
       where: { sellerId, ...dateWhere },
       select: {
@@ -42,22 +42,18 @@ export async function GET(req: NextRequest) {
         status: true,
         courier: true,
         totalAmount: true,
+        packingCharge: true,
+        productCost: true,
+        shippingCharge: true,
+        rtoCharge: true,
         createdAt: true,
         items: { select: { name: true, sku: true, quantity: true } },
       },
       orderBy: { createdAt: "asc" },
     }),
-    prisma.settlement.findMany({
-      where: { sellerId, ...dateWhere },
-      select: {
-        sellingPrice: true, platformFee: true, netPayable: true,
-        rtoCharge: true, status: true, createdAt: true,
-      },
-      orderBy: { createdAt: "asc" },
-    }),
     prisma.walletTransaction.findMany({
       where: { sellerId },
-      select: { type: true, amount: true, bankTxId: true },
+      select: { type: true, amount: true, bankTxId: true, createdAt: true },
     }),
     prisma.shopifyStore.findFirst({
       where: { sellerId },
@@ -124,19 +120,27 @@ export async function GET(req: NextRequest) {
   const totalRevenue = orders.reduce((s, o) => s + o.totalAmount, 0);
   const avgRevenue = total > 0 ? totalRevenue / total : 0;
 
-  // Settlement earnings
-  const totalGMV       = settlements.reduce((s, r) => s + r.sellingPrice, 0);
-  const totalFees      = settlements.reduce((s, r) => s + r.platformFee,  0);
-  const totalEarned    = settlements.reduce((s, r) => s + r.netPayable,   0);
-  const totalRtoCharge = settlements.reduce((s, r) => s + r.rtoCharge,    0);
+  // Earnings computed from orders (packingCharge = platform charges deducted from seller)
+  const totalGMV        = orders.reduce((s, o) => s + o.totalAmount, 0);
+  const totalFees       = orders.reduce((s, o) => s + (o.packingCharge  ?? 0), 0);
+  const totalProductCost = orders.reduce((s, o) => s + (o.productCost   ?? 0), 0);
+  const totalShipping   = orders.reduce((s, o) => s + (o.shippingCharge ?? 0), 0);
+  const totalRtoCharge  = orders
+    .filter((o) => o.status === "RTO")
+    .reduce((s, o) => s + (o.rtoCharge ?? 0), 0);
 
-  // Daily earnings trend
-  const earningsTrendMap = new Map<string, { gmv: number; earned: number; count: number }>();
-  for (const r of settlements) {
-    const day = r.createdAt.toISOString().slice(0, 10);
-    const cur = earningsTrendMap.get(day) ?? { gmv: 0, earned: 0, count: 0 };
-    cur.gmv   += r.sellingPrice;
-    cur.earned += r.netPayable;
+  // Actual money received = paid wallet CREDITs (bankTxId set = confirmed transfer)
+  const totalEarned = walletTxns
+    .filter((t) => t.type === "CREDIT" && t.bankTxId !== null)
+    .reduce((acc, t) => acc + t.amount, 0);
+
+  // Daily earnings trend from orders
+  const earningsTrendMap = new Map<string, { gmv: number; platformCharges: number; count: number }>();
+  for (const o of orders) {
+    const day = o.createdAt.toISOString().slice(0, 10);
+    const cur = earningsTrendMap.get(day) ?? { gmv: 0, platformCharges: 0, count: 0 };
+    cur.gmv            += o.totalAmount;
+    cur.platformCharges += o.packingCharge ?? 0;
     cur.count++;
     earningsTrendMap.set(day, cur);
   }
@@ -172,9 +176,11 @@ export async function GET(req: NextRequest) {
     earnings: {
       totalGMV,
       totalFees,
+      totalProductCost,
+      totalShipping,
       totalEarned,
       totalRtoCharge,
-      settledCount: settlements.length,
+      settledCount: orders.filter((o) => o.status === "DELIVERED").length,
       earningsTrend,
     },
     wallet: { balance: walletBalance, upcoming: upcomingAmount },

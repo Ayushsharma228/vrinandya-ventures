@@ -222,6 +222,32 @@ export default function SellerDashboard() {
       {/* ── Content ─────────────────────────────────────────── */}
       <div className="px-4 md:px-8 py-6 space-y-6">
 
+        {/* Upcoming Remittance Banner */}
+        {!loading && wallet && wallet.upcomingAmount > 0 && (
+          <div className="flex items-center justify-between gap-4 rounded-2xl px-5 py-4"
+            style={{ background: "linear-gradient(135deg, #052e16 0%, #064e3b 100%)", border: "1px solid rgba(0,198,122,0.3)" }}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(0,198,122,0.2)" }}>
+                <Clock className="w-5 h-5" style={{ color: "#00C67A" }} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">
+                  ₹{fmt(wallet.upcomingAmount)} upcoming remittance
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>
+                  {nextPayoutDate ? `Expected on ${nextPayoutDate}` : "Payment scheduled"}
+                </p>
+              </div>
+            </div>
+            <Link href="/seller/wallet"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex-shrink-0"
+              style={{ background: "rgba(0,198,122,0.2)", color: "#00C67A", border: "1px solid rgba(0,198,122,0.3)" }}>
+              View Wallet <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div className="flex flex-wrap items-center gap-2 md:gap-3">
           {[

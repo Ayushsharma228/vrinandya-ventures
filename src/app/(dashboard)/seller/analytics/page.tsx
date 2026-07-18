@@ -26,10 +26,12 @@ interface AnalyticsData {
   earnings: {
     totalGMV: number;
     totalFees: number;
+    totalProductCost: number;
+    totalShipping: number;
     totalEarned: number;
     totalRtoCharge: number;
     settledCount: number;
-    earningsTrend: { date: string; gmv: number; earned: number; count: number }[];
+    earningsTrend: { date: string; gmv: number; platformCharges: number; count: number }[];
   };
   wallet: { balance: number; upcoming: number };
 }
@@ -217,14 +219,16 @@ export default function SellerAnalyticsPage() {
             <div className="flex items-center gap-2 mb-4">
               <BadgeIndianRupee className="w-4 h-4 text-green-500" />
               <h2 className="font-semibold text-gray-900">Your Earnings</h2>
-              <span className="text-xs text-gray-400 ml-1">({data?.earnings?.settledCount ?? 0} settled orders in period)</span>
+              <span className="text-xs text-gray-400 ml-1">({data?.earnings?.settledCount ?? 0} delivered orders in period)</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-5">
               {[
-                { label: "Gross Revenue",  value: inr(data?.earnings?.totalGMV ?? 0),      color: "text-blue-600" },
-                { label: "Platform Fees",  value: inr(data?.earnings?.totalFees ?? 0),     color: "text-purple-600" },
-                { label: "RTO Charges",    value: inr(data?.earnings?.totalRtoCharge ?? 0), color: "text-orange-500" },
-                { label: "Net Earned",     value: inr(data?.earnings?.totalEarned ?? 0),   color: "text-green-600" },
+                { label: "Gross Revenue",       value: inr(data?.earnings?.totalGMV          ?? 0), color: "text-blue-600" },
+                { label: "Product Cost",        value: inr(data?.earnings?.totalProductCost  ?? 0), color: "text-purple-600" },
+                { label: "Platform Charges",    value: inr(data?.earnings?.totalFees         ?? 0), color: "text-orange-500" },
+                { label: "Shipping",            value: inr(data?.earnings?.totalShipping     ?? 0), color: "text-blue-400" },
+                { label: "RTO Charges",         value: inr(data?.earnings?.totalRtoCharge    ?? 0), color: "text-red-500" },
+                { label: "Remitted to You",     value: inr(data?.earnings?.totalEarned       ?? 0), color: "text-green-600" },
               ].map(({ label, value, color }) => (
                 <div key={label} className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
                   <p className="text-xs text-gray-500 mb-1">{label}</p>
@@ -258,8 +262,8 @@ export default function SellerAnalyticsPage() {
                     formatter={(val: unknown) => [inr(Number(val))]}
                     contentStyle={{ fontSize: 12 }} />
                   <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="gmv"    fill="#3b5bdb" name="GMV"       radius={[2,2,0,0]} />
-                  <Bar dataKey="earned" fill="#40c057" name="Net Earned" radius={[2,2,0,0]} />
+                  <Bar dataKey="gmv"             fill="#3b5bdb" name="GMV"               radius={[2,2,0,0]} />
+                  <Bar dataKey="platformCharges" fill="#fd7e14" name="Platform Charges" radius={[2,2,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
