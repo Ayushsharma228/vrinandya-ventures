@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   } : {};
 
   // ── Parallel queries ─────────────────────────────────────────────────────
-  const [orders, settlements, sellerRows, supplierPaymentAgg, activeSellers, pendingWd] = await Promise.all([
+  const [orders, settlements, sellerRows, supplierPaymentAgg, activeSellers, pendingWd, leadStages, waStatuses, activationStages] = await Promise.all([
     prisma.order.findMany({
       where: dateWhere,
       select: { status: true, totalAmount: true, createdAt: true, sellerId: true },
@@ -55,6 +55,9 @@ export async function GET(req: NextRequest) {
       _count: { id: true },
       _sum:   { amount: true },
     }),
+    prisma.lead.groupBy({ by: ["pipelineStage"], _count: { id: true } }),
+    prisma.wAConversation.groupBy({ by: ["status"], _count: { id: true } }),
+    prisma.sellerActivation.groupBy({ by: ["currentStage"], _count: { id: true }, orderBy: { _count: { currentStage: "desc" } } }),
   ]);
 
   // ── Order trend (daily) ──────────────────────────────────────────────────
@@ -142,6 +145,14 @@ export async function GET(req: NextRequest) {
     return acc;
   }, {} as Record<string, number>);
 
+  // ── Lead / CRM metrics ───────────────────────────────────────────────────
+  const QUALIFIED_STAGES = new Set(["SALES_CALL_BOOKED", "DEMO_DONE", "PROPOSAL_SENT", "NEGOTIATION", "CLIENT"]);
+  const leadByStage = Object.fromEntries(leadStages.map(l => [l.pipelineStage, l._count.id]));
+  const totalLeads     = leadStages.reduce((a, l) => a + l._count.id, 0);
+  const qualifiedLeads = leadStages.filter(l => QUALIFIED_STAGES.has(l.pipelineStage)).reduce((a, l) => a + l._count.id, 0);
+  const waByStatus     = Object.fromEntries(waStatuses.map(w => [w.status, w._count.id]));
+  const activationByStage = Object.fromEntries(activationStages.map(a => [a.currentStage, a._count.id]));
+
   return NextResponse.json({
     period: { from: from ?? null, to: to ?? null },
     orders: {
@@ -175,5 +186,8 @@ export async function GET(req: NextRequest) {
       count:  pendingWd._count.id ?? 0,
       amount: pendingWd._sum.amount ?? 0,
     },
+    leads: { total: totalLeads, qualified: qualifiedLeads, byStage: leadByStage },
+    whatsapp: waByStatus,
+    activation: activationByStage,
   });
 }

@@ -157,12 +157,6 @@ const salesGroups: NavGroup[] = [
       { label: "My Leads",     href: "/sales/leads",  icon: UserCheck },
     ],
   },
-  {
-    label: "Account",
-    items: [
-      { label: "Profile",      href: "/sales/profile", icon: User },
-    ],
-  },
 ];
 
 const supplierGroups: NavGroup[] = [

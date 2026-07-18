@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   RefreshCw, TrendingUp, ShoppingCart, Truck, Users,
   Calendar, BadgeIndianRupee, ArrowUpRight, BanknoteIcon,
+  UserCheck, MessageCircle, Zap,
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -48,6 +49,9 @@ interface AnalyticsData {
   supplierPayments:    { totalPaid: number; count: number };
   activeSellers:       number;
   pendingWithdrawals:  { count: number; amount: number };
+  leads:               { total: number; qualified: number; byStage: Record<string, number> };
+  whatsapp:            Record<string, number>;
+  activation:          Record<string, number>;
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
@@ -373,11 +377,11 @@ export default function AdminAnalyticsPage() {
               <h2 className="text-sm font-semibold mb-4" style={{ color: "var(--text-900)" }}>Financial Breakdown</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                 {[
-                  { label: "Gross Revenue", value: inr(s?.grossRevenue ?? 0),     color: "#3B82F6" },
-                  { label: "Platform Fee",  value: inr(s?.platformFee ?? 0),       color: "#8B5CF6" },
-                  { label: "GST on Fees",   value: inr(s?.gstOnFees ?? 0),         color: "#F59E0B" },
-                  { label: "Platform Earnings", value: inr(s?.platformEarnings ?? 0), color: "#00C67A" },
-                  { label: "Supplier Payable", value: inr(s?.supplierPayable ?? 0),  color: "#EF4444" },
+                  { label: "Gross Revenue",     value: inr(s?.grossRevenue ?? 0),       color: "#3B82F6" },
+                  { label: "Platform Fee",       value: inr(s?.platformFee ?? 0),        color: "#8B5CF6" },
+                  { label: "GST on Fees",        value: inr(s?.gstOnFees ?? 0),          color: "#F59E0B" },
+                  { label: "Platform Earnings",  value: inr(s?.platformEarnings ?? 0),   color: "#00C67A" },
+                  { label: "Supplier Payable",   value: inr(s?.supplierPayable ?? 0),    color: "#EF4444" },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="text-center rounded-xl py-4 px-3"
                     style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
@@ -387,6 +391,92 @@ export default function AdminAnalyticsPage() {
                 ))}
               </div>
             </div>
+
+            {/* ── Sales & CRM ────────────────────────────────────────────── */}
+            <div className="space-y-4">
+              <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Sales & CRM</h2>
+
+              {/* KPIs */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <KpiCard label="Total Leads"      value={String(data.leads.total)}
+                  sub="all time"
+                  icon={<UserCheck className="w-5 h-5" style={{ color: "#3B82F6" }} />} />
+                <KpiCard label="Qualified"         value={String(data.leads.qualified)}
+                  sub={`${data.leads.total > 0 ? Math.round((data.leads.qualified / data.leads.total) * 100) : 0}% conversion`}
+                  subColor="#00C67A"
+                  icon={<Zap className="w-5 h-5" style={{ color: "#00C67A" }} />} />
+                <KpiCard label="WA Conversations"  value={String(Object.values(data.whatsapp).reduce((a, b) => a + b, 0))}
+                  sub={`${data.whatsapp["QUALIFIED"] ?? 0} qualified`}
+                  icon={<MessageCircle className="w-5 h-5" style={{ color: "#8B5CF6" }} />} />
+                <KpiCard label="Clients Won"       value={String(data.leads.byStage["CLIENT"] ?? 0)}
+                  sub="pipeline stage: CLIENT"
+                  subColor="#00C67A"
+                  icon={<Users className="w-5 h-5" style={{ color: "#00C67A" }} />} />
+              </div>
+
+              {/* Lead pipeline bar */}
+              {Object.keys(data.leads.byStage).length > 0 && (
+                <div className="card p-5">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide mb-4" style={{ color: "var(--text-400)" }}>
+                    Lead Pipeline Breakdown
+                  </h3>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <BarChart data={Object.entries(data.leads.byStage).map(([stage, count]) => ({ stage: stage.replace(/_/g, " "), count }))}
+                      layout="vertical" margin={{ left: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+                      <XAxis type="number" tick={{ fontSize: 10, fill: "var(--text-400)" }} allowDecimals={false} />
+                      <YAxis type="category" dataKey="stage" tick={{ fontSize: 9, fill: "var(--text-400)" }} width={120} />
+                      <Tooltip contentStyle={{ fontSize: 12, background: "var(--bg-card)", border: "1px solid var(--border)" }} />
+                      <Bar dataKey="count" fill="#3B82F6" radius={[0, 3, 3, 0]} name="Leads" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {/* WhatsApp status breakdown */}
+              {Object.keys(data.whatsapp).length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  {[
+                    { key: "ACTIVE",     label: "Active",     color: "#3B82F6" },
+                    { key: "QUALIFIED",  label: "Qualified",  color: "#00C67A" },
+                    { key: "HANDED_OFF", label: "Handed Off", color: "#8B5CF6" },
+                    { key: "CLOSED",     label: "Closed",     color: "#9CA3AF" },
+                    { key: "OPTED_OUT",  label: "Opted Out",  color: "#EF4444" },
+                  ].map(({ key, label, color }) => (
+                    <div key={key} className="rounded-xl px-4 py-3 text-center"
+                      style={{ background: "var(--bg-card)", border: `1px solid var(--border)` }}>
+                      <p className="text-xs mb-1" style={{ color: "var(--text-400)" }}>WA {label}</p>
+                      <p className="text-xl font-bold" style={{ color }}>{data.whatsapp[key] ?? 0}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ── Seller Activation Funnel ───────────────────────────────── */}
+            {Object.keys(data.activation).length > 0 && (
+              <div className="card p-5">
+                <h2 className="text-sm font-semibold mb-4" style={{ color: "var(--text-900)" }}>Seller Activation Funnel</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {Object.entries(data.activation)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([stage, count]) => {
+                      const isGood = stage === "ACTIVATED";
+                      const isBad  = stage === "STALLED" || stage === "BLOCKED";
+                      const color  = isGood ? "#00C67A" : isBad ? "#EF4444" : "#3B82F6";
+                      return (
+                        <div key={stage} className="rounded-xl px-4 py-3"
+                          style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+                          <p className="text-xs mb-1 truncate" style={{ color: "var(--text-400)" }}>
+                            {stage.replace(/_/g, " ")}
+                          </p>
+                          <p className="text-xl font-bold" style={{ color }}>{count}</p>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
