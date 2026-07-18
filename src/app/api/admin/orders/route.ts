@@ -10,16 +10,26 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const search   = searchParams.get("search")   ?? "";
-  const status   = searchParams.get("status")   ?? "";
-  const sellerId = searchParams.get("sellerId") ?? "";
-  const page     = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
-  const limit    = Math.min(100, parseInt(searchParams.get("limit") ?? "50"));
+  const search     = searchParams.get("search")     ?? "";
+  const status     = searchParams.get("status")     ?? "";
+  const sellerId   = searchParams.get("sellerId")   ?? "";
+  const supplierId = searchParams.get("supplierId") ?? "";
+  const dateFrom   = searchParams.get("dateFrom")   ?? "";
+  const dateTo     = searchParams.get("dateTo")     ?? "";
+  const page       = Math.max(1, parseInt(searchParams.get("page")  ?? "1"));
+  const limit      = Math.min(100, parseInt(searchParams.get("limit") ?? "50"));
 
   const where = {
-    ...(sellerId ? { sellerId } : {}),
-    ...(status   ? { status: status as never } : {}),
-    ...(search   ? {
+    ...(sellerId   ? { sellerId }   : {}),
+    ...(supplierId ? { supplierId } : {}),
+    ...(status     ? { status: status as never } : {}),
+    ...(dateFrom || dateTo ? {
+      createdAt: {
+        ...(dateFrom ? { gte: new Date(dateFrom) }                               : {}),
+        ...(dateTo   ? { lte: new Date(new Date(dateTo).setHours(23, 59, 59, 999)) } : {}),
+      },
+    } : {}),
+    ...(search ? {
       OR: [
         { externalOrderId: { contains: search, mode: "insensitive" as const } },
         { customerName:    { contains: search, mode: "insensitive" as const } },

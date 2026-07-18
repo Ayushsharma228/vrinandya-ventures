@@ -312,6 +312,8 @@ export default function AdminOrdersPage() {
   const [search, setSearch]               = useState("");
   const [sellerFilter, setSellerFilter]   = useState("");
   const [statusFilter, setStatusFilter]   = useState("");
+  const [dateFrom, setDateFrom]           = useState("");
+  const [dateTo, setDateTo]               = useState("");
   const [dateInputs, setDateInputs]       = useState<Record<string, string>>({});
   const [quickActing, setQuickActing]       = useState<string | null>(null);
   const [selected, setSelected]             = useState<Set<string>>(new Set());
@@ -339,6 +341,8 @@ export default function AdminOrdersPage() {
     if (search)       params.set("search",   search);
     if (statusFilter) params.set("status",   statusFilter);
     if (sellerFilter) params.set("sellerId", sellerFilter);
+    if (dateFrom)     params.set("dateFrom", dateFrom);
+    if (dateTo)       params.set("dateTo",   dateTo);
     params.set("page",  String(page));
     params.set("limit", String(PAGE_LIMIT));
     const res = await fetch(`/api/admin/orders?${params}`);
@@ -347,9 +351,9 @@ export default function AdminOrdersPage() {
     setTotalOrders(data.total ?? 0);
     setTotalPages(data.pages ?? 1);
     setLoading(false);
-  }, [search, statusFilter, sellerFilter, page]);
+  }, [search, statusFilter, sellerFilter, dateFrom, dateTo, page]);
 
-  useEffect(() => { setPage(1); }, [search, statusFilter, sellerFilter]);
+  useEffect(() => { setPage(1); }, [search, statusFilter, sellerFilter, dateFrom, dateTo]);
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
   // Quick confirm: NEW → PROCESSING
@@ -460,38 +464,14 @@ export default function AdminOrdersPage() {
     setBulkUpdating(false);
   }
 
-  function exportToCSV(exportOrders: Order[]) {
-    const headers = ["Order ID", "Customer Name", "Phone", "Address", "City", "State", "Pincode", "Items", "Amount (₹)", "Status"];
-    const rows = exportOrders.map((o) => {
-      const addr = o.customerAddress ?? {};
-      const phone   = addr.phone   ?? "";
-      const address = addr.address ?? addr.address1 ?? "";
-      const city    = addr.city    ?? "";
-      const state   = addr.state   ?? addr.province ?? "";
-      const pincode = addr.pincode ?? addr.zip      ?? "";
-      const items   = o.items.map((i) => `${i.name} x${i.quantity}`).join(" | ");
-      return [
-        o.externalOrderId,
-        o.customerName ?? "",
-        phone,
-        address,
-        city,
-        state,
-        pincode,
-        items,
-        o.totalAmount.toString(),
-        o.status,
-      ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",");
-    });
-
-    const csv = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href     = url;
-    a.download = `orders-export-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  function exportToCSV() {
+    const params = new URLSearchParams();
+    if (search)       params.set("search",   search);
+    if (statusFilter) params.set("status",   statusFilter);
+    if (sellerFilter) params.set("sellerId", sellerFilter);
+    if (dateFrom)     params.set("from",     dateFrom);
+    if (dateTo)       params.set("to",       dateTo);
+    window.location.href = `/api/admin/orders/export?${params}`;
   }
 
   function toggleSelect(id: string) {
@@ -524,7 +504,7 @@ export default function AdminOrdersPage() {
           </button>
         }
         filters={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <select
               value={sellerFilter}
               onChange={(e) => setSellerFilter(e.target.value)}
@@ -541,6 +521,27 @@ export default function AdminOrdersPage() {
               <option value="" className="text-gray-900 bg-white">All Statuses</option>
               {STATUSES.map((s) => <option key={s} value={s} className="text-gray-900 bg-white">{s}</option>)}
             </select>
+            <input
+              type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+              title="From date"
+              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
+              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)", colorScheme: "dark" }}
+            />
+            <input
+              type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+              title="To date"
+              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
+              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)", colorScheme: "dark" }}
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(""); setDateTo(""); }}
+                className="px-2 py-2 text-xs rounded-xl"
+                style={{ background: "rgba(239,68,68,0.2)", color: "#FCA5A5", border: "1px solid rgba(239,68,68,0.3)" }}
+                title="Clear dates">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         }
       />
@@ -555,11 +556,11 @@ export default function AdminOrdersPage() {
               </span>
             </div>
             <button
-              onClick={() => exportToCSV(selected.size > 0 ? orders.filter((o) => selected.has(o.id)) : orders)}
+              onClick={() => exportToCSV()}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
               style={{ background: "#F0FDF4", color: "#16A34A", border: "1px solid #D1FAE5" }}>
               <Download className="w-3.5 h-3.5" />
-              {selected.size > 0 ? `Export (${selected.size})` : `Export All (${orders.length})`}
+              {`Export CSV (${totalOrders})`}
             </button>
             {selected.size > 0 && (
               <div className="flex items-center gap-2 flex-wrap">

@@ -17,9 +17,11 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = req.nextUrl;
-  const from   = searchParams.get("from");
-  const to     = searchParams.get("to");
-  const status = searchParams.get("status");
+  const from     = searchParams.get("from");
+  const to       = searchParams.get("to");
+  const status   = searchParams.get("status")   ?? "";
+  const sellerId = searchParams.get("sellerId") ?? "";
+  const search   = searchParams.get("search")   ?? "";
 
   const where: Record<string, unknown> = {};
   if (from || to) {
@@ -28,7 +30,15 @@ export async function GET(req: NextRequest) {
       ...(to   ? { lte: new Date(to + "T23:59:59.999Z") } : {}),
     };
   }
-  if (status) where.status = status;
+  if (status)   where.status   = status;
+  if (sellerId) where.sellerId = sellerId;
+  if (search) {
+    where.OR = [
+      { externalOrderId: { contains: search, mode: "insensitive" } },
+      { customerName:    { contains: search, mode: "insensitive" } },
+      { awbNumber:       { contains: search, mode: "insensitive" } },
+    ];
+  }
 
   const orders = await prisma.order.findMany({
     where,
@@ -66,6 +76,6 @@ export async function GET(req: NextRequest) {
     ]),
   );
 
-  const tag = from && to ? `_${from}_to_${to}` : status ? `_${status}` : "";
+  const tag = from && to ? `_${from}_to_${to}` : status ? `_${status}` : `_${new Date().toISOString().split("T")[0]}`;
   return csvResponse(csv, `orders${tag}.csv`);
 }
