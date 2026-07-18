@@ -118,9 +118,9 @@ export async function GET(req: NextRequest) {
   });
   const funnel = Object.fromEntries(funnelAll.map(f => [f.status, f._count.id]));
 
-  // ── Top sellers (enrich with names + settlement earnings) ────────────────
+  // ── Top sellers (enrich with names + real order/wallet earnings) ─────────
   const sellerIds = sellerRows.map(r => r.sellerId);
-  const [sellerUsers, sellerSettlements] = await Promise.all([
+  const [sellerUsers, sellerOrderCharges, sellerWalletCredits] = await Promise.all([
     sellerIds.length > 0
       ? prisma.user.findMany({
           where:  { id: { in: sellerIds } },
@@ -128,16 +128,24 @@ export async function GET(req: NextRequest) {
         })
       : Promise.resolve([]),
     sellerIds.length > 0
-      ? prisma.settlement.groupBy({
+      ? prisma.order.groupBy({
           by:    ["sellerId"],
           where: { sellerId: { in: sellerIds }, ...dateWhere },
-          _sum:  { sellingPrice: true, platformEarnings: true, netPayable: true },
+          _sum:  { packingCharge: true },
+        })
+      : Promise.resolve([]),
+    sellerIds.length > 0
+      ? prisma.walletTransaction.groupBy({
+          by:    ["sellerId"],
+          where: { sellerId: { in: sellerIds }, type: "CREDIT", ...dateWhere },
+          _sum:  { amount: true },
         })
       : Promise.resolve([]),
   ]);
 
   const userMap        = Object.fromEntries(sellerUsers.map(u => [u.id, u]));
-  const settlementMap2 = Object.fromEntries(sellerSettlements.map(s => [s.sellerId, s._sum]));
+  const sellerChargeMap  = Object.fromEntries(sellerOrderCharges.map(s => [s.sellerId, s._sum]));
+  const sellerWalletMap  = Object.fromEntries(sellerWalletCredits.map(s => [s.sellerId, s._sum]));
 
   const topSellers = sellerRows.map(row => ({
     id:               row.sellerId,
@@ -146,8 +154,8 @@ export async function GET(req: NextRequest) {
     brandName:        userMap[row.sellerId]?.brandName ?? null,
     orderCount:       row._count.id,
     gmv:              row._sum.totalAmount ?? 0,
-    platformEarnings: settlementMap2[row.sellerId]?.platformEarnings ?? 0,
-    netPayable:       settlementMap2[row.sellerId]?.netPayable        ?? 0,
+    platformEarnings: sellerChargeMap[row.sellerId]?.packingCharge ?? 0,
+    netPayable:       sellerWalletMap[row.sellerId]?.amount        ?? 0,
   }));
 
   // ── Order status counts ──────────────────────────────────────────────────

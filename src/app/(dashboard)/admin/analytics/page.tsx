@@ -339,7 +339,7 @@ export default function AdminAnalyticsPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-muted)" }}>
-                        {["#", "Seller", "Orders", "GMV", "Platform Earnings", "Net to Seller"].map(h => (
+                        {["#", "Seller", "Orders", "GMV", "Platform Charges", "Remitted to Seller"].map(h => (
                           <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
                             style={{ color: "var(--text-400)" }}>{h}</th>
                         ))}
@@ -382,11 +382,11 @@ export default function AdminAnalyticsPage() {
               <h2 className="text-sm font-semibold mb-4" style={{ color: "var(--text-900)" }}>Financial Breakdown</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                 {[
-                  { label: "Gross Revenue",     value: inr(s?.grossRevenue ?? 0),       color: "#3B82F6" },
-                  { label: "Platform Fee",       value: inr(s?.platformFee ?? 0),        color: "#8B5CF6" },
-                  { label: "GST on Fees",        value: inr(s?.gstOnFees ?? 0),          color: "#F59E0B" },
-                  { label: "Platform Earnings",  value: inr(s?.platformEarnings ?? 0),   color: "#00C67A" },
-                  { label: "Supplier Payable",   value: inr(s?.supplierPayable ?? 0),    color: "#EF4444" },
+                  { label: "Gross Revenue",       value: inr(data.remittances?.gmv              ?? 0), color: "#3B82F6" },
+                  { label: "Platform Charges",    value: inr(data.remittances?.platformCharges  ?? 0), color: "#8B5CF6" },
+                  { label: "GST (18%)",           value: inr((data.remittances?.platformCharges ?? 0) * 0.18), color: "#F59E0B" },
+                  { label: "Net to Sellers",      value: inr(data.remittances?.netPaidToSellers ?? 0), color: "#00C67A" },
+                  { label: "Product Cost",        value: inr(data.remittances?.productCost      ?? 0), color: "#EF4444" },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="text-center rounded-xl py-4 px-3"
                     style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
