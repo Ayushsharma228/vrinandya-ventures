@@ -56,7 +56,7 @@ function OrderBreakdownTable({ orders }: { orders: HistoryOrder[] }) {
             <th className="px-4 py-2 text-right text-gray-500">Order Amt</th>
             <th className="px-4 py-2 text-right text-purple-600">Product</th>
             <th className="px-4 py-2 text-right text-blue-600">Shipping</th>
-            <th className="px-4 py-2 text-right text-orange-500">Packing</th>
+            <th className="px-4 py-2 text-right text-orange-500">Platform</th>
             <th className="px-4 py-2 text-right text-red-500">RTO</th>
             <th className="px-4 py-2 text-right text-green-600 font-semibold">Net</th>
           </tr>
@@ -425,7 +425,7 @@ export default function AdminRemittancePage() {
                   <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-500">Order Amount</p><p className="font-bold text-gray-800 mt-0.5">{fmt(totalOrderAmt)}</p></div>
                   <div className="bg-purple-50 rounded-lg p-3"><p className="text-xs text-purple-600">Product Cost</p><p className="font-bold text-purple-700 mt-0.5">- {fmt(totalProductCost)}</p></div>
                   <div className="bg-blue-50 rounded-lg p-3"><p className="text-xs text-blue-600">Shipping</p><p className="font-bold text-blue-700 mt-0.5">- {fmt(totalShipping)}</p></div>
-                  <div className="bg-orange-50 rounded-lg p-3"><p className="text-xs text-orange-500">Packing</p><p className="font-bold text-orange-600 mt-0.5">- {fmt(totalPacking)}</p></div>
+                  <div className="bg-orange-50 rounded-lg p-3"><p className="text-xs text-orange-500">Platform Charges</p><p className="font-bold text-orange-600 mt-0.5">- {fmt(totalPacking)}</p></div>
                   <div className="bg-red-50 rounded-lg p-3"><p className="text-xs text-red-500">RTO Charges</p><p className="font-bold text-red-600 mt-0.5">- {fmt(totalRTO)}</p></div>
                   <div className={`rounded-lg p-3 ${totalNet >= 0 ? "bg-green-50" : "bg-red-50"}`}><p className={`text-xs font-semibold ${totalNet >= 0 ? "text-green-600" : "text-red-500"}`}>Net Remittance</p><p className={`text-xl font-bold mt-0.5 ${totalNet >= 0 ? "text-green-700" : "text-red-600"}`}>{fmt(totalNet)}</p></div>
                 </div>
