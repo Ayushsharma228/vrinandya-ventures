@@ -107,6 +107,23 @@ export async function generateSettlement(orderId: string): Promise<{ settlementI
 
   if (!order) throw new Error(`Order ${orderId} not found`);
 
+  // Stamp resolved charge defaults onto the order if not already set
+  const needsStamp = order.packingCharge == null || order.shippingCharge == null;
+  if (needsStamp) {
+    const stampedPacking  = order.packingCharge  ?? await getConfig("DEFAULT_PACKING_CHARGE",  20);
+    const stampedShipping = order.shippingCharge ?? await getConfig("DEFAULT_SHIPPING_CHARGE", 50);
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        ...(order.packingCharge  == null ? { packingCharge:  stampedPacking  } : {}),
+        ...(order.shippingCharge == null ? { shippingCharge: stampedShipping } : {}),
+      },
+    });
+    // Use stamped values for breakdown so everything is consistent
+    order.packingCharge  = order.packingCharge  ?? stampedPacking;
+    order.shippingCharge = order.shippingCharge ?? stampedShipping;
+  }
+
   const breakdown = await calculateSettlement(order);
 
   // Remittance date: 7 days from now (configurable)
