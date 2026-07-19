@@ -33,6 +33,17 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // Record status change in timeline
+  await prisma.orderTimeline.create({
+    data: {
+      orderId,
+      actorRole: "ADMIN",
+      actorId:   session.user.id,
+      event:     `STATUS_CHANGED_TO_${status}`,
+      details:   `Status updated to ${status} by admin`,
+    },
+  });
+
   // Fetch order + seller for downstream hooks
   const order = await prisma.order.findUnique({
     where: { id: orderId },

@@ -30,6 +30,18 @@ export async function POST(req: NextRequest) {
     data:  { status: status as never },
   });
 
+  // Record status change in timeline for each order
+  await prisma.orderTimeline.createMany({
+    data: orderIds.map((oid) => ({
+      orderId:   oid,
+      actorRole: "ADMIN",
+      actorId:   session.user.id,
+      event:     `STATUS_CHANGED_TO_${status}`,
+      details:   `Status updated to ${status} by admin (bulk)`,
+    })),
+    skipDuplicates: true,
+  });
+
   // Fetch orders with seller info for side-effects
   const orders = await prisma.order.findMany({
     where:  { id: { in: orderIds } },

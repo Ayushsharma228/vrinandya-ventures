@@ -268,36 +268,59 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
 
           {/* Timeline */}
           {order.timeline.length > 0 && (
-            <Section title="Order Timeline" icon={Clock}>
+            <Section title={`Order Timeline (${order.timeline.length})`} icon={Clock}>
               <div className="space-y-0">
-                {order.timeline.map((event, idx) => (
-                  <div key={event.id} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0"
-                        style={{ background: idx === order.timeline.length - 1 ? "#00C67A" : "var(--border)" }} />
-                      {idx < order.timeline.length - 1 && (
-                        <div className="w-px flex-1 min-h-[24px]" style={{ background: "var(--border)" }} />
-                      )}
-                    </div>
-                    <div className="pb-4 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold" style={{ color: "var(--text-900)" }}>
-                          {event.event.replace(/_/g, " ")}
-                        </span>
-                        <span className="text-xs px-1.5 py-0.5 rounded-full"
-                          style={{ background: "var(--bg-muted)", color: "var(--text-400)" }}>
-                          {event.actorRole}
-                        </span>
+                {[...order.timeline].reverse().map((event, idx, arr) => {
+                  const isLatest = idx === 0;
+                  const dotColor =
+                    event.event.includes("DELIVERED") ? "#00C67A" :
+                    event.event.includes("RTO") || event.event.includes("CANCELLED") || event.event.includes("REJECTED") ? "#EF4444" :
+                    event.event.includes("SHIPPED") || event.event.includes("DISPATCH") ? "#3B82F6" :
+                    event.event.includes("SETTLEMENT") ? "#A78BFA" :
+                    isLatest ? "#00C67A" : "var(--border)";
+                  const roleColor =
+                    event.actorRole === "ADMIN"    ? { bg: "#EFF6FF", color: "#3B82F6" } :
+                    event.actorRole === "SUPPLIER" ? { bg: "#FFF7ED", color: "#D97706" } :
+                    event.actorRole === "PLATFORM" ? { bg: "#F5F3FF", color: "#7C3AED" } :
+                    event.actorRole === "SELLER"   ? { bg: "#F0FDF4", color: "#16A34A" } :
+                    { bg: "var(--bg-muted)", color: "var(--text-400)" };
+                  const label = event.event
+                    .replace(/STATUS_CHANGED_TO_/, "→ ")
+                    .replace(/_/g, " ");
+                  return (
+                    <div key={event.id} className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <div className="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0 ring-2 ring-offset-1"
+                          style={{ background: dotColor, ringColor: dotColor, "--tw-ring-color": dotColor } as React.CSSProperties} />
+                        {idx < arr.length - 1 && (
+                          <div className="w-px flex-1 min-h-[24px]" style={{ background: "var(--border)" }} />
+                        )}
                       </div>
-                      {event.details && (
-                        <p className="text-xs mt-0.5" style={{ color: "var(--text-500)" }}>{event.details}</p>
-                      )}
-                      <p className="text-xs mt-0.5" style={{ color: "var(--text-300)" }}>
-                        {new Date(event.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                      </p>
+                      <div className="pb-4 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-semibold" style={{ color: "var(--text-900)" }}>
+                            {label}
+                          </span>
+                          {event.actorRole && (
+                            <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                              style={{ background: roleColor.bg, color: roleColor.color }}>
+                              {event.actorRole}
+                            </span>
+                          )}
+                        </div>
+                        {event.details && (
+                          <p className="text-xs mt-0.5" style={{ color: "var(--text-500)" }}>{event.details}</p>
+                        )}
+                        <p className="text-xs mt-0.5" style={{ color: "var(--text-300)" }}>
+                          {new Date(event.createdAt).toLocaleString("en-IN", {
+                            day: "numeric", month: "short", year: "numeric",
+                            hour: "2-digit", minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </Section>
           )}
