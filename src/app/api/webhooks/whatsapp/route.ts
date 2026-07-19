@@ -24,15 +24,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
-  // Always return 200 immediately — Meta requires this
-  // Process async
-  setImmediate(async () => {
-    try {
-      await processWebhook(body);
-    } catch (err) {
-      console.error("[WA Webhook] processing error:", err);
-    }
-  });
+  // Process synchronously — setImmediate is killed by Vercel after response
+  try {
+    await processWebhook(body);
+  } catch (err) {
+    console.error("[WA Webhook] processing error:", err);
+  }
 
   return NextResponse.json({ status: "ok" });
 }
