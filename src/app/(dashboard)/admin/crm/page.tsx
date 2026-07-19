@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   UserCheck, Plus, Trash2, Loader2, Target,
   TrendingUp, Users, Phone, MapPin, ChevronDown, UserPlus,
-  Upload, Download, RefreshCw, XCircle, Sparkles, DollarSign, AlertCircle,
+  Upload, Download, RefreshCw, XCircle, Sparkles, DollarSign, AlertCircle, MessageCircle,
 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
@@ -90,6 +90,18 @@ export default function AdminCRMPage() {
   // Deduplication
   const [deduping, setDeduping] = useState(false);
   const [dedupResult, setDedupResult] = useState<{ deleted: number } | null>(null);
+
+  // WhatsApp outreach
+  const [startingWa, setStartingWa] = useState<string | null>(null);
+
+  async function handleWhatsAppOutreach(leadId: string) {
+    setStartingWa(leadId);
+    const res = await fetch(`/api/admin/crm/leads/${leadId}/whatsapp-outreach`, { method: "POST" });
+    const data = await res.json();
+    setStartingWa(null);
+    if (!res.ok) { alert(data.error || "Failed to send WhatsApp message"); return; }
+    alert("WhatsApp intro sent! Arya will handle the conversation when they reply.");
+  }
 
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams();
@@ -814,6 +826,18 @@ export default function AdminCRMPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
+                            {lead.phone && (
+                              <button
+                                onClick={() => handleWhatsAppOutreach(lead.id)}
+                                disabled={startingWa === lead.id}
+                                title="Send WhatsApp intro via Arya"
+                                className="p-1.5 rounded-lg transition-colors disabled:opacity-50"
+                                style={{ color: "#25D366", background: "rgba(37,211,102,0.1)" }}>
+                                {startingWa === lead.id
+                                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  : <MessageCircle className="w-3.5 h-3.5" />}
+                              </button>
+                            )}
                             {(lead.stage === "PAID" || lead.stage === "ONBOARDED") && (
                               <button
                                 onClick={() => { setConvertingLead({ id: lead.id, name: lead.name, email: lead.email }); setConvertResult(null); }}

@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/sync-ndr",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/arya-followup",
+      "schedule": "0 10 * * *"
     }
   ]
 }
