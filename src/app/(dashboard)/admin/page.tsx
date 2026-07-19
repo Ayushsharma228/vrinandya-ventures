@@ -3,10 +3,11 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import {
-  Package, Users, ShoppingCart, ListChecks, Clock,
-  CheckCircle, ArrowRight, Truck, RotateCcw, AlertCircle,
-  TrendingUp, Store, IndianRupee, Layers,
-  AlertTriangle, UserX, BadgeIndianRupee, Wallet, Zap,
+  Package, Users, ShoppingCart, ListChecks,
+  CheckCircle, ArrowRight, Truck, RotateCcw,
+  Store, IndianRupee, AlertTriangle, UserX,
+  BadgeIndianRupee, Wallet, Zap, TrendingUp,
+  MoreHorizontal, Circle,
 } from "lucide-react";
 import { AdminOrderTrendChart } from "@/components/admin/order-trend-chart";
 
@@ -24,6 +25,15 @@ function greeting() {
   return "Good evening";
 }
 
+const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
+  APPROVED:    { bg: "rgba(0,198,122,0.15)",  color: "#00C67A" },
+  PENDING:     { bg: "rgba(245,158,11,0.15)", color: "#F59E0B" },
+  REJECTED:    { bg: "rgba(239,68,68,0.15)",  color: "#EF4444" },
+  LISTED:      { bg: "rgba(0,198,122,0.15)",  color: "#00C67A" },
+  FAILED:      { bg: "rgba(239,68,68,0.15)",  color: "#EF4444" },
+  IN_PROGRESS: { bg: "rgba(79,122,255,0.15)", color: "#4F7AFF" },
+};
+
 export default async function AdminDashboard() {
   const session = await getServerSession(authOptions);
   if (!session) return null;
@@ -34,13 +44,11 @@ export default async function AdminDashboard() {
   const [
     totalOrders, deliveredOrders, rtoOrders, activeOrders, cancelledOrders, newToday,
     totalSellers, activeSellers, totalSuppliers,
-    pendingProducts, totalProducts,
-    pendingListings,
+    pendingProducts, pendingListings,
     gmvResult,
-    pendingNdrs,
-    unremittedOrders,
-    unassignedOrders,
+    pendingNdrs, unremittedOrders, unassignedOrders,
     pendingPayablesAgg,
+    recentProducts, recentListings,
   ] = await Promise.all([
     prisma.order.count(),
     prisma.order.count({ where: { status: "DELIVERED" } }),
@@ -52,312 +60,228 @@ export default async function AdminDashboard() {
     prisma.user.count({ where: { role: "SELLER", accountStatus: "ACTIVE" } }),
     prisma.user.count({ where: { role: "SUPPLIER" } }),
     prisma.product.count({ where: { status: "PENDING" } }),
-    prisma.product.count(),
     prisma.listingRequest.count({ where: { status: "PENDING" } }),
     prisma.order.aggregate({ _sum: { totalAmount: true } }),
     prisma.order.count({ where: { ndrStatus: { not: null }, ndrActionTaken: null } }),
     prisma.order.count({ where: { remittedAt: null, status: { in: ["DELIVERED", "RTO"] } } }),
     prisma.order.count({ where: { supplierId: null, status: { notIn: ["DELIVERED", "CANCELLED", "RTO"] } } }),
     prisma.supplierPayment.aggregate({ where: { status: "PENDING" }, _sum: { amount: true }, _count: { id: true } }),
+    prisma.product.findMany({ take: 5, orderBy: { createdAt: "desc" }, include: { supplier: { select: { name: true } } } }),
+    prisma.listingRequest.findMany({ take: 5, orderBy: { createdAt: "desc" }, include: { seller: { select: { name: true, brandName: true } }, product: { select: { name: true } } } }),
   ]);
 
   const gmv = gmvResult._sum.totalAmount ?? 0;
   const pendingPayablesAmount = pendingPayablesAgg._sum.amount ?? 0;
   const pendingPayablesCount  = pendingPayablesAgg._count.id ?? 0;
-  const totalAlerts = (pendingNdrs > 0 ? 1 : 0) + (unremittedOrders > 0 ? 1 : 0) + (unassignedOrders > 0 ? 1 : 0) + (pendingPayablesCount > 0 ? 1 : 0);
-
-  const recentProducts = await prisma.product.findMany({
-    take: 6, orderBy: { createdAt: "desc" },
-    include: { supplier: { select: { name: true } } },
-  });
-
-  const recentListings = await prisma.listingRequest.findMany({
-    take: 6, orderBy: { createdAt: "desc" },
-    include: {
-      seller: { select: { name: true, brandName: true } },
-      product: { select: { name: true } },
-    },
-  });
-
   const firstName = session.user.name?.split(" ")[0] ?? "there";
-  const dateStr = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
+
+  const alerts = [
+    pendingNdrs > 0          && { label: "NDRs pending",       value: pendingNdrs,                          href: "/admin/ndr",               color: "#EF4444", bg: "rgba(239,68,68,0.12)" },
+    unassignedOrders > 0     && { label: "Unassigned orders",  value: unassignedOrders,                     href: "/admin/orders",             color: "#F59E0B", bg: "rgba(245,158,11,0.12)" },
+    unremittedOrders > 0     && { label: "Unremitted orders",  value: unremittedOrders,                     href: "/admin/remittance",         color: "#4F7AFF", bg: "rgba(79,122,255,0.12)" },
+    pendingPayablesCount > 0 && { label: "Supplier payables",  value: fmt(pendingPayablesAmount),           href: "/admin/supplier-payables",  color: "#00C67A", bg: "rgba(0,198,122,0.12)" },
+  ].filter(Boolean) as { label: string; value: string | number; href: string; color: string; bg: string }[];
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
+    <div className="flex-1 overflow-auto" style={{ background: "var(--bg-page)" }}>
+      <div className="p-6 md:p-8">
 
-      {/* ── Top header ── */}
-      <div className="px-8 pt-8 pb-6 flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>{dateStr}</p>
-          <h1 className="text-3xl font-bold text-white">{greeting()}, {firstName} 👋</h1>
-          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>Here's what's happening on your platform today.</p>
+        {/* ── Heading ── */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-1">
+            {greeting()}, <span style={{ color: "#4F7AFF" }}>{firstName}</span> 👋
+          </h1>
+          <p className="text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>
+            Here's your platform overview for today.
+          </p>
         </div>
-        {totalAlerts > 0 && (
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
-            style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.25)", color: "#F59E0B" }}>
-            <AlertTriangle className="w-4 h-4" />
-            {totalAlerts} action{totalAlerts > 1 ? "s" : ""} needed
-          </div>
-        )}
-      </div>
 
-      <div className="px-8 pb-8 space-y-6">
+        {/* ── Two-column layout ── */}
+        <div className="flex gap-6">
 
-        {/* ── KPI Tiles ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            {
-              label: "Platform GMV",
-              value: fmt(gmv),
-              sub: `${totalOrders} total orders`,
-              icon: IndianRupee,
-              color: "#00C67A",
-              glow: "rgba(0,198,122,0.12)",
-            },
-            {
-              label: "New Today",
-              value: newToday,
-              sub: `${activeOrders} in transit`,
-              icon: ShoppingCart,
-              color: "#4F7AFF",
-              glow: "rgba(79,122,255,0.12)",
-            },
-            {
-              label: "Active Sellers",
-              value: activeSellers,
-              sub: `${totalSellers} total · ${totalSuppliers} suppliers`,
-              icon: Store,
-              color: "#8B5CF6",
-              glow: "rgba(139,92,246,0.12)",
-            },
-            {
-              label: "Pending Reviews",
-              value: pendingProducts + pendingListings,
-              sub: `${pendingProducts} products · ${pendingListings} listings`,
-              icon: Clock,
-              color: "#F59E0B",
-              glow: "rgba(245,158,11,0.12)",
-            },
-          ].map(({ label, value, sub, icon: Icon, color, glow }) => (
-            <div key={label} className="rounded-2xl p-5 flex flex-col gap-4"
-              style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>{label}</p>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: glow }}>
-                  <Icon className="w-4 h-4" style={{ color }} />
+          {/* ── LEFT COLUMN ── */}
+          <div className="flex-1 min-w-0 space-y-5">
+
+            {/* KPI row */}
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: "Platform GMV",  value: fmt(gmv),         sub: `${totalOrders} orders total`,      color: "#00C67A", bg: "rgba(0,198,122,0.12)",  icon: IndianRupee },
+                { label: "New Today",     value: newToday,          sub: `${activeOrders} in transit`,       color: "#4F7AFF", bg: "rgba(79,122,255,0.12)",  icon: ShoppingCart },
+                { label: "Active Sellers",value: activeSellers,     sub: `${totalSellers} total`,            color: "#8B5CF6", bg: "rgba(139,92,246,0.12)", icon: Store },
+                { label: "Pending Review",value: pendingProducts + pendingListings, sub: `${pendingProducts} products · ${pendingListings} listings`, color: "#F59E0B", bg: "rgba(245,158,11,0.12)", icon: Package },
+              ].map(({ label, value, sub, color, bg, icon: Icon }) => (
+                <div key={label} className="rounded-2xl p-5"
+                  style={{ background: "var(--bg-card)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: bg }}>
+                      <Icon className="w-4 h-4" style={{ color }} />
+                    </div>
+                    <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.3)" }}>{label}</span>
+                  </div>
+                  <p className="text-2xl font-bold text-white">{value}</p>
+                  <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.3)" }}>{sub}</p>
                 </div>
+              ))}
+            </div>
+
+            {/* Order trend chart */}
+            <div className="rounded-2xl p-5" style={{ background: "var(--bg-card)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm font-semibold text-white">Order Trend</p>
+                  <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>Last 30 days</p>
+                </div>
+                <button style={{ color: "rgba(255,255,255,0.3)" }}><MoreHorizontal className="w-4 h-4" /></button>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-white">{value}</p>
-                <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>{sub}</p>
-              </div>
+              <AdminOrderTrendChart />
             </div>
-          ))}
-        </div>
 
-        {/* ── Alerts ── */}
-        {totalAlerts > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {pendingNdrs > 0 && (
-              <Link href="/admin/ndr"
-                className="flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
-                style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(239,68,68,0.15)" }}>
-                  <AlertTriangle className="w-4 h-4 text-red-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-lg font-bold text-red-400">{pendingNdrs}</p>
-                  <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.4)" }}>NDRs pending</p>
-                </div>
-                <ArrowRight className="w-4 h-4 text-red-400 opacity-50 flex-shrink-0" />
-              </Link>
-            )}
-            {unremittedOrders > 0 && (
-              <Link href="/admin/remittance"
-                className="flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
-                style={{ background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)" }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(249,115,22,0.15)" }}>
-                  <Wallet className="w-4 h-4" style={{ color: "#F97316" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-lg font-bold" style={{ color: "#F97316" }}>{unremittedOrders}</p>
-                  <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.4)" }}>Unremitted orders</p>
-                </div>
-                <ArrowRight className="w-4 h-4 opacity-50 flex-shrink-0" style={{ color: "#F97316" }} />
-              </Link>
-            )}
-            {unassignedOrders > 0 && (
-              <Link href="/admin/orders"
-                className="flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
-                style={{ background: "rgba(79,122,255,0.08)", border: "1px solid rgba(79,122,255,0.2)" }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(79,122,255,0.15)" }}>
-                  <UserX className="w-4 h-4" style={{ color: "#4F7AFF" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-lg font-bold" style={{ color: "#4F7AFF" }}>{unassignedOrders}</p>
-                  <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.4)" }}>Unassigned orders</p>
-                </div>
-                <ArrowRight className="w-4 h-4 opacity-50 flex-shrink-0" style={{ color: "#4F7AFF" }} />
-              </Link>
-            )}
-            {pendingPayablesCount > 0 && (
-              <Link href="/admin/supplier-payables"
-                className="flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
-                style={{ background: "rgba(0,198,122,0.08)", border: "1px solid rgba(0,198,122,0.2)" }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(0,198,122,0.15)" }}>
-                  <BadgeIndianRupee className="w-4 h-4" style={{ color: "#00C67A" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-lg font-bold" style={{ color: "#00C67A" }}>{fmt(pendingPayablesAmount)}</p>
-                  <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.4)" }}>Supplier payables</p>
-                </div>
-                <ArrowRight className="w-4 h-4 opacity-50 flex-shrink-0" style={{ color: "#00C67A" }} />
-              </Link>
-            )}
-          </div>
-        )}
-
-        {/* ── Order breakdown + Chart ── */}
-        <div className="grid grid-cols-5 gap-4">
-          {[
-            { label: "Delivered",     value: deliveredOrders, color: "#00C67A",  bg: "rgba(0,198,122,0.12)" },
-            { label: "In Transit",    value: activeOrders,    color: "#4F7AFF",  bg: "rgba(79,122,255,0.12)" },
-            { label: "RTO",           value: rtoOrders,       color: "#F59E0B",  bg: "rgba(245,158,11,0.12)" },
-            { label: "Cancelled",     value: cancelledOrders, color: "#EF4444",  bg: "rgba(239,68,68,0.12)" },
-            { label: "New Today",     value: newToday,        color: "#8B5CF6",  bg: "rgba(139,92,246,0.12)" },
-          ].map(({ label, value, color, bg }) => (
-            <div key={label} className="rounded-2xl p-4 text-center"
-              style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-              <div className="w-8 h-8 rounded-xl mx-auto mb-2 flex items-center justify-center" style={{ background: bg }}>
-                <div className="w-2 h-2 rounded-full" style={{ background: color }} />
-              </div>
-              <p className="text-xl font-bold text-white">{value}</p>
-              <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Chart ── */}
-        <div className="rounded-2xl p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm font-semibold text-white">Order Trend</p>
-              <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>Daily orders over the last 30 days</p>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full" style={{ background: "#4F7AFF" }} />
-              <span className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>Orders</span>
-            </div>
-          </div>
-          <AdminOrderTrendChart />
-        </div>
-
-        {/* ── Quick Actions ── */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Zap className="w-4 h-4" style={{ color: "#4F7AFF" }} />
-            <p className="text-sm font-semibold text-white">Quick Actions</p>
-          </div>
-          <div className="grid grid-cols-4 gap-3">
-            {[
-              { label: "Manage Orders",    sub: `${totalOrders} total`,      href: "/admin/orders",   color: "#4F7AFF",  bg: "rgba(79,122,255,0.12)",  icon: ShoppingCart },
-              { label: "Review Products",  sub: `${pendingProducts} pending`, href: "/admin/products", color: "#F59E0B",  bg: "rgba(245,158,11,0.12)", icon: Package },
-              { label: "Listing Requests", sub: `${pendingListings} pending`, href: "/admin/listings", color: "#EF4444",  bg: "rgba(239,68,68,0.12)",  icon: ListChecks },
-              { label: "Manage Sellers",   sub: `${totalSellers} sellers`,    href: "/admin/sellers",  color: "#8B5CF6",  bg: "rgba(139,92,246,0.12)", icon: Users },
-            ].map(({ label, sub, href, color, bg, icon: Icon }) => (
-              <Link key={href} href={href}
-                className="flex items-center gap-3 px-4 py-4 rounded-2xl transition-all hover:scale-[1.01] group"
-                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
-                  <Icon className="w-4 h-4" style={{ color }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{label}</p>
-                  <p className="text-xs mt-0.5 truncate" style={{ color: "rgba(255,255,255,0.35)" }}>{sub}</p>
-                </div>
-                <ArrowRight className="w-4 h-4 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color }} />
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Recent Activity ── */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="rounded-2xl overflow-hidden" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-            <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
-              <div className="flex items-center gap-2">
-                <Package className="w-4 h-4" style={{ color: "rgba(255,255,255,0.3)" }} />
+            {/* Recent submissions */}
+            <div className="rounded-2xl overflow-hidden" style={{ background: "var(--bg-card)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                 <p className="text-sm font-semibold text-white">Recent Submissions</p>
+                <Link href="/admin/products" className="text-xs font-medium flex items-center gap-1" style={{ color: "#4F7AFF" }}>
+                  View all <ArrowRight className="w-3 h-3" />
+                </Link>
               </div>
-              <Link href="/admin/products" className="flex items-center gap-1 text-xs font-medium" style={{ color: "#4F7AFF" }}>
-                View all <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-            {recentProducts.length === 0 ? (
-              <p className="p-5 text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>No products yet</p>
-            ) : (
-              <div>
-                {recentProducts.map((p, i) => (
-                  <div key={p.id} className="px-5 py-3 flex items-center justify-between"
-                    style={{ borderBottom: i < recentProducts.length - 1 ? "1px solid var(--border)" : "none" }}>
-                    <div className="min-w-0 flex-1">
+              {recentProducts.length === 0 ? (
+                <p className="p-5 text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>No products yet</p>
+              ) : recentProducts.map((p, i) => (
+                <div key={p.id} className="px-5 py-3.5 flex items-center justify-between transition-colors"
+                  style={{ borderBottom: i < recentProducts.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.02)"}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center"
+                      style={{ background: "rgba(255,255,255,0.06)" }}>
+                      <Package className="w-3.5 h-3.5" style={{ color: "rgba(255,255,255,0.4)" }} />
+                    </div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-white truncate">{p.name}</p>
                       <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>by {p.supplier.name}</p>
                     </div>
-                    <span className="ml-3 flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold"
-                      style={{
-                        background: p.status === "APPROVED" ? "rgba(0,198,122,0.15)" : p.status === "REJECTED" ? "rgba(239,68,68,0.15)" : "rgba(245,158,11,0.15)",
-                        color:      p.status === "APPROVED" ? "#00C67A" : p.status === "REJECTED" ? "#EF4444" : "#F59E0B",
-                      }}>
-                      {p.status}
-                    </span>
                   </div>
-                ))}
-              </div>
-            )}
+                  <span className="ml-3 flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold"
+                    style={{ background: STATUS_STYLE[p.status]?.bg ?? "rgba(255,255,255,0.1)", color: STATUS_STYLE[p.status]?.color ?? "#fff" }}>
+                    {p.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+
           </div>
 
-          <div className="rounded-2xl overflow-hidden" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-            <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
-              <div className="flex items-center gap-2">
-                <ListChecks className="w-4 h-4" style={{ color: "rgba(255,255,255,0.3)" }} />
-                <p className="text-sm font-semibold text-white">Listing Requests</p>
+          {/* ── RIGHT PANEL ── */}
+          <div className="w-72 flex-shrink-0 space-y-4">
+
+            {/* Order status breakdown */}
+            <div className="rounded-2xl p-5" style={{ background: "var(--bg-card)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm font-semibold text-white">Order Status</p>
+                <button style={{ color: "rgba(255,255,255,0.3)" }}><MoreHorizontal className="w-4 h-4" /></button>
               </div>
-              <Link href="/admin/listings" className="flex items-center gap-1 text-xs font-medium" style={{ color: "#4F7AFF" }}>
-                View all <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-            {recentListings.length === 0 ? (
-              <p className="p-5 text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>No listing requests yet</p>
-            ) : (
-              <div>
-                {recentListings.map((l, i) => (
-                  <div key={l.id} className="px-5 py-3 flex items-center justify-between"
-                    style={{ borderBottom: i < recentListings.length - 1 ? "1px solid var(--border)" : "none" }}>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-white truncate">{l.product.name}</p>
-                      <p className="text-xs mt-0.5 truncate" style={{ color: "rgba(255,255,255,0.3)" }}>
-                        {l.seller.brandName || l.seller.name} → {l.platform}
-                      </p>
+              <div className="space-y-3">
+                {[
+                  { label: "Delivered",   value: deliveredOrders, color: "#00C67A", pct: totalOrders ? Math.round(deliveredOrders / totalOrders * 100) : 0 },
+                  { label: "In Transit",  value: activeOrders,    color: "#4F7AFF", pct: totalOrders ? Math.round(activeOrders / totalOrders * 100) : 0 },
+                  { label: "RTO",         value: rtoOrders,       color: "#F59E0B", pct: totalOrders ? Math.round(rtoOrders / totalOrders * 100) : 0 },
+                  { label: "Cancelled",   value: cancelledOrders, color: "#EF4444", pct: totalOrders ? Math.round(cancelledOrders / totalOrders * 100) : 0 },
+                ].map(({ label, value, color, pct }) => (
+                  <div key={label}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ background: color }} />
+                        <span className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>{label}</span>
+                      </div>
+                      <span className="text-xs font-semibold text-white">{value}</span>
                     </div>
-                    <span className="ml-3 flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold"
-                      style={{
-                        background: l.status === "LISTED" ? "rgba(0,198,122,0.15)" : l.status === "FAILED" ? "rgba(239,68,68,0.15)" : l.status === "IN_PROGRESS" ? "rgba(79,122,255,0.15)" : "rgba(245,158,11,0.15)",
-                        color:      l.status === "LISTED" ? "#00C67A" : l.status === "FAILED" ? "#EF4444" : l.status === "IN_PROGRESS" ? "#4F7AFF" : "#F59E0B",
-                      }}>
-                      {l.status}
-                    </span>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+                    </div>
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Pending alerts */}
+            {alerts.length > 0 && (
+              <div className="rounded-2xl p-5" style={{ background: "var(--bg-card)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-sm font-semibold text-white">Needs Attention</p>
+                  <AlertTriangle className="w-4 h-4" style={{ color: "#F59E0B" }} />
+                </div>
+                <div className="space-y-2">
+                  {alerts.map((a) => (
+                    <Link key={a.href} href={a.href}
+                      className="flex items-center justify-between px-3 py-2.5 rounded-xl transition-all"
+                      style={{ background: a.bg, border: `1px solid ${a.color}25` }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.8"}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}>
+                      <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>{a.label}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-bold" style={{ color: a.color }}>{a.value}</span>
+                        <ArrowRight className="w-3 h-3" style={{ color: a.color }} />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
             )}
+
+            {/* Quick actions */}
+            <div className="rounded-2xl p-5" style={{ background: "var(--bg-card)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <p className="text-sm font-semibold text-white mb-4">Quick Actions</p>
+              <div className="space-y-2">
+                {[
+                  { label: "Manage Orders",    href: "/admin/orders",   icon: ShoppingCart, color: "#4F7AFF" },
+                  { label: "Review Products",  href: "/admin/products", icon: Package,      color: "#F59E0B" },
+                  { label: "Listing Requests", href: "/admin/listings", icon: ListChecks,   color: "#EF4444" },
+                  { label: "Manage Sellers",   href: "/admin/sellers",  icon: Users,        color: "#8B5CF6" },
+                  { label: "Finance OS",       href: "/admin/finance",  icon: TrendingUp,   color: "#00C67A" },
+                ].map(({ label, href, icon: Icon, color }) => (
+                  <Link key={href} href={href}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group"
+                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)"}>
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: `${color}18` }}>
+                      <Icon className="w-3.5 h-3.5" style={{ color }} />
+                    </div>
+                    <span className="flex-1 text-xs font-medium" style={{ color: "rgba(255,255,255,0.6)" }}>{label}</span>
+                    <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "rgba(255,255,255,0.4)" }} />
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Listing requests */}
+            <div className="rounded-2xl overflow-hidden" style={{ background: "var(--bg-card)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                <p className="text-sm font-semibold text-white">Listing Requests</p>
+                <Link href="/admin/listings" className="text-xs font-medium" style={{ color: "#4F7AFF" }}>See all</Link>
+              </div>
+              {recentListings.length === 0 ? (
+                <p className="p-4 text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>No requests</p>
+              ) : recentListings.map((l, i) => (
+                <div key={l.id} className="px-4 py-3 flex items-center justify-between"
+                  style={{ borderBottom: i < recentListings.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-white truncate">{l.product.name}</p>
+                    <p className="text-[10px] mt-0.5 truncate" style={{ color: "rgba(255,255,255,0.3)" }}>
+                      {l.seller.brandName || l.seller.name} → {l.platform}
+                    </p>
+                  </div>
+                  <span className="ml-2 flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                    style={{ background: STATUS_STYLE[l.status]?.bg ?? "rgba(255,255,255,0.1)", color: STATUS_STYLE[l.status]?.color ?? "#fff" }}>
+                    {l.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+
           </div>
         </div>
-
       </div>
     </div>
   );
