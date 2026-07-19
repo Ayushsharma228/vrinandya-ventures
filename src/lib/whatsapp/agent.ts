@@ -1,10 +1,55 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "@/lib/prisma";
 import { sendTextMessage } from "./client";
-import { ARYA_WA_SYSTEM_PROMPT, buildWAContext } from "./prompts";
+import { ARYA_WA_SYSTEM_PROMPT } from "./prompts";
 import { WAConversationStatus, WAMessageRole } from "@prisma/client";
 
 const MAX_MESSAGES = 20; // close conversation after this many exchanges
+
+async function callGemini(
+  systemPrompt: string,
+  history: Array<{ role: string; content: string }>,
+  latestMessage: string,
+): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY not set");
+
+  // Build multi-turn contents. Gemini requires user/model alternation starting with user.
+  const contents: Array<{ role: string; parts: { text: string }[] }> = [];
+  for (const m of history) {
+    contents.push({
+      role: m.role === "USER" ? "user" : "model",
+      parts: [{ text: m.content }],
+    });
+  }
+  contents.push({ role: "user", parts: [{ text: latestMessage }] });
+
+  // Gemini requires first message to be from user and roles to alternate.
+  // If history is empty or starts with model, prepend a blank user turn.
+  if (contents.length === 0 || contents[0].role !== "user") {
+    contents.unshift({ role: "user", parts: [{ text: latestMessage }] });
+  }
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents,
+        generationConfig: { temperature: 0.8, maxOutputTokens: 512 },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Gemini API error: ${err}`);
+  }
+
+  const data = await response.json();
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+}
 
 interface QualificationResult {
   qualified: boolean;
@@ -105,26 +150,14 @@ export async function handleIncomingMessage(
   }
 
   // Generate AI reply
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.GEMINI_API_KEY) {
     await sendTextMessage(waId, "Hi! Thanks for reaching out to Vrinandya Ventures. Our team will contact you shortly! 🙏");
     return;
   }
 
   try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-    const userPrompt = buildWAContext(
-      history.slice(0, -1).map(m => ({ role: m.role, content: m.content }))
-    ) + `\n\nLatest message from lead: ${messageText}\n\nRespond as Arya. Be conversational and brief.`;
-
-    const response = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 512,
-      system: ARYA_WA_SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userPrompt }],
-    });
-
-    const fullReply = response.content[0]?.type === "text" ? response.content[0].text : "";
+    const priorHistory = history.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
+    const fullReply = await callGemini(ARYA_WA_SYSTEM_PROMPT, priorHistory, messageText);
     const cleanedReply = cleanReply(fullReply);
 
     // Save assistant message
