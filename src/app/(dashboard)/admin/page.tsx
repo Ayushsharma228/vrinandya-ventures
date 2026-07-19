@@ -4,10 +4,10 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import {
   Package, Users, ShoppingCart, ListChecks,
-  CheckCircle, ArrowRight, Truck, RotateCcw,
-  Store, IndianRupee, AlertTriangle, UserX,
-  BadgeIndianRupee, Wallet, Zap, TrendingUp,
-  MoreHorizontal, Circle,
+  ArrowRight,
+  Store, IndianRupee, AlertTriangle,
+  BadgeIndianRupee, TrendingUp,
+  MoreHorizontal,
 } from "lucide-react";
 import { AdminOrderTrendChart } from "@/components/admin/order-trend-chart";
 
@@ -148,9 +148,7 @@ export default async function AdminDashboard() {
                 <p className="p-5 text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>No products yet</p>
               ) : recentProducts.map((p, i) => (
                 <div key={p.id} className="px-5 py-3.5 flex items-center justify-between transition-colors"
-                  style={{ borderBottom: i < recentProducts.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.02)"}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}>
+                  style={{ borderBottom: i < recentProducts.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center"
                       style={{ background: "rgba(255,255,255,0.06)" }}>
@@ -214,9 +212,7 @@ export default async function AdminDashboard() {
                   {alerts.map((a) => (
                     <Link key={a.href} href={a.href}
                       className="flex items-center justify-between px-3 py-2.5 rounded-xl transition-all"
-                      style={{ background: a.bg, border: `1px solid ${a.color}25` }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.8"}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}>
+                      style={{ background: a.bg, border: `1px solid ${a.color}25` }}>
                       <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>{a.label}</span>
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-bold" style={{ color: a.color }}>{a.value}</span>
@@ -241,9 +237,7 @@ export default async function AdminDashboard() {
                 ].map(({ label, href, icon: Icon, color }) => (
                   <Link key={href} href={href}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group"
-                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)"}>
+                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{ background: `${color}18` }}>
                       <Icon className="w-3.5 h-3.5" style={{ color }} />
