@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
       customerAddress: customerAddress ?? undefined,
       totalAmount,
       currency: (shopifyOrder.currency as string) ?? "INR",
-      rawData: shopifyOrder,
+      rawData: shopifyOrder as never,
       items: {
         create: lineItems.map(item => ({
           name: (item.title as string) ?? "Unknown",
