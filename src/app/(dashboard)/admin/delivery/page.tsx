@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Truck, Save, Loader2 } from "lucide-react";
+import { RefreshCw, Truck, Save, Loader2, Upload, ChevronDown, ChevronUp, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 interface Seller { id: string; name: string | null; email: string; brandName: string | null; }
@@ -47,6 +47,72 @@ export default function AdminDeliveryPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [gettingAwb, setGettingAwb] = useState<string | null>(null);
   const [awbError, setAwbError] = useState<string | null>(null);
+
+  // Bulk import state
+  const [bulkOpen,     setBulkOpen]     = useState(false);
+  const [csvText,      setCsvText]      = useState("");
+  const [csvColOrderId, setCsvColOrderId] = useState(0);
+  const [csvColAwb,    setCsvColAwb]    = useState(1);
+  const [csvColCourier,setCsvColCourier]= useState(-1);
+  const [csvHeaders,   setCsvHeaders]   = useState<string[]>([]);
+  const [csvPreview,   setCsvPreview]   = useState<{ orderId: string; awb: string; courier: string }[]>([]);
+  const [bulkApplying, setBulkApplying] = useState(false);
+  const [bulkResult,   setBulkResult]   = useState<{ updated: number; notFound: string[] } | null>(null);
+
+  function parseCsv(text: string): string[][] {
+    return text.trim().split(/\r?\n/).map((line) =>
+      line.split(",").map((cell) => cell.trim().replace(/^"|"$/g, ""))
+    );
+  }
+
+  function handleCsvParse() {
+    if (!csvText.trim()) return;
+    const rows = parseCsv(csvText);
+    if (rows.length < 2) return;
+    const headers = rows[0];
+    setCsvHeaders(headers);
+    // Auto-detect columns by common header names
+    const detectCol = (keywords: string[]) => {
+      const idx = headers.findIndex((h) =>
+        keywords.some((k) => h.toLowerCase().includes(k))
+      );
+      return idx >= 0 ? idx : 0;
+    };
+    const orderCol   = detectCol(["order", "id", "external"]);
+    const awbCol     = detectCol(["awb", "waybill", "tracking", "consignment"]);
+    const courierCol = detectCol(["courier", "carrier", "shipper"]);
+    setCsvColOrderId(orderCol);
+    setCsvColAwb(awbCol !== orderCol ? awbCol : Math.min(1, headers.length - 1));
+    setCsvColCourier(courierCol !== orderCol && courierCol !== awbCol ? courierCol : -1);
+    const preview = rows.slice(1).map((r) => ({
+      orderId: r[orderCol] ?? "",
+      awb:     r[awbCol]     ?? "",
+      courier: courierCol >= 0 ? (r[courierCol] ?? "") : "",
+    })).filter((r) => r.orderId && r.awb);
+    setCsvPreview(preview);
+    setBulkResult(null);
+  }
+
+  async function handleBulkApply() {
+    if (!csvPreview.length) return;
+    setBulkApplying(true);
+    const res = await fetch("/api/admin/orders/bulk-set-awb", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({
+        rows: csvPreview.map((r) => ({
+          externalOrderId: r.orderId,
+          awbNumber:       r.awb,
+          courier:         r.courier || "Delhivery",
+          markShipped:     true,
+        })),
+      }),
+    });
+    const data = await res.json();
+    setBulkResult(data);
+    if (res.ok) { setCsvText(""); setCsvPreview([]); setCsvHeaders([]); await fetchOrders(); }
+    setBulkApplying(false);
+  }
 
   useEffect(() => {
     fetch("/api/admin/sellers")
@@ -280,6 +346,161 @@ export default function AdminDeliveryPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+
+      {/* ── Bulk AWB Import ── */}
+      <div className="mt-4 card overflow-hidden">
+        <button
+          onClick={() => setBulkOpen((p) => !p)}
+          className="w-full px-5 py-3.5 flex items-center gap-2 text-left"
+          style={{ borderBottom: bulkOpen ? "1px solid var(--border)" : "none" }}>
+          <Upload className="w-4 h-4" style={{ color: "var(--accent)" }} />
+          <span className="font-semibold text-sm flex-1" style={{ color: "var(--text-900)" }}>
+            Bulk AWB Import
+          </span>
+          <span className="text-xs mr-2" style={{ color: "var(--text-400)" }}>
+            Paste courier manifest CSV to update multiple AWBs at once
+          </span>
+          {bulkOpen ? <ChevronUp className="w-4 h-4" style={{ color: "var(--text-400)" }} />
+                    : <ChevronDown className="w-4 h-4" style={{ color: "var(--text-400)" }} />}
+        </button>
+
+        {bulkOpen && (
+          <div className="p-5 space-y-4">
+            {/* Paste area */}
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-400)" }}>
+                Paste CSV (first row = headers, must include Order ID and AWB columns)
+              </label>
+              <textarea
+                value={csvText}
+                onChange={(e) => { setCsvText(e.target.value); setCsvPreview([]); setBulkResult(null); }}
+                rows={5}
+                placeholder={"Order ID,AWB Number,Courier\n1001,123456789,Delhivery\n1002,987654321,Delhivery"}
+                className="w-full px-3 py-2 text-xs font-mono rounded-xl resize-none outline-none"
+                style={{ background: "var(--bg-muted)", border: "1px solid var(--border)", color: "var(--text-900)" }}
+              />
+            </div>
+
+            <button
+              onClick={handleCsvParse}
+              disabled={!csvText.trim()}
+              className="px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-40"
+              style={{ background: "var(--accent)", color: "#fff" }}>
+              Parse & Preview
+            </button>
+
+            {/* Column mapping */}
+            {csvHeaders.length > 0 && (
+              <div className="flex items-center gap-4 flex-wrap text-xs">
+                <span style={{ color: "var(--text-400)" }}>Column mapping:</span>
+                {[
+                  { label: "Order ID", val: csvColOrderId, set: setCsvColOrderId },
+                  { label: "AWB",      val: csvColAwb,     set: setCsvColAwb },
+                ].map(({ label, val, set }) => (
+                  <label key={label} className="flex items-center gap-1.5">
+                    <span className="font-medium" style={{ color: "var(--text-900)" }}>{label}:</span>
+                    <select
+                      value={val}
+                      onChange={(e) => { set(Number(e.target.value)); setCsvPreview([]); }}
+                      className="rounded-lg px-2 py-1 text-xs outline-none"
+                      style={{ background: "var(--bg-muted)", border: "1px solid var(--border)", color: "var(--text-900)" }}>
+                      {csvHeaders.map((h, i) => <option key={i} value={i}>{h || `Col ${i + 1}`}</option>)}
+                    </select>
+                  </label>
+                ))}
+                <label className="flex items-center gap-1.5">
+                  <span className="font-medium" style={{ color: "var(--text-900)" }}>Courier:</span>
+                  <select
+                    value={csvColCourier}
+                    onChange={(e) => { setCsvColCourier(Number(e.target.value)); setCsvPreview([]); }}
+                    className="rounded-lg px-2 py-1 text-xs outline-none"
+                    style={{ background: "var(--bg-muted)", border: "1px solid var(--border)", color: "var(--text-900)" }}>
+                    <option value={-1}>— (use Delhivery)</option>
+                    {csvHeaders.map((h, i) => <option key={i} value={i}>{h || `Col ${i + 1}`}</option>)}
+                  </select>
+                </label>
+                {csvHeaders.length > 0 && (
+                  <button onClick={handleCsvParse}
+                    className="px-3 py-1 rounded-lg text-xs font-medium"
+                    style={{ background: "var(--bg-muted)", border: "1px solid var(--border)", color: "var(--text-900)" }}>
+                    Re-parse
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Preview table */}
+            {csvPreview.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold" style={{ color: "var(--text-900)" }}>
+                    Preview — {csvPreview.length} rows
+                  </span>
+                  <span className="text-xs" style={{ color: "var(--text-400)" }}>
+                    All will be marked SHIPPED + AWB saved
+                  </span>
+                </div>
+                <div className="overflow-x-auto rounded-xl" style={{ border: "1px solid var(--border)" }}>
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr style={{ background: "var(--bg-muted)", borderBottom: "1px solid var(--border)" }}>
+                        {["Order ID", "AWB Number", "Courier"].map((h) => (
+                          <th key={h} className="px-4 py-2 text-left font-semibold" style={{ color: "var(--text-400)" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {csvPreview.slice(0, 20).map((row, i) => (
+                        <tr key={i} style={{ borderTop: "1px solid var(--border)" }}>
+                          <td className="px-4 py-2 font-mono" style={{ color: "var(--text-900)" }}>{row.orderId}</td>
+                          <td className="px-4 py-2 font-mono" style={{ color: "#3B82F6" }}>{row.awb}</td>
+                          <td className="px-4 py-2" style={{ color: "var(--text-400)" }}>{row.courier || "Delhivery"}</td>
+                        </tr>
+                      ))}
+                      {csvPreview.length > 20 && (
+                        <tr style={{ borderTop: "1px solid var(--border)" }}>
+                          <td colSpan={3} className="px-4 py-2 text-center" style={{ color: "var(--text-400)" }}>
+                            … and {csvPreview.length - 20} more rows
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <button
+                  onClick={handleBulkApply}
+                  disabled={bulkApplying}
+                  className="mt-3 flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50"
+                  style={{ background: "#00C67A", color: "#fff" }}>
+                  {bulkApplying
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Applying…</>
+                    : <><Upload className="w-4 h-4" /> Apply {csvPreview.length} AWBs</>
+                  }
+                </button>
+              </div>
+            )}
+
+            {/* Result */}
+            {bulkResult && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-green-700">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {bulkResult.updated} order{bulkResult.updated !== 1 ? "s" : ""} updated successfully
+                </div>
+                {bulkResult.notFound.length > 0 && (
+                  <div className="flex items-start gap-2 text-xs text-orange-600">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span>
+                      Not found ({bulkResult.notFound.length}): {bulkResult.notFound.join(", ")}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
