@@ -6,6 +6,7 @@ import {
   Package, Users, ShoppingCart, ListChecks, Clock,
   CheckCircle, ArrowRight, Truck, RotateCcw, AlertCircle,
   TrendingUp, Store, IndianRupee, Layers,
+  AlertTriangle, UserX, BadgeIndianRupee, Wallet,
 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 import { AdminOrderTrendChart } from "@/components/admin/order-trend-chart";
@@ -29,6 +30,10 @@ export default async function AdminDashboard() {
     pendingProducts, totalProducts,
     pendingListings,
     gmvResult,
+    pendingNdrs,
+    unremittedOrders,
+    unassignedOrders,
+    pendingPayablesAgg,
   ] = await Promise.all([
     prisma.order.count(),
     prisma.order.count({ where: { status: "DELIVERED" } }),
@@ -43,10 +48,17 @@ export default async function AdminDashboard() {
     prisma.product.count(),
     prisma.listingRequest.count({ where: { status: "PENDING" } }),
     prisma.order.aggregate({ _sum: { totalAmount: true } }),
+    // Operational alerts
+    prisma.order.count({ where: { ndrStatus: { not: null }, ndrActionTaken: null } }),
+    prisma.order.count({ where: { remittedAt: null, status: { in: ["DELIVERED", "RTO"] } } }),
+    prisma.order.count({ where: { supplierId: null, status: { notIn: ["DELIVERED", "CANCELLED", "RTO"] } } }),
+    prisma.supplierPayment.aggregate({ where: { status: "PENDING" }, _sum: { amount: true }, _count: { id: true } }),
   ]);
 
   const gmv = gmvResult._sum.totalAmount ?? 0;
   const pendingReviews = pendingProducts + pendingListings;
+  const pendingPayablesAmount = pendingPayablesAgg._sum.amount ?? 0;
+  const pendingPayablesCount  = pendingPayablesAgg._count.id ?? 0;
 
   const recentProducts = await prisma.product.findMany({
     take: 6,
@@ -93,6 +105,81 @@ export default async function AdminDashboard() {
       />
 
       <div className="px-8 pt-6 space-y-6">
+
+        {/* ── Operational Alerts ── */}
+        {(pendingNdrs > 0 || unremittedOrders > 0 || unassignedOrders > 0 || pendingPayablesCount > 0) && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Pending Actions</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {pendingNdrs > 0 && (
+                <Link href="/admin/ndr"
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
+                  style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                  <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-red-600">{pendingNdrs}</p>
+                    <p className="text-xs" style={{ color: "var(--text-400)" }}>NDRs awaiting action</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 ml-auto text-red-400 opacity-60" />
+                </Link>
+              )}
+              {unremittedOrders > 0 && (
+                <Link href="/admin/remittance"
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
+                  style={{ background: "rgba(249,115,22,0.07)", border: "1px solid rgba(249,115,22,0.2)" }}>
+                  <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+                    <Wallet className="w-4 h-4 text-orange-500" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-orange-600">{unremittedOrders}</p>
+                    <p className="text-xs" style={{ color: "var(--text-400)" }}>orders unremitted</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 ml-auto text-orange-400 opacity-60" />
+                </Link>
+              )}
+              {unassignedOrders > 0 && (
+                <Link href="/admin/orders"
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
+                  style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                  <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                    <UserX className="w-4 h-4 text-indigo-500" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-indigo-600">{unassignedOrders}</p>
+                    <p className="text-xs" style={{ color: "var(--text-400)" }}>orders unassigned</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 ml-auto text-indigo-400 opacity-60" />
+                </Link>
+              )}
+              {pendingPayablesCount > 0 && (
+                <Link href="/admin/supplier-payables"
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
+                  style={{ background: "rgba(0,198,122,0.07)", border: "1px solid rgba(0,198,122,0.2)" }}>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: "rgba(0,198,122,0.1)" }}>
+                    <BadgeIndianRupee className="w-4 h-4" style={{ color: "#00C67A" }} />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold" style={{ color: "#00C67A" }}>
+                      {pendingPayablesAmount >= 1000
+                        ? `₹${(pendingPayablesAmount / 1000).toFixed(1)}K`
+                        : `₹${pendingPayablesAmount.toFixed(0)}`}
+                    </p>
+                    <p className="text-xs" style={{ color: "var(--text-400)" }}>
+                      supplier payables ({pendingPayablesCount})
+                    </p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 ml-auto opacity-60" style={{ color: "#00C67A" }} />
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ── Order Status Breakdown ── */}
         <div>
