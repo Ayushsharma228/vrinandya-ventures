@@ -2,10 +2,12 @@
 
 /* ─── Design Tokens ─────────────────────────────────────────── */
 :root {
-  /* Page */
-  --bg-page:          #F8FAF9;
-  --bg-card:          #FFFFFF;
-  --bg-sidebar:       #0D1F13;
+  /* Page — deep navy dark */
+  --bg-page:          #0B0F1A;
+  --bg-card:          #111827;
+  --bg-elevated:      #1A2235;
+  --bg-sidebar:       #0D1117;
+  --bg-muted:         #1E2A3A;
   --bg-hero:          #0D1117;
 
   /* Brand */
@@ -14,25 +16,30 @@
   --green-600:        #00A865;
   --green-900:        #0D1F13;
 
+  /* Accent blue (primary action) */
+  --blue-500:         #4F7AFF;
+  --blue-600:         #3B6FFF;
+
   /* Teal */
   --teal-600:         #025864;
 
   /* Text */
-  --text-900:         #0A1628;
-  --text-600:         #374151;
-  --text-400:         #9CA3AF;
+  --text-900:         #F1F5F9;
+  --text-600:         #94A3B8;
+  --text-400:         #4B5563;
+  --text-300:         #374151;
   --text-white:       #FFFFFF;
 
   /* Border */
-  --border:           #E8EBE8;
-  --border-strong:    #D1D5DB;
+  --border:           rgba(255,255,255,0.07);
+  --border-strong:    rgba(255,255,255,0.14);
 
   /* Status */
   --success:          #00C67A;
   --warning:          #F59E0B;
   --danger:           #EF4444;
-  --info:             #3B82F6;
-  --purple:           #7C3AED;
+  --info:             #4F7AFF;
+  --purple:           #8B5CF6;
 
   /* Radius */
   --radius-sm:        8px;
@@ -41,8 +48,8 @@
   --radius-xl:        20px;
 
   /* Shadow */
-  --shadow-card:      0 1px 4px rgba(0,0,0,0.06);
-  --shadow-md:        0 4px 16px rgba(0,0,0,0.08);
+  --shadow-card:      0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:        0 4px 16px rgba(0,0,0,0.5);
 }
 
 /* ─── Base ──────────────────────────────────────────────────── */
@@ -66,8 +73,8 @@ body {
 /* ─── Scrollbar ─────────────────────────────────────────────── */
 ::-webkit-scrollbar        { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: #D1D5DB; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.12); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
 /* ─── Utility classes ───────────────────────────────────────── */
 .card {
@@ -75,6 +82,12 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
+}
+
+.card-elevated {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 
 .card-dark {
@@ -93,19 +106,24 @@ body {
   border-radius: 99px;
 }
 
-.stat-badge.up   { background: #F0FDF4; color: #00C67A; }
-.stat-badge.down { background: #FEF2F2; color: #EF4444; }
+.stat-badge.up   { background: rgba(0,198,122,0.15); color: #00C67A; }
+.stat-badge.down { background: rgba(239,68,68,0.15);  color: #EF4444; }
 
 /* ─── Status pills ──────────────────────────────────────────── */
 .pill              { display:inline-flex; align-items:center; padding:2px 10px; border-radius:99px; font-size:11px; font-weight:600; }
-.pill-new          { background:#EFF6FF; color:#3B82F6; }
-.pill-processing   { background:#FFF7ED; color:#F59E0B; }
-.pill-shipped      { background:#F5F3FF; color:#7C3AED; }
-.pill-in_transit   { background:#ECFDF5; color:#025864; }
-.pill-delivered    { background:#F0FDF4; color:#00C67A; }
-.pill-rto          { background:#FEF2F2; color:#EF4444; }
-.pill-cancelled    { background:#F9FAFB; color:#6B7280; }
-.pill-ndr          { background:#FFFBEB; color:#D97706; }
-.pill-approved     { background:#F0FDF4; color:#00C67A; }
-.pill-pending      { background:#FFF7ED; color:#F59E0B; }
-.pill-rejected     { background:#FEF2F2; color:#EF4444; }
+.pill-new          { background:rgba(79,122,255,0.15);  color:#4F7AFF; }
+.pill-processing   { background:rgba(245,158,11,0.15);  color:#F59E0B; }
+.pill-shipped      { background:rgba(139,92,246,0.15);  color:#8B5CF6; }
+.pill-in_transit   { background:rgba(2,88,100,0.25);    color:#34D399; }
+.pill-delivered    { background:rgba(0,198,122,0.15);   color:#00C67A; }
+.pill-rto          { background:rgba(239,68,68,0.15);   color:#EF4444; }
+.pill-cancelled    { background:rgba(75,85,99,0.25);    color:#9CA3AF; }
+.pill-ndr          { background:rgba(245,158,11,0.15);  color:#F59E0B; }
+.pill-approved     { background:rgba(0,198,122,0.15);   color:#00C67A; }
+.pill-pending      { background:rgba(245,158,11,0.15);  color:#F59E0B; }
+.pill-rejected     { background:rgba(239,68,68,0.15);   color:#EF4444; }
+
+/* ─── Input base ────────────────────────────────────────────── */
+input, select, textarea {
+  color-scheme: dark;
+}
