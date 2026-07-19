@@ -20,6 +20,8 @@ export default function ShopifyConnectPage() {
   const [disconnecting, setDisconnecting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [registeringWebhooks, setRegisteringWebhooks] = useState(false);
+  const [webhooksRegistered, setWebhooksRegistered] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -47,6 +49,13 @@ export default function ShopifyConnectPage() {
 
     // Redirect to Shopify OAuth
     window.location.href = data.authUrl;
+  }
+
+  async function handleRegisterWebhooks() {
+    setRegisteringWebhooks(true);
+    const res = await fetch("/api/seller/shopify/register-webhooks", { method: "POST" });
+    if (res.ok) setWebhooksRegistered(true);
+    setRegisteringWebhooks(false);
   }
 
   async function handleDisconnect() {
@@ -116,11 +125,18 @@ export default function ShopifyConnectPage() {
               ))}
             </div>
 
-            <button onClick={handleDisconnect} disabled={disconnecting}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50">
-              <Trash2 className="w-4 h-4" />
-              {disconnecting ? "Disconnecting..." : "Disconnect Store"}
-            </button>
+            <div className="flex items-center gap-3">
+              <button onClick={handleRegisterWebhooks} disabled={registeringWebhooks || webhooksRegistered}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-700 border border-green-300 rounded-lg hover:bg-green-50 transition-colors disabled:opacity-50">
+                <CheckCircle className="w-4 h-4" />
+                {webhooksRegistered ? "Webhooks Active ✓" : registeringWebhooks ? "Registering..." : "Enable Auto Orders"}
+              </button>
+              <button onClick={handleDisconnect} disabled={disconnecting}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50">
+                <Trash2 className="w-4 h-4" />
+                {disconnecting ? "Disconnecting..." : "Disconnect Store"}
+              </button>
+            </div>
           </div>
         </div>
 
