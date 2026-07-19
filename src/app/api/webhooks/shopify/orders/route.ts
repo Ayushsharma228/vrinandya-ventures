@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
       await prisma.notification.create({
         data: {
           userId: supplierId,
-          type: "ORDER",
+          type: "ORDER_UPDATE",
           title: "New Order Assigned",
           message: `Order ${externalOrderId} has been assigned to you. PO: ${poNumber}. Please confirm and dispatch.`,
           data: { orderId: order.id, poNumber, externalOrderId },
@@ -196,7 +196,7 @@ export async function POST(req: NextRequest) {
       prisma.notification.create({
         data: {
           userId: admin.id,
-          type: "ORDER",
+          type: "ORDER_UPDATE",
           title: supplierId ? "✅ New Order — Auto-processed" : "⚠️ New Order — Needs Supplier",
           message: supplierId
             ? `Order ${externalOrderId} from ${store.storeName} received and auto-assigned. ₹${totalAmount}`
