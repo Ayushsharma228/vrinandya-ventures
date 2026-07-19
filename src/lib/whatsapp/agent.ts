@@ -5,50 +5,44 @@ import { WAConversationStatus, WAMessageRole } from "@prisma/client";
 
 const MAX_MESSAGES = 20; // close conversation after this many exchanges
 
-async function callGemini(
+async function callGroq(
   systemPrompt: string,
   history: Array<{ role: string; content: string }>,
   latestMessage: string,
 ): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY not set");
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error("GROQ_API_KEY not set");
 
-  // Build multi-turn contents. Gemini requires user/model alternation starting with user.
-  const contents: Array<{ role: string; parts: { text: string }[] }> = [];
-  for (const m of history) {
-    contents.push({
-      role: m.role === "USER" ? "user" : "model",
-      parts: [{ text: m.content }],
-    });
-  }
-  contents.push({ role: "user", parts: [{ text: latestMessage }] });
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...history.map(m => ({
+      role: m.role === "USER" ? "user" : "assistant",
+      content: m.content,
+    })),
+    { role: "user", content: latestMessage },
+  ];
 
-  // Gemini requires first message to be from user and roles to alternate.
-  // If history is empty or starts with model, prepend a blank user turn.
-  if (contents.length === 0 || contents[0].role !== "user") {
-    contents.unshift({ role: "user", parts: [{ text: latestMessage }] });
-  }
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents,
-        generationConfig: { temperature: 0.8, maxOutputTokens: 512 },
-      }),
-    }
-  );
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages,
+      temperature: 0.8,
+      max_tokens: 512,
+    }),
+  });
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`Gemini API error: ${err}`);
+    throw new Error(`Groq API error: ${err}`);
   }
 
   const data = await response.json();
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  return data?.choices?.[0]?.message?.content ?? "";
 }
 
 interface QualificationResult {
@@ -150,14 +144,14 @@ export async function handleIncomingMessage(
   }
 
   // Generate AI reply
-  if (!process.env.GEMINI_API_KEY) {
+  if (!process.env.GROQ_API_KEY) {
     await sendTextMessage(waId, "Hi! Thanks for reaching out to Vrinandya Ventures. Our team will contact you shortly! 🙏");
     return;
   }
 
   try {
     const priorHistory = history.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
-    const fullReply = await callGemini(ARYA_WA_SYSTEM_PROMPT, priorHistory, messageText);
+    const fullReply = await callGroq(ARYA_WA_SYSTEM_PROMPT, priorHistory, messageText);
     const cleanedReply = cleanReply(fullReply);
 
     // Save assistant message
