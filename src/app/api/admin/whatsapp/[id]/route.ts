@@ -19,6 +19,7 @@ export async function GET(
     include: {
       messages: { orderBy: { createdAt: "asc" } },
       lead: { select: { id: true, name: true, leadScore: true, temperature: true, pipelineStage: true, recommendedPlan: true, qualificationSummary: true } },
+      _count: { select: { messages: true } },
     },
   });
 

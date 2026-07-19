@@ -6,7 +6,7 @@ import { PageHero } from "@/components/layout/page-hero";
 
 interface Config {
   key: string; value: string; label: string;
-  description: string; unit: string; isDefault: boolean;
+  description: string; unit: string; isDefault: boolean; type?: string;
 }
 
 export default function AdminConfigPage() {
@@ -116,24 +116,41 @@ export default function AdminConfigPage() {
 
                       <div className="flex items-center gap-3">
                         <div className="relative flex items-center">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value={edits[c.key] ?? c.value}
-                            onChange={(e) => setEdits((prev) => ({ ...prev, [c.key]: e.target.value }))}
-                            className="w-28 text-sm font-bold rounded-xl px-3 py-2 pr-10 border outline-none"
-                            style={{
-                              background:   "var(--bg-muted)",
-                              color:        "var(--text-900)",
-                              borderColor:  dirty ? "#00C67A" : "var(--border)",
-                              boxShadow:    dirty ? "0 0 0 2px rgba(0,198,122,0.15)" : "none",
-                            }}
-                          />
-                          <span className="absolute right-3 text-xs font-medium pointer-events-none"
-                            style={{ color: "var(--text-400)" }}>
-                            {c.unit}
-                          </span>
+                          {c.type === "string" ? (
+                            <input
+                              type="text"
+                              value={edits[c.key] ?? c.value}
+                              onChange={(e) => setEdits((prev) => ({ ...prev, [c.key]: e.target.value }))}
+                              className="w-52 text-sm font-mono rounded-xl px-3 py-2 border outline-none"
+                              style={{
+                                background:   "var(--bg-muted)",
+                                color:        "var(--text-900)",
+                                borderColor:  dirty ? "#00C67A" : "var(--border)",
+                                boxShadow:    dirty ? "0 0 0 2px rgba(0,198,122,0.15)" : "none",
+                              }}
+                            />
+                          ) : (
+                            <>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                value={edits[c.key] ?? c.value}
+                                onChange={(e) => setEdits((prev) => ({ ...prev, [c.key]: e.target.value }))}
+                                className="w-28 text-sm font-bold rounded-xl px-3 py-2 pr-10 border outline-none"
+                                style={{
+                                  background:   "var(--bg-muted)",
+                                  color:        "var(--text-900)",
+                                  borderColor:  dirty ? "#00C67A" : "var(--border)",
+                                  boxShadow:    dirty ? "0 0 0 2px rgba(0,198,122,0.15)" : "none",
+                                }}
+                              />
+                              <span className="absolute right-3 text-xs font-medium pointer-events-none"
+                                style={{ color: "var(--text-400)" }}>
+                                {c.unit}
+                              </span>
+                            </>
+                          )}
                         </div>
 
                         <button

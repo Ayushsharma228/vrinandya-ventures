@@ -62,6 +62,7 @@ export default function AdminWhatsAppPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [actioning, setActioning] = useState(false);
 
   const load = useCallback(async (f = filter) => {
     setLoading(true);
@@ -99,6 +100,19 @@ export default function AdminWhatsAppPage() {
     setMessage("");
     await openDetail(selected.id);
     setSending(false);
+  };
+
+  const doAction = async (action: "close" | "reopen") => {
+    if (!selected) return;
+    setActioning(true);
+    await fetch(`/api/admin/whatsapp/${selected.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    await openDetail(selected.id);
+    await load();
+    setActioning(false);
   };
 
   const totalConvs = Object.values(statusMap).reduce((a, b) => a + b, 0);
@@ -230,6 +244,23 @@ export default function AdminWhatsAppPage() {
                       style={{ background: "rgba(0,198,122,0.1)", color: "var(--green-500)" }}>
                       View Lead →
                     </Link>
+                  )}
+                  {selected.status === "CLOSED" ? (
+                    <button
+                      onClick={() => doAction("reopen")}
+                      disabled={actioning}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50"
+                      style={{ background: "rgba(59,130,246,0.1)", color: "#3B82F6" }}>
+                      {actioning ? "..." : "Reopen"}
+                    </button>
+                  ) : selected.status !== "OPTED_OUT" && (
+                    <button
+                      onClick={() => doAction("close")}
+                      disabled={actioning}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50"
+                      style={{ background: "rgba(239,68,68,0.1)", color: "#EF4444" }}>
+                      {actioning ? "..." : "Close"}
+                    </button>
                   )}
                   <button onClick={() => setSelected(null)} style={{ color: "var(--text-300)" }}>
                     <X className="w-4 h-4" />
