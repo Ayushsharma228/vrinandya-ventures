@@ -9,7 +9,7 @@ import {
   mapAmazonStatus,
   MARKETPLACE_IDS,
 } from "@/lib/amazon-sp";
-import { OrderStatus } from "@prisma/client";
+import { OrderStatus, Prisma } from "@prisma/client";
 
 const DELAY_MS = 300; // stay well within SP-API rate limits
 function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
@@ -97,7 +97,7 @@ async function syncForSeller(sellerId: string): Promise<{ created: number; updat
                 city:    addr.City          ?? "",
                 state:   addr.StateOrRegion ?? "",
                 pincode: addr.PostalCode    ?? "",
-              } : null,
+              } : Prisma.JsonNull,
               rawData: order as object,
               items: {
                 create: orderItems,
