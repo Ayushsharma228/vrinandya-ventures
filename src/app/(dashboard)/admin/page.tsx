@@ -269,7 +269,7 @@ export default async function AdminDashboard() {
                       <div className="flex items-center gap-1.5">
                         <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
                           style={{ background: "var(--accent)" }}>
-                          {p.supplier.name[0]?.toUpperCase()}
+                          {(p.supplier.name ?? "?")[0]?.toUpperCase()}
                         </div>
                         <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.25)" }}>{p.supplier.name}</span>
                       </div>
