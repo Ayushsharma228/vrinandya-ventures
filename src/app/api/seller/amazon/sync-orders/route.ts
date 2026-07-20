@@ -67,16 +67,18 @@ async function syncForSeller(sellerId: string): Promise<{ created: number; updat
             where: { id: existing.id },
             data: {
               status,
-              totalAmount: total,
-              customerName:    buyer?.BuyerName  ?? existing.customerName,
-              customerEmail:   buyer?.BuyerEmail ?? existing.customerEmail,
-              customerAddress: addr ? {
-                phone:   addr.Phone         ?? "",
-                address: addr.AddressLine1  ?? "",
-                city:    addr.City          ?? "",
-                state:   addr.StateOrRegion ?? "",
-                pincode: addr.PostalCode    ?? "",
-              } : existing.customerAddress,
+              totalAmount:  total,
+              customerName:  buyer?.BuyerName  ?? existing.customerName,
+              customerEmail: buyer?.BuyerEmail ?? existing.customerEmail,
+              ...(addr ? {
+                customerAddress: {
+                  phone:   addr.Phone         ?? "",
+                  address: addr.AddressLine1  ?? "",
+                  city:    addr.City          ?? "",
+                  state:   addr.StateOrRegion ?? "",
+                  pincode: addr.PostalCode    ?? "",
+                },
+              } : {}),
             },
           });
           updated++;
