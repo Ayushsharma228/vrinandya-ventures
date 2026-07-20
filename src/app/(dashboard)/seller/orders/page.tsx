@@ -51,6 +51,7 @@ export default function SellerOrdersPage() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting]   = useState(false);
   const [importResult, setImportResult] = useState<{ created: number; skipped: number; errors: { row: number; message: string }[] } | null>(null);
+  const [selected, setSelected]     = useState<Set<string>>(new Set());
 
   const fetchOrders = useCallback(async () => {
     const params = new URLSearchParams({ from, to });
@@ -131,24 +132,57 @@ export default function SellerOrdersPage() {
   }
 
   function handleExport() {
+    const toExport = selected.size > 0
+      ? displayed.filter((o) => selected.has(o.id))
+      : displayed;
     const csv = [
-      ["Order #", "Name", "Phone", "Products", "Address", "Qty", "Amount", "Status", "Date"].join(","),
-      ...orders.map((o) => [
-        o.externalOrderId, o.customerName || "", o.customerAddress?.phone || "",
-        o.items.map((i) => `${i.name} x${i.quantity}`).join("; "),
-        [o.customerAddress?.address, o.customerAddress?.city, o.customerAddress?.state, o.customerAddress?.pincode].filter(Boolean).join(", "),
-        o.items.reduce((s, i) => s + i.quantity, 0), o.totalAmount, o.status,
-        new Date(o.createdAt).toLocaleDateString("en-IN"),
-      ].map((v) => `"${v}"`).join(","))
+      ["Order #", "Customer Name", "Phone", "Email", "Products", "Address", "City", "State", "Pincode", "Qty", "Amount", "AWB", "Status", "Date"].join(","),
+      ...toExport.map((o) => {
+        const addr = o.customerAddress as { phone?: string; address?: string; city?: string; state?: string; pincode?: string } | null;
+        return [
+          o.externalOrderId,
+          o.customerName || "",
+          addr?.phone || "",
+          o.customerEmail || "",
+          o.items.map((i) => `${i.name} x${i.quantity}`).join("; "),
+          addr?.address || "",
+          addr?.city || "",
+          addr?.state || "",
+          addr?.pincode || "",
+          o.items.reduce((s, i) => s + i.quantity, 0),
+          o.totalAmount,
+          o.awbNumber || "",
+          o.status,
+          new Date(o.createdAt).toLocaleDateString("en-IN"),
+        ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",");
+      })
     ].join("\n");
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    a.download = "orders.csv"; a.click();
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    a.download = selected.size > 0 ? `orders-selected-${selected.size}.csv` : "orders.csv";
+    a.click();
   }
 
   const displayed = orders.filter((o) =>
     statusFilter === "ALL" || o.status === statusFilter
   );
+  const allSelected = displayed.length > 0 && displayed.every((o) => selected.has(o.id));
+  const someSelected = selected.size > 0;
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(displayed.map((o) => o.id)));
+    }
+  }
 
   const statCards = [
     { label: "Total Orders", value: fmt(stats.totalOrders), icon: ShoppingCart, color: "#3B82F6", bg: "#EFF6FF" },
@@ -181,9 +215,10 @@ export default function SellerOrdersPage() {
               <Download className="w-4 h-4 rotate-180" /> Import CSV
             </button>
             <button onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-              style={{ background: "var(--green-500)", color: "var(--text-primary)" }}>
-              <Download className="w-4 h-4" /> Export
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors text-white"
+              style={{ background: "var(--accent)" }}>
+              <Download className="w-4 h-4" />
+              {someSelected ? `Export Selected (${selected.size})` : "Export"}
             </button>
           </div>
         }
@@ -249,6 +284,10 @@ export default function SellerOrdersPage() {
             <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
+                  <th className="px-4 py-3 w-8">
+                    <input type="checkbox" checked={allSelected} onChange={toggleSelectAll}
+                      className="w-3.5 h-3.5 rounded cursor-pointer accent-[#4361EE]" />
+                  </th>
                   {["Order #", "Customer", "Products", "Address", "Qty", "Amount", "Status", "Date", "Actions"].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-400)" }}>{h}</th>
                   ))}
@@ -261,7 +300,12 @@ export default function SellerOrdersPage() {
                   const canConfirm = order.status === "NEW";
                   const canCancel = order.status !== "CANCELLED" && order.status !== "DELIVERED";
                   return (
-                    <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={order.id} className="hover:bg-gray-50/50 transition-colors"
+                      style={{ background: selected.has(order.id) ? "rgba(67,97,238,0.04)" : undefined }}>
+                      <td className="px-4 py-3 w-8">
+                        <input type="checkbox" checked={selected.has(order.id)} onChange={() => toggleSelect(order.id)}
+                          className="w-3.5 h-3.5 rounded cursor-pointer accent-[#4361EE]" />
+                      </td>
                       <td className="px-4 py-3 font-semibold">
                         <Link href={`/seller/orders/${order.id}`}
                           className="hover:underline" style={{ color: "var(--green-500)" }}>
