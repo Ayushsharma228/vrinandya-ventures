@@ -234,8 +234,7 @@ export default function AdminDeliveryPage() {
         filters={
           <div className="flex items-center gap-2">
             <select value={sellerFilter} onChange={(e) => setSellerFilter(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
-              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)", background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <option value="" className="text-gray-900 bg-white">All Sellers</option>
               {sellers.map((s) => (
                 <option key={s.id} value={s.id} className="text-gray-900 bg-white">
@@ -244,8 +243,7 @@ export default function AdminDeliveryPage() {
               ))}
             </select>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
-              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)", background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <option value="" className="text-gray-900 bg-white">All Statuses</option>
               {STATUSES.map((s) => <option key={s} value={s} className="text-gray-900 bg-white">{s}</option>)}
             </select>

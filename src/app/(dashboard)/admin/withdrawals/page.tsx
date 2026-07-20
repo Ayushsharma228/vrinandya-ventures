@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { BanknoteIcon, RefreshCw, CheckCircle2, XCircle, Filter, Clock } from "lucide-react";
@@ -150,7 +150,7 @@ export default function AdminWithdrawalsPage() {
                       {tab === "PENDING" && (
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <button onClick={e => { e.stopPropagation(); setExpanded(isOpen ? null : req.id); }}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ color: "var(--text-primary)" }}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
                             style={{ background: "#16A34A" }}>
                             <CheckCircle2 className="w-3.5 h-3.5" /> Approve
                           </button>

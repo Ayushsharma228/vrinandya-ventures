@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -139,7 +139,7 @@ export default function SalesDashboard() {
                   return (
                     <Link key={f.id} href={`/sales/leads/${f.id}`}
                       className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50/50 transition-colors">
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold" style={{ color: "var(--text-primary)" }}
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold text-white"
                         style={{ background: "var(--green-500)" }}>
                         {f.name[0]?.toUpperCase()}
                       </div>

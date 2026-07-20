@@ -141,8 +141,7 @@ export default function AdminSellersPage() {
         }
         filters={
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
-            style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+            className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)", background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
             <option value="" className="text-gray-900 bg-white">All Statuses</option>
             <option value="PENDING" className="text-gray-900 bg-white">Pending</option>
             <option value="ACTIVE" className="text-gray-900 bg-white">Active</option>

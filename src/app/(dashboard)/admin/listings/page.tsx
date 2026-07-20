@@ -139,13 +139,11 @@ export default function AdminListingsPage() {
         filters={
           <div className="flex items-center gap-2">
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
-              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)", background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               {STATUSES.map((s) => <option key={s} value={s} className="text-gray-900 bg-white">{s === "ALL" ? "All Statuses" : STATUS_LABEL[s]}</option>)}
             </select>
             <select value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
-              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)", background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               {PLATFORMS.map((p) => <option key={p} value={p} className="text-gray-900 bg-white">{p === "ALL" ? "All Platforms" : p}</option>)}
             </select>
           </div>

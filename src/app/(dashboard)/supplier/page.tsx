@@ -1,4 +1,4 @@
-﻿import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
@@ -73,7 +73,7 @@ export default async function SupplierDashboard() {
         subtitle="Your fulfillment dashboard"
         actions={
           <Link href="/supplier/products/new"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ color: "var(--text-primary)" }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
             style={{ background: "var(--green-500)" }}>
             <Plus className="w-4 h-4" /> Add Product
           </Link>

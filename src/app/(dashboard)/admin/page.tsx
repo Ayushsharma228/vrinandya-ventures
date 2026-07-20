@@ -1,4 +1,4 @@
-﻿import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
@@ -255,7 +255,7 @@ export default async function AdminDashboard() {
                     <p className="text-xs" style={{ color: "var(--text-secondary)" }}>by {p.supplier?.name ?? "Unknown"}</p>
                     <div className="flex items-center justify-between mt-3">
                       <div className="flex items-center gap-1.5">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ color: "var(--text-primary)" }}
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
                           style={{ background: "var(--accent)" }}>
                           {(p.supplier?.name ?? "?")[0]?.toUpperCase()}
                         </div>

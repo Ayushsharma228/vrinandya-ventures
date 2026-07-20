@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
@@ -129,7 +129,7 @@ function ShippingTab() {
           <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>When dispatching, AXQEN will call your shipping provider's API to auto-create the shipment and fetch the AWB.</p>
         </div>
         <button onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ color: "var(--text-primary)" }}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
           style={{ background: "var(--green-500)" }}>
           <Plus className="w-4 h-4" /> Add Provider
         </button>

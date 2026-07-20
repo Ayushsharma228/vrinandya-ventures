@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -365,8 +365,8 @@ export default function AdminCRMPage() {
               </span>
             )}
             <button onClick={() => { setShowForm(p => !p); setShowBulkUpload(false); }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ color: "var(--text-primary)" }}
-              style={{ background: "var(--green-500)" }}>
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+              style={{ background: "var(--accent)" }}>
               <Plus className="w-4 h-4" /> Add Lead
             </button>
           </div>
@@ -374,14 +374,12 @@ export default function AdminCRMPage() {
         filters={
           <div className="flex items-center gap-2">
             <select value={repFilter} onChange={e => setRepFilter(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
-              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)", background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <option value="" className="text-gray-900 bg-white">All Reps</option>
               {salesTeam.map(r => <option key={r.id} value={r.id} className="text-gray-900 bg-white">{r.name}</option>)}
             </select>
             <select value={stageFilter} onChange={e => setStageFilter(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
-              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)", background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <option value="" className="text-gray-900 bg-white">All Stages</option>
               {STAGES.map(s => <option key={s} value={s} className="text-gray-900 bg-white">{STAGE_LABEL[s]}</option>)}
             </select>
@@ -493,7 +491,7 @@ export default function AdminCRMPage() {
                       <tr key={rep.id} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ color: "var(--text-primary)" }}
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
                               style={{ background: "var(--green-500)" }}>
                               {rep.name?.[0]?.toUpperCase()}
                             </div>

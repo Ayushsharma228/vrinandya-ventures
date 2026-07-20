@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
@@ -128,7 +128,7 @@ export default function SellerCatalogPage() {
                     )}
                     {/* Pushed badge */}
                     {isPushed && (
-                      <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold" style={{ color: "var(--text-primary)" }}
+                      <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold text-white"
                         style={{ background: "var(--green-500)" }}>
                         <Check className="w-3 h-3" /> Pushed
                       </div>

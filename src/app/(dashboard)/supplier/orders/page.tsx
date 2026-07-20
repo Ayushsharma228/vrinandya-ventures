@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import {
@@ -384,7 +384,7 @@ export default function SupplierOrdersPage() {
                                   Reject
                                 </button>
                                 <button onClick={() => runAction(order.id, "ACCEPT")} disabled={isActioning}
-                                  className="px-2 py-1 rounded-lg text-xs font-semibold" style={{ color: "var(--text-primary)" }}
+                                  className="px-2 py-1 rounded-lg text-xs font-semibold text-white"
                                   style={{ background: "#16A34A", opacity: isActioning ? 0.6 : 1 }}>
                                   {isActioning ? "..." : "Accept"}
                                 </button>
@@ -392,14 +392,14 @@ export default function SupplierOrdersPage() {
                             )}
                             {order.supplierStatus === "READY_TO_SHIP" && (
                               <button onClick={() => openDispatch(order.id)} disabled={isActioning}
-                                className="px-2 py-1 rounded-lg text-xs font-semibold" style={{ color: "var(--text-primary)" }}
+                                className="px-2 py-1 rounded-lg text-xs font-semibold text-white"
                                 style={{ background: "#16A34A" }}>
                                 Dispatch
                               </button>
                             )}
                             {nextAction && order.supplierStatus !== "ASSIGNED" && order.supplierStatus !== "READY_TO_SHIP" && (
                               <button onClick={() => runAction(order.id, nextAction.action)} disabled={isActioning}
-                                className="px-2 py-1 rounded-lg text-xs font-semibold" style={{ color: "var(--text-primary)" }}
+                                className="px-2 py-1 rounded-lg text-xs font-semibold text-white"
                                 style={{ background: nextAction.color, opacity: isActioning ? 0.6 : 1 }}>
                                 {isActioning ? "..." : nextAction.label}
                               </button>
@@ -508,7 +508,7 @@ export default function SupplierOrdersPage() {
                 className="flex-1 px-4 py-2 rounded-xl text-sm font-medium border text-gray-600">Cancel</button>
               <button onClick={() => runAction(showReject, "REJECT", { note: rejectNote })}
                 disabled={!rejectNote.trim() || actioning === showReject}
-                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold" style={{ color: "var(--text-primary)" }}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white"
                 style={{ background: "#EF4444", opacity: !rejectNote.trim() ? 0.5 : 1 }}>
                 Confirm Reject
               </button>

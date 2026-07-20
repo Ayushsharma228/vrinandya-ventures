@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { Search, Plus, Trash2, RefreshCw, Users, Store, Package, Eye, EyeOff } from "lucide-react";
@@ -122,7 +122,7 @@ export default function AdminUsersPage() {
               Refresh
             </button>
             <button onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ color: "var(--text-primary)" }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
               style={{ background: "var(--green-500)" }}>
               <Plus className="w-4 h-4" /> Create User
             </button>
@@ -130,8 +130,7 @@ export default function AdminUsersPage() {
         }
         filters={
           <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
-            style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+            className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)", background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
             <option value="ALL" className="text-gray-900 bg-white">All Roles</option>
             <option value="SELLER" className="text-gray-900 bg-white">Sellers</option>
             <option value="SUPPLIER" className="text-gray-900 bg-white">Suppliers</option>
