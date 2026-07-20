@@ -88,7 +88,6 @@ async function syncForSeller(sellerId: string): Promise<{ created: number; updat
               source:          "AMAZON",
               status,
               totalAmount:     total,
-              orderDate:       new Date(order.PurchaseDate),
               customerName:    buyer?.BuyerName  ?? null,
               customerEmail:   buyer?.BuyerEmail ?? null,
               customerAddress: addr ? {

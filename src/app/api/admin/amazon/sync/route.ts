@@ -65,7 +65,6 @@ async function syncSeller(sellerId: string) {
               source:          "AMAZON",
               status,
               totalAmount:     total,
-              orderDate:       new Date(order.PurchaseDate),
               customerName:    buyer?.BuyerName  ?? null,
               customerEmail:   buyer?.BuyerEmail ?? null,
               customerAddress: addr ? {
