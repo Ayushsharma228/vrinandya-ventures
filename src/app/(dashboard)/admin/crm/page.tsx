@@ -405,7 +405,7 @@ export default function AdminCRMPage() {
                   </div>
                   <p className="text-xs font-medium truncate" style={{ color: "var(--text-secondary)" }}>{label}</p>
                 </div>
-                <p className="text-2xl font-bold text-white leading-none">{value}</p>
+                <p className="text-2xl font-bold leading-none" style={{ color: "var(--text-primary)" }}>{value}</p>
               </div>
             ))}
           </div>

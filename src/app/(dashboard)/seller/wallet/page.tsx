@@ -90,7 +90,7 @@ export default function SellerWalletPage() {
                   <Wallet style={{ color: "var(--green-500)", width: 18, height: 18 }} />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-white mb-1">
+              <p className="text-3xl font-bold mb-1" style={{ color: "var(--text-primary)" }}>
                 {loading ? "—" : `₹${fmt(data?.totalCredit ?? 0)}`}
               </p>
               <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Total paid to your account</p>
@@ -112,7 +112,7 @@ export default function SellerWalletPage() {
                   <Clock style={{ color: "#F59E0B", width: 18, height: 18 }} />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-white mb-1">
+              <p className="text-3xl font-bold mb-1" style={{ color: "var(--text-primary)" }}>
                 {loading ? "—" : `₹${fmt(data?.upcomingAmount ?? 0)}`}
               </p>
               <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
@@ -132,7 +132,7 @@ export default function SellerWalletPage() {
                   <TrendingDown style={{ color: "#EF4444", width: 18, height: 18 }} />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-white mb-1">
+              <p className="text-3xl font-bold mb-1" style={{ color: "var(--text-primary)" }}>
                 {loading ? "—" : `₹${fmt(data?.totalDebit ?? 0)}`}
               </p>
               <p className="text-xs" style={{ color: "var(--text-secondary)" }}>RTO charges & adjustments</p>

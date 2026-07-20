@@ -200,7 +200,7 @@ export default function SellerOrdersPage() {
                       <Icon className="w-4 h-4" style={{ color: s.color }} />
                     </div>
                   </div>
-                  <p className="text-xl font-bold leading-tight text-white">{s.value}</p>
+                  <p className="text-xl font-bold leading-tight" style={{ color: "var(--text-primary)" }}>{s.value}</p>
                 </div>
               );
             })}

@@ -85,7 +85,7 @@ export default function SupplierWalletPage() {
                   <Wallet style={{ color: "var(--green-500)", width: 18, height: 18 }} />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-white mb-1">₹{fmt(stats?.walletBalance ?? 0)}</p>
+              <p className="text-3xl font-bold mb-1" style={{ color: "var(--text-primary)" }}>₹{fmt(stats?.walletBalance ?? 0)}</p>
               <p className="text-xs" style={{ color: "var(--text-secondary)" }}>After remittances deducted</p>
             </div>
 
@@ -100,7 +100,7 @@ export default function SupplierWalletPage() {
                   <ArrowDownCircle style={{ color: "#7C3AED", width: 18, height: 18 }} />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-white mb-1">₹{fmt(stats?.totalRemittances ?? 0)}</p>
+              <p className="text-3xl font-bold mb-1" style={{ color: "var(--text-primary)" }}>₹{fmt(stats?.totalRemittances ?? 0)}</p>
               <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Amount received from admin</p>
             </div>
 
