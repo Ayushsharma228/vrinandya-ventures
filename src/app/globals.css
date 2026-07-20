@@ -2,128 +2,102 @@
 
 /* ─── Design Tokens ─────────────────────────────────────────── */
 :root {
-  /* Page — deep navy dark */
-  --bg-page:          #0B0F1A;
-  --bg-card:          #111827;
-  --bg-elevated:      #1A2235;
-  --bg-sidebar:       #0D1117;
-  --bg-muted:         #1E2A3A;
-  --bg-hero:          #0D1117;
+  --bg-page:        #080D1C;
+  --bg-sidebar:     #060A16;
+  --bg-card:        #0F1629;
+  --bg-elevated:    #141B2D;
+  --bg-muted:       #1A2240;
 
-  /* Brand */
-  --green-400:        #34D399;
-  --green-500:        #00C67A;
-  --green-600:        #00A865;
-  --green-900:        #0D1F13;
+  --accent:         #4361EE;
+  --accent-light:   rgba(67,97,238,0.15);
+  --accent-glow:    rgba(67,97,238,0.35);
 
-  /* Accent blue (primary action) */
-  --blue-500:         #4F7AFF;
-  --blue-600:         #3B6FFF;
+  --text-primary:   #FFFFFF;
+  --text-secondary: rgba(255,255,255,0.5);
+  --text-muted:     rgba(255,255,255,0.25);
 
-  /* Teal */
-  --teal-600:         #025864;
+  --border:         rgba(255,255,255,0.06);
+  --border-strong:  rgba(255,255,255,0.12);
 
-  /* Text */
-  --text-900:         #F1F5F9;
-  --text-600:         #94A3B8;
-  --text-400:         #4B5563;
-  --text-300:         #374151;
-  --text-white:       #FFFFFF;
-
-  /* Border */
-  --border:           rgba(255,255,255,0.07);
-  --border-strong:    rgba(255,255,255,0.14);
-
-  /* Status */
-  --success:          #00C67A;
-  --warning:          #F59E0B;
-  --danger:           #EF4444;
-  --info:             #4F7AFF;
-  --purple:           #8B5CF6;
-
-  /* Radius */
-  --radius-sm:        8px;
-  --radius-md:        12px;
-  --radius-lg:        16px;
-  --radius-xl:        20px;
-
-  /* Shadow */
-  --shadow-card:      0 1px 3px rgba(0,0,0,0.4);
-  --shadow-md:        0 4px 16px rgba(0,0,0,0.5);
+  /* kept for backward compat — mapped to blue */
+  --green-400:      #60A5FA;
+  --green-500:      #4361EE;
+  --green-600:      #3451D1;
+  --text-900:       #FFFFFF;
+  --text-600:       rgba(255,255,255,0.5);
+  --text-400:       rgba(255,255,255,0.3);
+  --text-300:       rgba(255,255,255,0.2);
+  --text-white:     #FFFFFF;
+  --bg-hero:        #060A16;
+  --teal-600:       #4361EE;
+  --success:        #4361EE;
+  --warning:        #F59E0B;
+  --danger:         #EF4444;
+  --info:           #4361EE;
+  --purple:         #8B5CF6;
+  --radius-sm:      8px;
+  --radius-md:      12px;
+  --radius-lg:      16px;
+  --radius-xl:      20px;
+  --shadow-card:    0 2px 8px rgba(0,0,0,0.5);
+  --shadow-md:      0 4px 24px rgba(0,0,0,0.6);
 }
 
-/* ─── Base ──────────────────────────────────────────────────── */
-*, *::before, *::after {
-  box-sizing: border-box;
-}
+*, *::before, *::after { box-sizing: border-box; }
 
 html {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   background: var(--bg-page);
-  color: var(--text-900);
+  color: var(--text-primary);
   font-size: 14px;
   line-height: 1.5;
 }
 
-/* ─── Scrollbar ─────────────────────────────────────────────── */
-::-webkit-scrollbar        { width: 5px; height: 5px; }
+/* Scrollbar */
+::-webkit-scrollbar        { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.12); border-radius: 99px; }
+::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.1); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-/* ─── Utility classes ───────────────────────────────────────── */
+/* Cards */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
 }
-
 .card-elevated {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
 }
-
 .card-dark {
   background: var(--bg-sidebar);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.05);
   border-radius: var(--radius-md);
 }
 
-.stat-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 7px;
-  border-radius: 99px;
-}
-
-.stat-badge.up   { background: rgba(0,198,122,0.15); color: #00C67A; }
+/* Stat badge */
+.stat-badge { display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:600; padding:2px 7px; border-radius:99px; }
+.stat-badge.up   { background: rgba(67,97,238,0.15);  color: #4361EE; }
 .stat-badge.down { background: rgba(239,68,68,0.15);  color: #EF4444; }
 
-/* ─── Status pills ──────────────────────────────────────────── */
+/* Status pills */
 .pill              { display:inline-flex; align-items:center; padding:2px 10px; border-radius:99px; font-size:11px; font-weight:600; }
-.pill-new          { background:rgba(79,122,255,0.15);  color:#4F7AFF; }
-.pill-processing   { background:rgba(245,158,11,0.15);  color:#F59E0B; }
-.pill-shipped      { background:rgba(139,92,246,0.15);  color:#8B5CF6; }
-.pill-in_transit   { background:rgba(2,88,100,0.25);    color:#34D399; }
-.pill-delivered    { background:rgba(0,198,122,0.15);   color:#00C67A; }
-.pill-rto          { background:rgba(239,68,68,0.15);   color:#EF4444; }
-.pill-cancelled    { background:rgba(75,85,99,0.25);    color:#9CA3AF; }
-.pill-ndr          { background:rgba(245,158,11,0.15);  color:#F59E0B; }
-.pill-approved     { background:rgba(0,198,122,0.15);   color:#00C67A; }
-.pill-pending      { background:rgba(245,158,11,0.15);  color:#F59E0B; }
-.pill-rejected     { background:rgba(239,68,68,0.15);   color:#EF4444; }
+.pill-new          { background:rgba(67,97,238,0.15);  color:#4361EE; }
+.pill-processing   { background:rgba(245,158,11,0.15); color:#F59E0B; }
+.pill-shipped      { background:rgba(139,92,246,0.15); color:#8B5CF6; }
+.pill-in_transit   { background:rgba(67,97,238,0.15);  color:#60A5FA; }
+.pill-delivered    { background:rgba(52,199,89,0.15);  color:#34C759; }
+.pill-rto          { background:rgba(239,68,68,0.15);  color:#EF4444; }
+.pill-cancelled    { background:rgba(75,85,99,0.2);    color:#9CA3AF; }
+.pill-ndr          { background:rgba(245,158,11,0.15); color:#F59E0B; }
+.pill-approved     { background:rgba(52,199,89,0.15);  color:#34C759; }
+.pill-pending      { background:rgba(245,158,11,0.15); color:#F59E0B; }
+.pill-rejected     { background:rgba(239,68,68,0.15);  color:#EF4444; }
 
-/* ─── Input base ────────────────────────────────────────────── */
-input, select, textarea {
-  color-scheme: dark;
-}
+input, select, textarea { color-scheme: dark; }

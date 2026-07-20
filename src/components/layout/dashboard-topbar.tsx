@@ -91,7 +91,7 @@ export function DashboardTopbar({ role }: DashboardTopbarProps) {
 
         {/* Avatar */}
         <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold cursor-pointer ml-1"
-          style={{ background: "linear-gradient(135deg, #4F7AFF, #00C67A)" }}>
+          style={{ background: "linear-gradient(135deg, #4361EE, #7C3AED)" }}>
           {initial}
         </div>
       </div>
