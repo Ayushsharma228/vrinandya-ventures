@@ -28,74 +28,66 @@ export function PageHero({
 }: PageHeroProps) {
   return (
     <div
-      className="relative overflow-hidden px-4 md:px-8 pt-6 md:pt-7"
+      className="px-4 md:px-8 pt-6 md:pt-7"
       style={{
-        background: "linear-gradient(135deg, #0D1117 0%, #0D2818 60%, #0a1f12 100%)",
-        paddingBottom: cards ? "0" : "2rem",
+        background: "var(--bg-card)",
+        borderBottom: "1px solid var(--border)",
+        paddingBottom: cards ? "0" : "1.5rem",
       }}
     >
-      {/* BG decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute -top-16 -right-16 w-64 h-64 rounded-full opacity-10"
-          style={{ background: "radial-gradient(circle, #00C67A, transparent)" }}
-        />
-        <div
-          className="absolute bottom-0 left-1/4 w-48 h-48 rounded-full opacity-5"
-          style={{ background: "radial-gradient(circle, #3B82F6, transparent)" }}
-        />
+      {/* Title row */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+        <div>
+          <h1 className="text-xl font-bold leading-tight" style={{ color: "var(--text-primary)" }}>
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
+              {subtitle}
+            </p>
+          )}
+        </div>
+        {actions && <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>}
       </div>
 
-      <div className="relative">
-        {/* Title row */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
-          <div>
-            <h1 className="text-2xl font-bold text-white leading-tight">{title}</h1>
-            {subtitle && (
-              <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.45)" }}>
-                {subtitle}
-              </p>
-            )}
-          </div>
-          {actions && <div className="flex items-center gap-2">{actions}</div>}
-        </div>
-
-        {/* Search + filters row */}
-        <div className="flex items-center gap-3">
+      {/* Search + filters row */}
+      {(onSearchChange || filters) && (
+        <div className="flex items-center gap-3 mb-4">
           {onSearchChange && (
             <form
               onSubmit={(e) => { e.preventDefault(); onSearchSubmit?.(); }}
-              className="flex-1 max-w-md relative"
+              className="flex-1 max-w-sm relative"
             >
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-                style={{ color: "rgba(255,255,255,0.35)" }}
+                style={{ color: "var(--text-muted)" }}
               />
               <input
                 type="text"
                 value={searchValue}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="w-full pl-10 pr-4 py-2.5 text-sm text-white placeholder-white/30 rounded-xl outline-none transition-all"
+                className="w-full pl-10 pr-4 py-2 text-sm rounded-xl outline-none transition-all"
                 style={{
-                  background: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.12)",
+                  background: "var(--bg-muted)",
+                  border: "1.5px solid var(--border)",
+                  color: "var(--text-primary)",
                 }}
-                onFocus={(e) => { e.currentTarget.style.border = "1px solid rgba(0,198,122,0.5)"; }}
-                onBlur={(e) => { e.currentTarget.style.border = "1px solid rgba(255,255,255,0.12)"; }}
+                onFocus={(e) => { e.currentTarget.style.border = "1.5px solid var(--accent)"; e.currentTarget.style.background = "white"; }}
+                onBlur={(e) => { e.currentTarget.style.border = "1.5px solid var(--border)"; e.currentTarget.style.background = "var(--bg-muted)"; }}
               />
             </form>
           )}
-          {filters && <div className="flex items-center gap-2">{filters}</div>}
+          {filters && <div className="flex items-center gap-2 flex-wrap">{filters}</div>}
         </div>
+      )}
 
-        {/* Stat cards inside gradient */}
-        {cards && (
-          <div className="mt-6 pb-6">
-            {cards}
-          </div>
-        )}
-      </div>
+      {/* Stat cards */}
+      {cards && (
+        <div className="mt-2 pb-6">
+          {cards}
+        </div>
+      )}
     </div>
   );
 }

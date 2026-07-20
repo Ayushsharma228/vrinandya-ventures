@@ -37,60 +37,63 @@ export function DashboardTopbar({ role }: DashboardTopbarProps) {
   const initial = session?.user?.name?.[0]?.toUpperCase() ?? "U";
 
   return (
-    <header className="h-16 flex items-center justify-between px-8 flex-shrink-0"
-      style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", background: "var(--bg-page)" }}>
+    <header className="h-14 flex items-center justify-between px-8 flex-shrink-0"
+      style={{
+        borderBottom: "1px solid var(--border)",
+        background: "var(--bg-card)",
+      }}>
 
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm">
-        <Link href="/" className="transition-colors" style={{ color: "rgba(255,255,255,0.3)" }}
-          onMouseEnter={e => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
-          onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}>
+      <div className="flex items-center gap-1.5 text-sm">
+        <Link href="/" className="transition-colors" style={{ color: "var(--text-muted)" }}
+          onMouseEnter={e => e.currentTarget.style.color = "var(--text-primary)"}
+          onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}>
           Home
         </Link>
         {breadcrumbs.map((b, i) => (
-          <span key={b.href} className="flex items-center gap-2">
-            <span style={{ color: "rgba(255,255,255,0.2)" }}>/</span>
+          <span key={b.href} className="flex items-center gap-1.5">
+            <span style={{ color: "var(--border-strong)" }}>/</span>
             {i === breadcrumbs.length - 1 ? (
-              <span className="font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>{b.label}</span>
+              <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{b.label}</span>
             ) : (
-              <Link href={b.href} className="transition-colors" style={{ color: "rgba(255,255,255,0.4)" }}
-                onMouseEnter={e => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
-                onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.4)"}>
+              <Link href={b.href} className="transition-colors" style={{ color: "var(--text-muted)" }}
+                onMouseEnter={e => e.currentTarget.style.color = "var(--text-primary)"}
+                onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}>
                 {b.label}
               </Link>
             )}
           </span>
         ))}
-        <span className="flex items-center gap-1 ml-2 px-2.5 py-1 rounded-lg text-xs font-medium"
-          style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.08)" }}>
-          {today} <ChevronDown className="w-3 h-3" />
+        <span className="flex items-center gap-1 ml-2 px-2 py-0.5 rounded-lg text-xs"
+          style={{ background: "var(--bg-muted)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
+          {today}
         </span>
       </div>
 
       {/* Right controls */}
       <div className="flex items-center gap-2">
         {/* Search */}
-        <button className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
-          style={{ color: "rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.05)" }}
-          onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}>
-          <Search className="w-4 h-4" />
+        <button className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
+          style={{ color: "var(--text-muted)", background: "var(--bg-muted)" }}
+          onMouseEnter={e => { e.currentTarget.style.background = "var(--accent-light)"; e.currentTarget.style.color = "var(--accent)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "var(--bg-muted)"; e.currentTarget.style.color = "var(--text-muted)"; }}>
+          <Search className="w-3.5 h-3.5" />
         </button>
 
         {/* Notifications */}
         <Link href={`/${role}/notifications`}
-          className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors relative"
-          style={{ color: "rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.05)" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.7)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.4)"; }}>
-          <Bell className="w-4 h-4" />
+          className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors relative"
+          style={{ color: "var(--text-muted)", background: "var(--bg-muted)" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--accent-light)"; (e.currentTarget as HTMLElement).style.color = "var(--accent)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "var(--bg-muted)"; (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}>
+          <Bell className="w-3.5 h-3.5" />
           {unread > 0 && (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" />
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
           )}
         </Link>
 
         {/* Avatar */}
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold cursor-pointer ml-1"
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold cursor-pointer ml-1 flex-shrink-0"
           style={{ background: "linear-gradient(135deg, #4361EE, #7C3AED)" }}>
           {initial}
         </div>

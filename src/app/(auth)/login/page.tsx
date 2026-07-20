@@ -64,26 +64,26 @@ function LoginContent() {
     <div className="min-h-screen flex">
       {/* ── LEFT PANEL ─────────────────────────────────────── */}
       <div className="hidden lg:flex lg:w-[52%] relative flex-col justify-between p-12 overflow-hidden"
-        style={{ background: "linear-gradient(145deg, #0D1117 0%, #0D2818 55%, #071a0e 100%)" }}>
+        style={{ background: "linear-gradient(145deg, #0c1530 0%, #111d45 55%, #1a2a6e 100%)" }}>
 
         {/* Decorative glowing orbs */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-[-80px] left-[-80px] w-[400px] h-[400px] rounded-full opacity-20"
-            style={{ background: "radial-gradient(circle, #00C67A, transparent 70%)" }} />
+            style={{ background: "radial-gradient(circle, #4361EE, transparent 70%)" }} />
           <div className="absolute bottom-[-60px] right-[-60px] w-[350px] h-[350px] rounded-full opacity-15"
-            style={{ background: "radial-gradient(circle, #00C67A, transparent 70%)" }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full opacity-5"
-            style={{ background: "radial-gradient(circle, #3B82F6, transparent 70%)" }} />
+            style={{ background: "radial-gradient(circle, #7C3AED, transparent 70%)" }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full opacity-8"
+            style={{ background: "radial-gradient(circle, #4361EE, transparent 70%)" }} />
         </div>
 
         {/* Abstract orb visual — CSS only */}
         <div className="absolute right-[-40px] top-1/2 -translate-y-1/2 w-[340px] h-[340px] pointer-events-none">
           <div className="w-full h-full rounded-full opacity-30"
-            style={{ background: "radial-gradient(circle at 40% 40%, #00C67A 0%, #0a4a28 50%, transparent 70%)", filter: "blur(2px)" }} />
+            style={{ background: "radial-gradient(circle at 40% 40%, #4361EE 0%, #1a2a6e 50%, transparent 70%)", filter: "blur(2px)" }} />
           <div className="absolute inset-8 rounded-full opacity-40"
-            style={{ background: "radial-gradient(circle at 60% 35%, #00e87a 0%, #003d1f 60%, transparent 80%)" }} />
+            style={{ background: "radial-gradient(circle at 60% 35%, #6080ff 0%, #1a2060 60%, transparent 80%)" }} />
           <div className="absolute inset-16 rounded-full opacity-50"
-            style={{ background: "radial-gradient(circle at 50% 50%, #00C67A 0%, #005c2e 70%)" }} />
+            style={{ background: "radial-gradient(circle at 50% 50%, #4361EE 0%, #2030a0 70%)" }} />
         </div>
 
         {/* Logo */}
@@ -100,9 +100,9 @@ function LoginContent() {
           <h1 className="text-4xl font-bold text-white leading-tight"
             style={{ fontFamily: "var(--font-playfair), serif" }}>
             Start managing your commerce with{" "}
-            <em className="not-italic" style={{ fontStyle: "italic", color: "#00C67A" }}>clarity</em>
+            <em className="not-italic" style={{ fontStyle: "italic", color: "#4361EE" }}>clarity</em>
             {" "}and{" "}
-            <em style={{ fontStyle: "italic", color: "#00C67A" }}>control.</em>
+            <em style={{ fontStyle: "italic", color: "#4361EE" }}>control.</em>
           </h1>
           <p className="text-xs font-light leading-relaxed tracking-widest uppercase"
             style={{ color: "rgba(255,255,255,0.4)" }}>
@@ -121,7 +121,7 @@ function LoginContent() {
                 style={{ color: "rgba(255,255,255,0.55)" }}>
                 <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{ background: "rgba(0,198,122,0.2)", border: "1px solid rgba(0,198,122,0.4)" }}>
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#00C67A" }} />
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#4361EE" }} />
                 </div>
                 {f}
               </li>
@@ -186,10 +186,10 @@ function LoginContent() {
                 <button onClick={() => setZone("supplier")}
                   className="w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all hover:shadow-md"
                   style={{ border: "1.5px solid var(--border)", background: "white" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--green-500)"; e.currentTarget.style.background = "#F0FDF4"; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--green-500)"; e.currentTarget.style.background = "#EEF1FF"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "white"; }}>
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: "#F0FDF4" }}>
+                    style={{ background: "#EEF1FF" }}>
                     <Package className="w-5 h-5" style={{ color: "var(--green-500)" }} />
                   </div>
                   <div className="flex-1">
@@ -203,10 +203,10 @@ function LoginContent() {
               <div className="mt-8 space-y-3">
                 {/* Sign up CTA */}
                 <div className="rounded-2xl p-4 flex items-center justify-between"
-                  style={{ background: "#F0FDF4", border: "1px solid #D1FAE5" }}>
+                  style={{ background: "#EEF1FF", border: "1px solid #C7D2FE" }}>
                   <div>
-                    <p className="text-sm font-semibold" style={{ color: "#065F46" }}>New seller?</p>
-                    <p className="text-xs" style={{ color: "#6EE7B7" }}>Create your account in 2 minutes</p>
+                    <p className="text-sm font-semibold" style={{ color: "#1e3a8a" }}>New seller?</p>
+                    <p className="text-xs" style={{ color: "#93C5FD" }}>Create your account in 2 minutes</p>
                   </div>
                   <Link href="/signup"
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-opacity hover:opacity-90"
@@ -239,7 +239,7 @@ function LoginContent() {
               <div className="mb-7">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-3"
                   style={{
-                    background: zone === "seller" ? "#EFF6FF" : zone === "sales" ? "#F5F3FF" : "#F0FDF4",
+                    background: zone === "seller" ? "#EFF6FF" : zone === "sales" ? "#F5F3FF" : "#EEF1FF",
                     color: zone === "seller" ? "#3B82F6" : zone === "sales" ? "#7C3AED" : "var(--green-500)",
                   }}>
                   {zone === "seller" ? <Store className="w-3 h-3" /> : zone === "sales" ? <UserCheck className="w-3 h-3" /> : <Package className="w-3 h-3" />}
