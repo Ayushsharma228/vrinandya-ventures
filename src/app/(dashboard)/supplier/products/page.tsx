@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+﻿import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
@@ -24,7 +24,7 @@ export default async function MyProductsPage() {
   const statCards = [
     { label: "Total",    value: counts.total,    icon: Package,     color: "#3B82F6" },
     { label: "Pending",  value: counts.pending,  icon: Clock,       color: "#F59E0B" },
-    { label: "Approved", value: counts.approved, icon: CheckCircle, color: "#00C67A" },
+    { label: "Approved", value: counts.approved, icon: CheckCircle, color: "#16A34A" },
     { label: "Rejected", value: counts.rejected, icon: XCircle,     color: "#EF4444" },
   ];
 
@@ -36,7 +36,7 @@ export default async function MyProductsPage() {
         actions={
           <Link
             href="/supplier/products/new"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ color: "var(--text-primary)" }}
             style={{ background: "var(--green-500)" }}
           >
             <Plus className="w-4 h-4" /> Add Product
@@ -48,17 +48,17 @@ export default async function MyProductsPage() {
               <div
                 key={label}
                 className="rounded-2xl px-5 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
                     {label}
                   </p>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)" }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--bg-muted)" }}>
                     <Icon className="w-4 h-4" style={{ color }} />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-white">{value}</p>
+                <p className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{value}</p>
               </div>
             ))}
           </div>
@@ -74,7 +74,7 @@ export default async function MyProductsPage() {
               <p className="text-xs" style={{ color: "var(--text-400)" }}>Start by listing your first product</p>
               <Link
                 href="/supplier/products/new"
-                className="mt-1 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+                className="mt-1 px-4 py-2 rounded-xl text-sm font-semibold" style={{ color: "var(--text-primary)" }}
                 style={{ background: "var(--green-500)" }}
               >
                 Add Product
@@ -106,7 +106,7 @@ export default async function MyProductsPage() {
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
                         style={{
                           background: p.status === "APPROVED" ? "#F0FDF4" : p.status === "REJECTED" ? "#FEF2F2" : "#FFF7ED",
-                          color:      p.status === "APPROVED" ? "#00C67A" : p.status === "REJECTED" ? "#EF4444" : "#F59E0B",
+                          color:      p.status === "APPROVED" ? "#16A34A" : p.status === "REJECTED" ? "#EF4444" : "#F59E0B",
                         }}
                       >
                         {p.status === "APPROVED" && <CheckCircle className="w-3 h-3" />}

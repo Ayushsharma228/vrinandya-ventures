@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import {
@@ -106,10 +106,10 @@ export default function NdrPage() {
         subtitle="Manage failed delivery attempts — re-attempt or return to origin"
         actions={
           <div className="flex items-center gap-3">
-            {syncMsg && <span className="text-xs font-medium" style={{ color: "#00C67A" }}>{syncMsg}</span>}
+            {syncMsg && <span className="text-xs font-medium" style={{ color: "#16A34A" }}>{syncMsg}</span>}
             <button onClick={handleSync} disabled={syncing}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
-              style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+              style={{ background: "var(--bg-muted)", color: "var(--text-primary)", border: "1px solid var(--border)" }}>
               <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Checking..." : "Sync NDRs"}
             </button>
@@ -123,14 +123,14 @@ export default function NdrPage() {
               { label: "RTO Initiated", value: actioned.filter(a => a.ndrActionTaken === "RTO").length, color: "#F59E0B", icon: PackageX },
             ].map(({ label, value, color, icon: Icon }) => (
               <div key={label} className="rounded-2xl px-5 py-4 flex items-center gap-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(255,255,255,0.1)" }}>
+                  style={{ background: "var(--bg-muted)" }}>
                   <Icon className="w-5 h-5" style={{ color }} />
                 </div>
                 <div>
-                  <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
-                  <p className="text-2xl font-bold text-white">{value}</p>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}</p>
+                  <p className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{value}</p>
                 </div>
               </div>
             ))}
@@ -283,7 +283,7 @@ export default function NdrPage() {
                         <button onClick={() => handleSubmit(order.id)}
                           disabled={submitting === order.id}
                           className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
-                          style={{ background: isRTO ? "#EF4444" : "#3B82F6", color: "white" }}>
+                          style={{ background: isRTO ? "#EF4444" : "#3B82F6", color: "var(--text-primary)" }}>
                           {submitting === order.id
                             ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</>
                             : isRTO

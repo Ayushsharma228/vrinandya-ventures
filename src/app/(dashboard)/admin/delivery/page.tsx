@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, Truck, Save, Loader2, Upload, ChevronDown, ChevronUp, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
@@ -218,14 +218,14 @@ export default function AdminDeliveryPage() {
             {Object.keys(statusInputs).some((id) => statusInputs[id] !== orders.find(o => o.id === id)?.status) && (
               <button onClick={handleBulkSave} disabled={bulkSaving}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50"
-                style={{ background: "#00C67A", color: "white" }}>
+                style={{ background: "#16A34A", color: "var(--text-primary)" }}>
                 <Save className="w-4 h-4" />
                 {bulkSaving ? "Saving..." : `Save All Changes`}
               </button>
             )}
             <button onClick={handleRefreshTracking} disabled={refreshing}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
-              style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+              style={{ background: "var(--bg-muted)", color: "var(--text-primary)", border: "1px solid var(--border)" }}>
               <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               Refresh Tracking
             </button>
@@ -234,8 +234,8 @@ export default function AdminDeliveryPage() {
         filters={
           <div className="flex items-center gap-2">
             <select value={sellerFilter} onChange={(e) => setSellerFilter(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
-              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
+              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <option value="" className="text-gray-900 bg-white">All Sellers</option>
               {sellers.map((s) => (
                 <option key={s.id} value={s.id} className="text-gray-900 bg-white">
@@ -244,8 +244,8 @@ export default function AdminDeliveryPage() {
               ))}
             </select>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
-              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
+              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <option value="" className="text-gray-900 bg-white">All Statuses</option>
               {STATUSES.map((s) => <option key={s} value={s} className="text-gray-900 bg-white">{s}</option>)}
             </select>
@@ -475,7 +475,7 @@ export default function AdminDeliveryPage() {
                   onClick={handleBulkApply}
                   disabled={bulkApplying}
                   className="mt-3 flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50"
-                  style={{ background: "#00C67A", color: "#fff" }}>
+                  style={{ background: "#16A34A", color: "#fff" }}>
                   {bulkApplying
                     ? <><Loader2 className="w-4 h-4 animate-spin" /> Applying…</>
                     : <><Upload className="w-4 h-4" /> Apply {csvPreview.length} AWBs</>

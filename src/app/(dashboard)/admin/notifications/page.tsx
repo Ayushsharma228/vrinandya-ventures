@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { Bell, Send, Loader2, Users, User, IndianRupee, Package, AlertCircle, Info, CheckCircle } from "lucide-react";
@@ -19,7 +19,7 @@ const CATEGORIES = [
   { value: "Payment Reminder", label: "Payment Reminder",  icon: IndianRupee,   color: "#F59E0B", bg: "#FFF7ED" },
   { value: "Stock Update",     label: "Stock Update",      icon: Package,       color: "#7C3AED", bg: "#F5F3FF" },
   { value: "Order Alert",      label: "Order Alert",       icon: AlertCircle,   color: "#EF4444", bg: "#FEF2F2" },
-  { value: "Announcement",     label: "Announcement",      icon: Bell,          color: "#00C67A", bg: "#F0FDF4" },
+  { value: "Announcement",     label: "Announcement",      icon: Bell,          color: "#16A34A", bg: "#F0FDF4" },
 ];
 
 function CategoryBadge({ category }: { category?: string }) {
@@ -188,7 +188,7 @@ export default function AdminNotificationsPage() {
 
             <button type="submit" disabled={sending || !title.trim() || !message.trim()}
               className="w-full py-2.5 font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-colors text-sm"
-              style={{ background: "#3B82F6", color: "white" }}>
+              style={{ background: "#3B82F6", color: "var(--text-primary)" }}>
               {sending
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
                 : <><Send className="w-4 h-4" /> {target === "all" ? `Send to All Sellers (${sellers.length})` : "Send to Seller"}</>

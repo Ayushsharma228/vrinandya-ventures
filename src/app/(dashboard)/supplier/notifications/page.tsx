@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { Bell, CheckCheck, Package, ShoppingCart, AlertCircle } from "lucide-react";
@@ -23,7 +23,7 @@ const TYPE_ICON: Record<string, React.ElementType> = {
 
 const TYPE_COLOR: Record<string, string> = {
   ORDER_UPDATE: "#3B82F6",
-  PRODUCT_APPROVED: "#00C67A",
+  PRODUCT_APPROVED: "#16A34A",
   PRODUCT_REJECTED: "#EF4444",
   GENERAL: "#8B5CF6",
 };
@@ -67,7 +67,7 @@ export default function SupplierNotificationsPage() {
           unread > 0 ? (
             <button onClick={markAllRead} disabled={markingAll}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white"
-              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <CheckCheck className="w-4 h-4" />
               Mark all read
             </button>
@@ -76,10 +76,10 @@ export default function SupplierNotificationsPage() {
         cards={
           <div className="flex items-center gap-3 px-1">
             <div className="flex items-center gap-2 px-4 py-2 rounded-xl"
-              style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
               <Bell className="w-4 h-4 text-white" />
               <span className="text-white text-sm font-bold">{unread}</span>
-              <span className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>unread</span>
+              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>unread</span>
             </div>
           </div>
         }

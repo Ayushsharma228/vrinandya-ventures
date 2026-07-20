@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -128,7 +128,7 @@ function AssignSupplierModal({ order, suppliers, onClose, onSaved }: {
             </button>
             <button type="submit" disabled={saving}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl disabled:opacity-50"
-              style={{ background: "#00C67A" }}>
+              style={{ background: "#16A34A" }}>
               {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Assigning...</> : <><UserCheck className="w-4 h-4" /> Assign & Create PO</>}
             </button>
           </div>
@@ -498,8 +498,8 @@ export default function AdminOrdersPage() {
         onSearchSubmit={fetchOrders}
         actions={
           <button onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-            style={{ background: "#00C67A" }}>
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ color: "var(--text-primary)" }}
+            style={{ background: "#16A34A" }}>
             <Plus className="w-4 h-4" /> Add Order
           </button>
         }
@@ -508,30 +508,30 @@ export default function AdminOrdersPage() {
             <select
               value={sellerFilter}
               onChange={(e) => setSellerFilter(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
-              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
+              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <option value="" className="text-gray-900 bg-white">All Sellers</option>
               {sellers.map((s) => (
                 <option key={s.id} value={s.id} className="text-gray-900 bg-white">{s.name || s.email}</option>
               ))}
             </select>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
-              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
+              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <option value="" className="text-gray-900 bg-white">All Statuses</option>
               {STATUSES.map((s) => <option key={s} value={s} className="text-gray-900 bg-white">{s}</option>)}
             </select>
             <input
               type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
               title="From date"
-              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
-              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)", colorScheme: "dark" }}
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
+              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)", colorScheme: "dark" }}
             />
             <input
               type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
               title="To date"
-              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
-              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)", colorScheme: "dark" }}
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
+              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)", colorScheme: "dark" }}
             />
             {(dateFrom || dateTo) && (
               <button
@@ -696,7 +696,7 @@ export default function AdminOrdersPage() {
                                 onClick={() => setAssignOrder(order)}
                                 title="Assign supplier"
                                 className="p-1.5 rounded-lg transition-colors"
-                                style={{ color: "#00C67A", background: "#F0FDF4" }}>
+                                style={{ color: "#16A34A", background: "#F0FDF4" }}>
                                 <UserCheck className="w-3.5 h-3.5" />
                               </button>
                             )}
@@ -754,7 +754,7 @@ export default function AdminOrdersPage() {
                     <button key={p} onClick={() => setPage(p)}
                       className="w-7 h-7 rounded-lg text-xs font-semibold"
                       style={p === page
-                        ? { background: "var(--bg-sidebar)", color: "white" }
+                        ? { background: "var(--bg-sidebar)", color: "var(--text-primary)" }
                         : { color: "var(--text-400)" }}>
                       {p}
                     </button>
@@ -815,7 +815,7 @@ export default function AdminOrdersPage() {
               </button>
               <button onClick={handleBulkAssign} disabled={bulkAssigning || !bulkAssignSupplierId}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl disabled:opacity-50"
-                style={{ background: "#00C67A" }}>
+                style={{ background: "#16A34A" }}>
                 {bulkAssigning
                   ? <><Loader2 className="w-4 h-4 animate-spin" /> Assigning...</>
                   : <><UserCheck className="w-4 h-4" /> Assign {unassignedSelectedCount} Orders</>}

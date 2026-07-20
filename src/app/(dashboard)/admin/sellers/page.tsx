@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -114,7 +114,7 @@ export default function AdminSellersPage() {
         actions={
           <button onClick={fetchSellers} disabled={loading}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
-            style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+            style={{ background: "var(--bg-muted)", color: "var(--text-primary)", border: "1px solid var(--border)" }}>
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </button>
@@ -124,25 +124,25 @@ export default function AdminSellersPage() {
             {[
               { label: "Total Sellers", value: sellers.length, icon: Users,       color: "#3B82F6" },
               { label: "Pending",       value: pendingCount,   icon: Clock,       color: "#F59E0B" },
-              { label: "Active",        value: activeCount,    icon: BadgeCheck,  color: "#00C67A" },
+              { label: "Active",        value: activeCount,    icon: BadgeCheck,  color: "#16A34A" },
             ].map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)" }}>
+                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "var(--bg-muted)" }}>
                     <Icon className="w-3.5 h-3.5" style={{ color }} />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-white">{value}</p>
+                <p className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{value}</p>
               </div>
             ))}
           </div>
         }
         filters={
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl text-white outline-none"
-            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+            className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
+            style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
             <option value="" className="text-gray-900 bg-white">All Statuses</option>
             <option value="PENDING" className="text-gray-900 bg-white">Pending</option>
             <option value="ACTIVE" className="text-gray-900 bg-white">Active</option>
@@ -373,7 +373,7 @@ export default function AdminSellersPage() {
               </button>
               <button onClick={saveDateStartDate} disabled={dateSaving}
                 className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50"
-                style={{ background: "var(--green-500)", color: "white" }}>
+                style={{ background: "var(--green-500)", color: "var(--text-primary)" }}>
                 {dateSaving ? "Saving..." : "Save"}
               </button>
             </div>

@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+﻿import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
@@ -155,13 +155,13 @@ export default async function AdminDashboard() {
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-5">
                   <div>
-                    <p className="text-xs font-semibold mb-1" style={{ color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    <p className="text-xs font-semibold mb-1" style={{ color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                       Platform GMV
                     </p>
                     <p className="text-4xl font-black text-white">{fmt(gmv)}</p>
                   </div>
                   <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
-                    style={{ background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.8)" }}>
+                    style={{ background: "var(--bg-muted)", color: "var(--text-primary)" }}>
                     <Zap className="w-3 h-3" />
                     Live
                   </div>
@@ -175,10 +175,10 @@ export default async function AdminDashboard() {
                     { label: "In Transit",   value: activeOrders,    color: "#FDE68A" },
                   ].map(({ label, value, color }, i) => (
                     <div key={label} className="flex items-center gap-4">
-                      {i > 0 && <div className="w-px h-6" style={{ background: "rgba(255,255,255,0.15)" }} />}
+                      {i > 0 && <div className="w-px h-6" style={{ background: "var(--bg-muted)" }} />}
                       <div>
                         <p className="text-xl font-bold" style={{ color }}>{value}</p>
-                        <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>{label}</p>
+                        <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{label}</p>
                       </div>
                     </div>
                   ))}
@@ -255,7 +255,7 @@ export default async function AdminDashboard() {
                     <p className="text-xs" style={{ color: "var(--text-secondary)" }}>by {p.supplier?.name ?? "Unknown"}</p>
                     <div className="flex items-center justify-between mt-3">
                       <div className="flex items-center gap-1.5">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ color: "var(--text-primary)" }}
                           style={{ background: "var(--accent)" }}>
                           {(p.supplier?.name ?? "?")[0]?.toUpperCase()}
                         </div>

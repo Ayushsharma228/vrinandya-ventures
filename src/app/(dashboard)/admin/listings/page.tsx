@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -131,7 +131,7 @@ export default function AdminListingsPage() {
         actions={
           <button onClick={() => fetchListings(true)} disabled={refreshing}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
-            style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+            style={{ background: "var(--bg-muted)", color: "var(--text-primary)", border: "1px solid var(--border)" }}>
             <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
             Refresh
           </button>
@@ -139,13 +139,13 @@ export default function AdminListingsPage() {
         filters={
           <div className="flex items-center gap-2">
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
-              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
+              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               {STATUSES.map((s) => <option key={s} value={s} className="text-gray-900 bg-white">{s === "ALL" ? "All Statuses" : STATUS_LABEL[s]}</option>)}
             </select>
             <select value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
-              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
+              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               {PLATFORMS.map((p) => <option key={p} value={p} className="text-gray-900 bg-white">{p === "ALL" ? "All Platforms" : p}</option>)}
             </select>
           </div>
@@ -156,18 +156,18 @@ export default function AdminListingsPage() {
               { label: "Total",       value: stats.total,      icon: ListChecks,  color: "#7C3AED" },
               { label: "Pending",     value: stats.pending,    icon: Clock,       color: "#F59E0B" },
               { label: "In Progress", value: stats.inProgress, icon: Loader2,     color: "#3B82F6" },
-              { label: "Listed",      value: stats.listed,     icon: CheckCircle, color: "#00C67A" },
+              { label: "Listed",      value: stats.listed,     icon: CheckCircle, color: "#16A34A" },
               { label: "Failed",      value: stats.failed,     icon: XCircle,     color: "#EF4444" },
             ].map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="rounded-2xl px-4 py-4 flex items-center gap-3"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(255,255,255,0.1)" }}>
+                  style={{ background: "var(--bg-muted)" }}>
                   <Icon className="w-4 h-4" style={{ color }} />
                 </div>
                 <div>
-                  <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
-                  <p className="text-xl font-bold text-white">{value}</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>{label}</p>
+                  <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{value}</p>
                 </div>
               </div>
             ))}

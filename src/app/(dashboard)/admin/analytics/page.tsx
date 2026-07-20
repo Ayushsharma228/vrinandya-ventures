@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -76,7 +76,7 @@ const PRESETS = [
   { label: "All", days: 0 },
 ];
 
-const PIE_COLORS = ["#00C67A", "#3B82F6", "#F59E0B", "#EF4444", "#8B5CF6"];
+const PIE_COLORS = ["#16A34A", "#3B82F6", "#F59E0B", "#EF4444", "#8B5CF6"];
 
 /* ─── Sub-components ─────────────────────────────────────────────────────── */
 function KpiCard({
@@ -149,15 +149,15 @@ export default function AdminAnalyticsPage() {
         cards={
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Total GMV",           value: inr(data?.remittances?.gmv ?? s?.grossRevenue ?? 0),              color: "#00C67A" },
+              { label: "Total GMV",           value: inr(data?.remittances?.gmv ?? s?.grossRevenue ?? 0),              color: "#16A34A" },
               { label: "Platform Charges",    value: inr(data?.remittances?.platformCharges ?? s?.platformFee ?? 0),   color: "#3B82F6" },
               { label: "Active Sellers",      value: String(data?.activeSellers ?? 0),                                  color: "#8B5CF6" },
               { label: "Pending Payouts",     value: String(data?.pendingWithdrawals.count ?? 0),                       color: "#F59E0B" },
             ].map(({ label, value, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <p className="text-xs font-medium uppercase tracking-wide mb-1"
-                  style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
+                  style={{ color: "var(--text-muted)" }}>{label}</p>
                 <p className="text-2xl font-bold" style={{ color }}>{value}</p>
               </div>
             ))}
@@ -212,8 +212,8 @@ export default function AdminAnalyticsPage() {
                 sub={`${o?.activeOrders ?? 0} active`}
                 icon={<ShoppingCart className="w-5 h-5" style={{ color: "#3B82F6" }} />} />
               <KpiCard label="Delivery Rate"   value={`${deliveryRate}%`}
-                sub={`${o?.deliveredOrders ?? 0} delivered`} subColor="#00C67A"
-                icon={<Truck className="w-5 h-5" style={{ color: "#00C67A" }} />} />
+                sub={`${o?.deliveredOrders ?? 0} delivered`} subColor="#16A34A"
+                icon={<Truck className="w-5 h-5" style={{ color: "#16A34A" }} />} />
               <KpiCard label="RTO Rate"        value={`${o && o.totalOrders > 0 ? Math.round((o.rtoOrders / o.totalOrders) * 100) : 0}%`}
                 sub={`${o?.rtoOrders ?? 0} orders`} subColor="#F59E0B"
                 icon={<TrendingUp className="w-5 h-5" style={{ color: "#F59E0B" }} />} />
@@ -250,7 +250,7 @@ export default function AdminAnalyticsPage() {
                     <Tooltip labelFormatter={(v) => fmt(v as string)} contentStyle={{ fontSize: 12, background: "var(--bg-card)", border: "1px solid var(--border)" }} />
                     <Legend iconType="square" iconSize={10} wrapperStyle={{ fontSize: 12 }} />
                     <Line type="monotone" dataKey="total"     stroke="#9ca3af"  dot={false} name="Total" />
-                    <Line type="monotone" dataKey="delivered" stroke="#00C67A"  dot={false} name="Delivered" />
+                    <Line type="monotone" dataKey="delivered" stroke="#16A34A"  dot={false} name="Delivered" />
                     <Line type="monotone" dataKey="rto"       stroke="#F59E0B"  dot={false} name="RTO" />
                     <Line type="monotone" dataKey="cancelled" stroke="#EF4444"  dot={false} name="Cancelled" />
                   </LineChart>
@@ -363,7 +363,7 @@ export default function AdminAnalyticsPage() {
                           <td className="px-4 py-3 text-xs font-bold" style={{ color: "#3B82F6" }}>
                             {inr(seller.gmv)}
                           </td>
-                          <td className="px-4 py-3 text-xs font-bold" style={{ color: "#00C67A" }}>
+                          <td className="px-4 py-3 text-xs font-bold" style={{ color: "#16A34A" }}>
                             {inr(seller.platformEarnings)}
                           </td>
                           <td className="px-4 py-3 text-xs font-medium" style={{ color: "#8B5CF6" }}>
@@ -385,7 +385,7 @@ export default function AdminAnalyticsPage() {
                   { label: "Gross Revenue",       value: inr(data.remittances?.gmv              ?? 0), color: "#3B82F6" },
                   { label: "Platform Charges",    value: inr(data.remittances?.platformCharges  ?? 0), color: "#8B5CF6" },
                   { label: "GST (18%)",           value: inr((data.remittances?.platformCharges ?? 0) * 0.18), color: "#F59E0B" },
-                  { label: "Net to Sellers",      value: inr(data.remittances?.netPaidToSellers ?? 0), color: "#00C67A" },
+                  { label: "Net to Sellers",      value: inr(data.remittances?.netPaidToSellers ?? 0), color: "#16A34A" },
                   { label: "Product Cost",        value: inr(data.remittances?.productCost      ?? 0), color: "#EF4444" },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="text-center rounded-xl py-4 px-3"
@@ -408,15 +408,15 @@ export default function AdminAnalyticsPage() {
                   icon={<UserCheck className="w-5 h-5" style={{ color: "#3B82F6" }} />} />
                 <KpiCard label="Qualified"         value={String(data.leads.qualified)}
                   sub={`${data.leads.total > 0 ? Math.round((data.leads.qualified / data.leads.total) * 100) : 0}% conversion`}
-                  subColor="#00C67A"
-                  icon={<Zap className="w-5 h-5" style={{ color: "#00C67A" }} />} />
+                  subColor="#16A34A"
+                  icon={<Zap className="w-5 h-5" style={{ color: "#16A34A" }} />} />
                 <KpiCard label="WA Conversations"  value={String(Object.values(data.whatsapp).reduce((a, b) => a + b, 0))}
                   sub={`${data.whatsapp["QUALIFIED"] ?? 0} qualified`}
                   icon={<MessageCircle className="w-5 h-5" style={{ color: "#8B5CF6" }} />} />
                 <KpiCard label="Clients Won"       value={String(data.leads.byStage["CLIENT"] ?? 0)}
                   sub="pipeline stage: CLIENT"
-                  subColor="#00C67A"
-                  icon={<Users className="w-5 h-5" style={{ color: "#00C67A" }} />} />
+                  subColor="#16A34A"
+                  icon={<Users className="w-5 h-5" style={{ color: "#16A34A" }} />} />
               </div>
 
               {/* Lead pipeline bar */}
@@ -443,7 +443,7 @@ export default function AdminAnalyticsPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                   {[
                     { key: "ACTIVE",     label: "Active",     color: "#3B82F6" },
-                    { key: "QUALIFIED",  label: "Qualified",  color: "#00C67A" },
+                    { key: "QUALIFIED",  label: "Qualified",  color: "#16A34A" },
                     { key: "HANDED_OFF", label: "Handed Off", color: "#8B5CF6" },
                     { key: "CLOSED",     label: "Closed",     color: "#9CA3AF" },
                     { key: "OPTED_OUT",  label: "Opted Out",  color: "#EF4444" },
@@ -468,7 +468,7 @@ export default function AdminAnalyticsPage() {
                     .map(([stage, count]) => {
                       const isGood = stage === "ACTIVATED";
                       const isBad  = stage === "STALLED" || stage === "BLOCKED";
-                      const color  = isGood ? "#00C67A" : isBad ? "#EF4444" : "#3B82F6";
+                      const color  = isGood ? "#16A34A" : isBad ? "#EF4444" : "#3B82F6";
                       return (
                         <div key={stage} className="rounded-xl px-4 py-3"
                           style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>

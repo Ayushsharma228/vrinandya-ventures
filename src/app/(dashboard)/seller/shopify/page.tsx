@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { CheckCircle, AlertCircle, ExternalLink, Trash2, Loader2, ShoppingBag, Key, Info } from "lucide-react";
@@ -209,7 +209,7 @@ export default function ShopifyConnectPage() {
               type="submit"
               disabled={connecting || !shop.trim() || !clientId.trim() || !clientSecret.trim()}
               className="w-full py-3 font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
-              style={{ background: "#00C67A", color: "white" }}
+              style={{ background: "#16A34A", color: "var(--text-primary)" }}
             >
               {connecting
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting to Shopify...</>

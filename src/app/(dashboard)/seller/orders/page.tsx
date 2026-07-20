@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -19,7 +19,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   PROCESSING: { label: "Processing", color: "#F59E0B", bg: "#FFF7ED" },
   SHIPPED:    { label: "Shipped",    color: "#7C3AED", bg: "#F5F3FF" },
   IN_TRANSIT: { label: "In Transit", color: "#025864", bg: "#ECFDF5" },
-  DELIVERED:  { label: "Delivered",  color: "#00C67A", bg: "#F0FDF4" },
+  DELIVERED:  { label: "Delivered",  color: "#16A34A", bg: "#F0FDF4" },
   RTO:        { label: "RTO",        color: "#EF4444", bg: "#FEF2F2" },
   CANCELLED:  { label: "Cancelled",  color: "#6B7280", bg: "#F9FAFB" },
 };
@@ -152,7 +152,7 @@ export default function SellerOrdersPage() {
 
   const statCards = [
     { label: "Total Orders", value: fmt(stats.totalOrders), icon: ShoppingCart, color: "#3B82F6", bg: "#EFF6FF" },
-    { label: "Total Revenue", value: `₹${fmt(stats.totalRevenue)}`, icon: IndianRupee, color: "#00C67A", bg: "#F0FDF4" },
+    { label: "Total Revenue", value: `₹${fmt(stats.totalRevenue)}`, icon: IndianRupee, color: "#16A34A", bg: "#F0FDF4" },
     { label: "Total Items", value: fmt(stats.totalItems), icon: Package, color: "#7C3AED", bg: "#F5F3FF" },
     { label: "Top Product", value: stats.topProduct ? stats.topProduct.slice(0, 22) + (stats.topProduct.length > 22 ? "…" : "") : "—", icon: Star, color: "#F59E0B", bg: "#FFF7ED" },
   ];
@@ -171,18 +171,18 @@ export default function SellerOrdersPage() {
           <div className="flex items-center gap-2">
             <button onClick={handleRefresh} disabled={refreshing}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
-              style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+              style={{ background: "var(--bg-muted)", color: "var(--text-primary)", border: "1px solid var(--border)" }}>
               <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               {refreshing ? "Syncing..." : "Refresh Orders"}
             </button>
             <button onClick={() => { setShowImport(true); setImportResult(null); setImportFile(null); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-              style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+              style={{ background: "var(--bg-muted)", color: "var(--text-primary)", border: "1px solid var(--border)" }}>
               <Download className="w-4 h-4 rotate-180" /> Import CSV
             </button>
             <button onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-              style={{ background: "var(--green-500)", color: "white" }}>
+              style={{ background: "var(--green-500)", color: "var(--text-primary)" }}>
               <Download className="w-4 h-4" /> Export
             </button>
           </div>
@@ -193,10 +193,10 @@ export default function SellerOrdersPage() {
               const Icon = s.icon;
               return (
                 <div key={s.label} className="rounded-2xl px-5 py-4"
-                  style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.45)" }}>{s.label}</p>
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)" }}>
+                    <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{s.label}</p>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--bg-muted)" }}>
                       <Icon className="w-4 h-4" style={{ color: s.color }} />
                     </div>
                   </div>
@@ -224,7 +224,7 @@ export default function SellerOrdersPage() {
               <button key={s} onClick={() => setStatusFilter(s)}
                 className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
                 style={isActive
-                  ? { background: cfg ? cfg.color : "var(--bg-sidebar)", color: "white" }
+                  ? { background: cfg ? cfg.color : "var(--bg-sidebar)", color: "var(--text-primary)" }
                   : { background: cfg ? cfg.bg : "#F3F4F6", color: cfg ? cfg.color : "var(--text-600)", border: `1px solid ${cfg ? cfg.bg : "#E5E7EB"}` }
                 }>
                 {s === "ALL" ? "All Orders" : cfg?.label ?? s}
@@ -328,7 +328,7 @@ export default function SellerOrdersPage() {
                               disabled={confirming === order.id}
                               title="Confirm Order"
                               className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-40"
-                              style={{ background: "#F0FDF4", color: "#00C67A" }}>
+                              style={{ background: "#F0FDF4", color: "#16A34A" }}>
                               {confirming === order.id
                                 ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                 : <CheckCircle className="w-3.5 h-3.5" />}

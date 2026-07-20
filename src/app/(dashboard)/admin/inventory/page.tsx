@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -84,14 +84,14 @@ export default function AdminInventoryPage() {
         cards={
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Total SKUs",      value: data?.total ?? "—",       color: "#00C67A" },
+              { label: "Total SKUs",      value: data?.total ?? "—",       color: "#16A34A" },
               { label: "Low Stock Alerts", value: lowStockCount,            color: "#F59E0B" },
               { label: "Suppliers",       value: suppliers.length,          color: "#3B82F6" },
             ].map(({ label, value, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <p className="text-xs font-medium uppercase tracking-wide mb-1"
-                  style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
+                  style={{ color: "var(--text-muted)" }}>{label}</p>
                 <p className="text-2xl font-bold" style={{ color }}>{value}</p>
               </div>
             ))}
@@ -119,7 +119,7 @@ export default function AdminInventoryPage() {
               Low Stock Only
               {lowStockCount > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold"
-                  style={{ background: "#F59E0B", color: "white" }}>{lowStockCount}</span>
+                  style={{ background: "#F59E0B", color: "var(--text-primary)" }}>{lowStockCount}</span>
               )}
             </button>
             <span className="ml-auto text-xs" style={{ color: "var(--text-400)" }}>
@@ -220,7 +220,7 @@ export default function AdminInventoryPage() {
                               </div>
                             ) : (
                               <div className="flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#00C67A" }} />
+                                <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#16A34A" }} />
                                 <span className="text-xs" style={{ color: "#15803D" }}>OK</span>
                               </div>
                             )}
@@ -233,7 +233,7 @@ export default function AdminInventoryPage() {
                               <div className="flex items-center gap-1">
                                 <button onClick={() => saveEdit(item.id)} disabled={saving}
                                   className="px-2 py-1 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
-                                  style={{ background: "#00C67A" }}>
+                                  style={{ background: "#16A34A" }}>
                                   {saving ? "…" : "Save"}
                                 </button>
                                 <button onClick={() => setEditing(null)}

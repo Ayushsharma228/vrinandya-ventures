@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import {
@@ -18,10 +18,10 @@ interface Notification {
 }
 
 const TYPE_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
-  PRODUCT_APPROVED:  { icon: CheckCheck,    color: "#00C67A", bg: "#F0FDF4" },
+  PRODUCT_APPROVED:  { icon: CheckCheck,    color: "#16A34A", bg: "#F0FDF4" },
   PRODUCT_REJECTED:  { icon: AlertCircle,   color: "#EF4444", bg: "#FEF2F2" },
   LISTING_REQUEST:   { icon: Package,       color: "#7C3AED", bg: "#F5F3FF" },
-  LISTING_DONE:      { icon: CheckCheck,    color: "#00C67A", bg: "#F0FDF4" },
+  LISTING_DONE:      { icon: CheckCheck,    color: "#16A34A", bg: "#F0FDF4" },
   ORDER_UPDATE:      { icon: ShoppingCart,  color: "#3B82F6", bg: "#EFF6FF" },
   AWB_GENERATED:     { icon: Truck,         color: "#025864", bg: "#ECFDF5" },
   GENERAL:           { icon: Bell,          color: "#6B7280", bg: "#F9FAFB" },
@@ -31,7 +31,7 @@ const CATEGORY_CONFIG: Record<string, { icon: React.ElementType; color: string; 
   "Payment Reminder": { icon: IndianRupee, color: "#F59E0B", bg: "#FFF7ED" },
   "Stock Update":     { icon: Package,     color: "#7C3AED", bg: "#F5F3FF" },
   "Order Alert":      { icon: AlertCircle, color: "#EF4444", bg: "#FEF2F2" },
-  "Announcement":     { icon: Bell,        color: "#00C67A", bg: "#F0FDF4" },
+  "Announcement":     { icon: Bell,        color: "#16A34A", bg: "#F0FDF4" },
   "General":          { icon: Info,        color: "#3B82F6", bg: "#EFF6FF" },
 };
 

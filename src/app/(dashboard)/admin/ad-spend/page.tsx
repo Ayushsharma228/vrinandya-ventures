@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { Megaphone, Plus, Trash2, Loader2, IndianRupee, RefreshCw, ChevronDown, ChevronUp, Check } from "lucide-react";
@@ -200,7 +200,7 @@ export default function AdminAdSpendPage() {
                 onClick={handleMetaSync}
                 disabled={syncing}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl disabled:opacity-50 transition-colors"
-                style={{ background: "#1877F2", color: "white" }}
+                style={{ background: "#1877F2", color: "var(--text-primary)" }}
               >
                 {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Fetching...</> : <><RefreshCw className="w-4 h-4" /> Fetch Campaigns</>}
               </button>
@@ -260,7 +260,7 @@ export default function AdminAdSpendPage() {
                     onClick={handleImport}
                     disabled={importing || campaigns.every(c => !mappings[c.id])}
                     className="ml-auto flex items-center gap-2 px-5 py-2 text-sm font-semibold rounded-xl disabled:opacity-50 transition-colors"
-                    style={{ background: "#00C67A", color: "white" }}
+                    style={{ background: "#16A34A", color: "var(--text-primary)" }}
                   >
                     {importing ? <><Loader2 className="w-4 h-4 animate-spin" /> Importing...</> : <><Check className="w-4 h-4" /> Import to Ledger</>}
                   </button>
@@ -344,7 +344,7 @@ export default function AdminAdSpendPage() {
               type="submit"
               disabled={saving || !sellerId || !amount}
               className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl disabled:opacity-50 transition-colors"
-              style={{ background: "#7C3AED", color: "white" }}
+              style={{ background: "#7C3AED", color: "var(--text-primary)" }}
             >
               {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : <><Plus className="w-4 h-4" /> Add Entry</>}
             </button>

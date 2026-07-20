@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { TrendingUp, Award, CheckCircle, XCircle, Truck, RefreshCw, Star, BarChart2 } from "lucide-react";
@@ -23,7 +23,7 @@ type PerformanceData = {
 
 function ScoreBar({ value, max = 100 }: { value: number; max?: number }) {
   const pct = Math.min(100, (value / max) * 100);
-  const color = pct >= 80 ? "#00C67A" : pct >= 60 ? "#F59E0B" : "#EF4444";
+  const color = pct >= 80 ? "#16A34A" : pct >= 60 ? "#F59E0B" : "#EF4444";
   return (
     <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
       <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
@@ -58,7 +58,7 @@ export default function SupplierPerformancePage() {
 
   if (!data) return null;
 
-  const scoreColor = data.qualityScore >= 80 ? "#00C67A" : data.qualityScore >= 60 ? "#F59E0B" : "#EF4444";
+  const scoreColor = data.qualityScore >= 80 ? "#16A34A" : data.qualityScore >= 60 ? "#F59E0B" : "#EF4444";
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
@@ -69,17 +69,17 @@ export default function SupplierPerformancePage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: "Total Orders",   value: data.total,                              icon: BarChart2,   color: "#3B82F6" },
-              { label: "Delivered",      value: data.delivered,                          icon: CheckCircle, color: "#00C67A" },
+              { label: "Delivered",      value: data.delivered,                          icon: CheckCircle, color: "#16A34A" },
               { label: "Revenue",        value: `₹${data.revenue.toLocaleString()}`,     icon: TrendingUp,  color: "#8B5CF6" },
               { label: "Quality Score",  value: `${data.qualityScore}/100`,              icon: Star,        color: scoreColor },
             ].map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
                   <Icon className="w-4 h-4" style={{ color }} />
                 </div>
-                <p className="text-xl font-bold text-white">{value}</p>
+                <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{value}</p>
               </div>
             ))}
           </div>
@@ -134,7 +134,7 @@ export default function SupplierPerformancePage() {
                 { label: "Accepted",     value: data.accepted,    color: "#3B82F6", icon: CheckCircle },
                 { label: "Rejected",     value: data.rejected,    color: "#EF4444", icon: XCircle },
                 { label: "Dispatched",   value: data.dispatched,  color: "#8B5CF6", icon: Truck },
-                { label: "Delivered",    value: data.delivered,   color: "#00C67A", icon: CheckCircle },
+                { label: "Delivered",    value: data.delivered,   color: "#16A34A", icon: CheckCircle },
                 { label: "Cancelled",    value: data.cancelled,   color: "#6B7280", icon: XCircle },
                 { label: "RTO",          value: data.rto,         color: "#F59E0B", icon: RefreshCw },
               ].map(({ label, value, color, icon: Icon }) => (

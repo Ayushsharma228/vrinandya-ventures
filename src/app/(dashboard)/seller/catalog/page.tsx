@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
@@ -128,7 +128,7 @@ export default function SellerCatalogPage() {
                     )}
                     {/* Pushed badge */}
                     {isPushed && (
-                      <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold text-white"
+                      <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold" style={{ color: "var(--text-primary)" }}
                         style={{ background: "var(--green-500)" }}>
                         <Check className="w-3 h-3" /> Pushed
                       </div>
@@ -136,7 +136,7 @@ export default function SellerCatalogPage() {
                     {/* Category tag */}
                     {product.category && (
                       <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
-                        style={{ background: "rgba(0,0,0,0.55)", color: "rgba(255,255,255,0.9)" }}>
+                        style={{ background: "rgba(0,0,0,0.55)", color: "var(--text-primary)" }}>
                         <Tag className="w-2.5 h-2.5" />
                         {product.category.split(">").pop()?.trim() ?? product.category}
                       </div>
@@ -207,7 +207,7 @@ export default function SellerCatalogPage() {
                     style={{
                       borderColor: alreadyDone ? "#D1FAE5" : selectedMarketplace === m ? "#7C3AED" : "var(--border)",
                       background: alreadyDone ? "#F0FDF4" : selectedMarketplace === m ? "#F5F3FF" : "white",
-                      color: alreadyDone ? "#00C67A" : selectedMarketplace === m ? "#7C3AED" : "var(--text-600)",
+                      color: alreadyDone ? "#16A34A" : selectedMarketplace === m ? "#7C3AED" : "var(--text-600)",
                     }}>
                     {alreadyDone ? `✓ ${m}` : m}
                   </button>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -264,14 +264,14 @@ export default function AdminCRMPage() {
           <div className="flex items-center gap-2">
             <button onClick={handleRefresh} disabled={refreshing}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
-              style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+              style={{ background: "var(--bg-muted)", color: "var(--text-primary)", border: "1px solid var(--border)" }}>
               <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               {refreshing ? "Refreshing..." : "Refresh"}
             </button>
             <button
               onClick={() => { setShowBulkUpload(p => !p); setShowForm(false); setBulkResult(null); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
-              style={{ background: "rgba(255,255,255,0.12)", color: "white", border: "1px solid rgba(255,255,255,0.2)" }}>
+              style={{ background: "var(--bg-muted)", color: "var(--text-primary)", border: "1px solid var(--border)" }}>
               <Upload className="w-4 h-4" /> Bulk Upload
             </button>
             <button
@@ -289,12 +289,12 @@ export default function AdminCRMPage() {
               }}
               disabled={testingToken || metaSyncing}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
-              style={{ background: "rgba(255,255,255,0.08)", color: "var(--text-300)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              style={{ background: "var(--bg-card)", color: "var(--text-300)", border: "1px solid var(--border)" }}>
               {testingToken ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span style={{ fontSize: 13 }}>🔑</span>}
               {testingToken ? "Testing..." : "Test Token"}
             </button>
             {tokenStatus && (
-              <span className="text-xs font-medium" style={{ color: tokenStatus.ok ? "#00C67A" : "#EF4444" }}>
+              <span className="text-xs font-medium" style={{ color: tokenStatus.ok ? "#16A34A" : "#EF4444" }}>
                 {tokenStatus.ok
                   ? `Token OK · ${tokenStatus.page} · Forms accessible · ${tokenStatus.sampleLeadsFound} lead(s) visible`
                   : tokenStatus.reason}
@@ -324,7 +324,7 @@ export default function AdminCRMPage() {
                   }}
                   disabled={metaSyncing}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
-                  style={{ background: "rgba(0,198,122,0.15)", color: "#00C67A", border: "1px solid rgba(0,198,122,0.3)" }}>
+                  style={{ background: "rgba(0,198,122,0.15)", color: "#16A34A", border: "1px solid rgba(0,198,122,0.3)" }}>
                   <RefreshCw className={`w-4 h-4 ${metaSyncing ? "animate-spin" : ""}`} />
                   {metaSyncing ? "Syncing..." : isFull ? "Full Sync" : "Sync (24h)"}
                 </button>
@@ -332,7 +332,7 @@ export default function AdminCRMPage() {
             })}
             {metaResult && (
               <div className="text-xs font-medium flex flex-col gap-0.5">
-                <span style={{ color: metaResult.imported > 0 ? "#00C67A" : "var(--text-400)" }}>
+                <span style={{ color: metaResult.imported > 0 ? "#16A34A" : "var(--text-400)" }}>
                   Found {metaResult.found ?? 0} on Meta · {metaResult.imported} new · {metaResult.skipped} already exist
                 </span>
                 {metaResult.tokenExpired && (
@@ -365,7 +365,7 @@ export default function AdminCRMPage() {
               </span>
             )}
             <button onClick={() => { setShowForm(p => !p); setShowBulkUpload(false); }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ color: "var(--text-primary)" }}
               style={{ background: "var(--green-500)" }}>
               <Plus className="w-4 h-4" /> Add Lead
             </button>
@@ -374,14 +374,14 @@ export default function AdminCRMPage() {
         filters={
           <div className="flex items-center gap-2">
             <select value={repFilter} onChange={e => setRepFilter(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
-              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
+              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <option value="" className="text-gray-900 bg-white">All Reps</option>
               {salesTeam.map(r => <option key={r.id} value={r.id} className="text-gray-900 bg-white">{r.name}</option>)}
             </select>
             <select value={stageFilter} onChange={e => setStageFilter(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl text-white outline-none"
-              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
+              style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <option value="" className="text-gray-900 bg-white">All Stages</option>
               {STAGES.map(s => <option key={s} value={s} className="text-gray-900 bg-white">{STAGE_LABEL[s]}</option>)}
             </select>
@@ -395,17 +395,17 @@ export default function AdminCRMPage() {
               { label: "NI",           value: totalNI,            color: "#EF4444",  bg: "rgba(239,68,68,0.15)",   icon: XCircle },
               { label: "Prospect",     value: totalProspect,      color: "#A78BFA",  bg: "rgba(167,139,250,0.15)", icon: Target },
               { label: "Interested",   value: totalInterested,    color: "#06B6D4",  bg: "rgba(6,182,212,0.15)",   icon: Sparkles },
-              { label: "Paid",         value: stageCounts["PAID"] ?? 0,     color: "#00C67A",  bg: "rgba(0,198,122,0.15)",   icon: DollarSign },
+              { label: "Paid",         value: stageCounts["PAID"] ?? 0,     color: "#16A34A",  bg: "rgba(0,198,122,0.15)",   icon: DollarSign },
               { label: "Onboarded",    value: stageCounts["ONBOARDED"] ?? 0, color: "#16A34A", bg: "rgba(22,163,74,0.15)",   icon: UserCheck },
               { label: "Sales Reps",   value: salesTeam.length,   color: "#E879F9",  bg: "rgba(232,121,249,0.15)", icon: TrendingUp },
             ].map(({ label, value, color, bg, icon: Icon }) => (
               <div key={label} className="rounded-2xl px-3 py-3 flex flex-col gap-1"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <div className="flex items-center gap-1.5">
                   <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
                     <Icon className="w-3.5 h-3.5" style={{ color }} />
                   </div>
-                  <p className="text-xs font-medium truncate" style={{ color: "rgba(255,255,255,0.5)" }}>{label}</p>
+                  <p className="text-xs font-medium truncate" style={{ color: "var(--text-secondary)" }}>{label}</p>
                 </div>
                 <p className="text-2xl font-bold text-white leading-none">{value}</p>
               </div>
@@ -493,7 +493,7 @@ export default function AdminCRMPage() {
                       <tr key={rep.id} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ color: "var(--text-primary)" }}
                               style={{ background: "var(--green-500)" }}>
                               {rep.name?.[0]?.toUpperCase()}
                             </div>
@@ -843,7 +843,7 @@ export default function AdminCRMPage() {
                                 onClick={() => { setConvertingLead({ id: lead.id, name: lead.name, email: lead.email }); setConvertResult(null); }}
                                 title="Convert to Seller Account"
                                 className="p-1.5 rounded-lg transition-colors"
-                                style={{ color: "#00C67A", background: "rgba(0,198,122,0.1)" }}>
+                                style={{ color: "#16A34A", background: "rgba(0,198,122,0.1)" }}>
                                 <UserCheck className="w-3.5 h-3.5" />
                               </button>
                             )}
@@ -913,7 +913,7 @@ export default function AdminCRMPage() {
                       }
                     }}
                     className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60 flex items-center justify-center gap-2"
-                    style={{ background: "#00C67A", color: "white" }}>
+                    style={{ background: "#16A34A", color: "var(--text-primary)" }}>
                     {converting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
                     {converting ? "Creating..." : "Create Seller Account"}
                   </button>
@@ -927,11 +927,11 @@ export default function AdminCRMPage() {
             ) : (
               <>
                 <div className="rounded-xl p-4 mb-4" style={{ background: "rgba(0,198,122,0.08)", border: "1px solid rgba(0,198,122,0.2)" }}>
-                  <p className="text-sm font-semibold" style={{ color: "#00C67A" }}>Seller account created!</p>
+                  <p className="text-sm font-semibold" style={{ color: "#16A34A" }}>Seller account created!</p>
                   <p className="text-xs mt-1" style={{ color: "var(--text-400)" }}>Username: <strong>{convertResult.username}</strong></p>
                   {convertingLead.email && <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>Welcome email sent to {convertingLead.email}</p>}
                 </div>
-                <button onClick={() => { setConvertingLead(null); setConvertResult(null); }} className="w-full px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: "#00C67A", color: "white" }}>Done</button>
+                <button onClick={() => { setConvertingLead(null); setConvertResult(null); }} className="w-full px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: "#16A34A", color: "var(--text-primary)" }}>Done</button>
               </>
             )}
           </div>

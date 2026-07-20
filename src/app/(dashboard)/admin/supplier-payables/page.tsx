@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -143,7 +143,7 @@ export default function SupplierPayablesPage() {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         {[
           { label: "Pending Payables", value: grandPending, color: "#f97316", icon: Clock },
-          { label: "Total Paid",        value: grandPaid,    color: "#00C67A", icon: CheckCircle2 },
+          { label: "Total Paid",        value: grandPaid,    color: "#16A34A", icon: CheckCircle2 },
           { label: "Suppliers",         value: groups.length, color: "#6366f1", icon: AlertCircle, isCount: true },
         ].map(({ label, value, color, icon: Icon, isCount }) => (
           <div key={label} className="rounded-2xl p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
@@ -180,7 +180,7 @@ export default function SupplierPayablesPage() {
           <button
             onClick={() => setPayModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
-            style={{ background: "#00C67A", color: "#fff" }}
+            style={{ background: "#16A34A", color: "#fff" }}
           >
             <CheckCircle2 size={15} />
             Mark {selected.size} payment{selected.size > 1 ? "s" : ""} paid · {fmt(selectedAmount)}
@@ -231,7 +231,7 @@ export default function SupplierPayablesPage() {
                     </div>
                     <div className="text-right">
                       <div className="text-xs mb-0.5" style={{ color: "var(--text-400)" }}>Paid</div>
-                      <div className="font-semibold" style={{ color: "#00C67A" }}>{fmt(g.totalPaid)}</div>
+                      <div className="font-semibold" style={{ color: "#16A34A" }}>{fmt(g.totalPaid)}</div>
                     </div>
                     <div className="text-right">
                       <div className="text-xs mb-0.5" style={{ color: "var(--text-400)" }}>Orders</div>
@@ -337,7 +337,7 @@ export default function SupplierPayablesPage() {
                 Mark {selected.size} Payment{selected.size > 1 ? "s" : ""} as Paid
               </div>
               <div className="text-sm" style={{ color: "var(--text-400)" }}>
-                Total: <span className="font-semibold" style={{ color: "#00C67A" }}>{fmt(selectedAmount)}</span>
+                Total: <span className="font-semibold" style={{ color: "#16A34A" }}>{fmt(selectedAmount)}</span>
               </div>
             </div>
 
@@ -391,7 +391,7 @@ export default function SupplierPayablesPage() {
                 onClick={handleMarkPaid}
                 disabled={paying}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
-                style={{ background: "#00C67A", color: "#fff", opacity: paying ? 0.7 : 1 }}
+                style={{ background: "#16A34A", color: "#fff", opacity: paying ? 0.7 : 1 }}
               >
                 <IndianRupee size={14} />
                 {paying ? "Saving…" : "Confirm Payment"}

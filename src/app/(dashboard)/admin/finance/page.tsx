@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -134,14 +134,14 @@ export default function AdminFinancePage() {
         cards={
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Gross Revenue",      value: s ? fmt(s.grossRevenue)     : "—", color: "#00C67A" },
+              { label: "Gross Revenue",      value: s ? fmt(s.grossRevenue)     : "—", color: "#16A34A" },
               { label: "Platform Earnings",  value: s ? fmt(s.platformEarnings) : "—", color: "#3B82F6" },
               { label: "Seller Payouts",     value: s ? fmt(s.netPayable)       : "—", color: "#A78BFA" },
               { label: "Supplier Payable",   value: s ? fmt(s.supplierPayable)  : "—", color: "#F59E0B" },
             ].map(({ label, value, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+                <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: "var(--text-muted)" }}>{label}</p>
                 <p className="text-2xl font-bold" style={{ color }}>{value}</p>
               </div>
             ))}
@@ -156,7 +156,7 @@ export default function AdminFinancePage() {
             <button key={t} onClick={() => setTab(t)}
               className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
               style={tab === t
-                ? { background: "var(--bg-sidebar)", color: "white" }
+                ? { background: "var(--bg-sidebar)", color: "var(--text-primary)" }
                 : { color: "var(--text-400)" }}>
               {t}
             </button>
@@ -173,7 +173,7 @@ export default function AdminFinancePage() {
                 <h3 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Revenue Breakdown</h3>
               </div>
               {[
-                { label: "Gross Revenue",     value: s?.grossRevenue     ?? 0, color: "#00C67A" },
+                { label: "Gross Revenue",     value: s?.grossRevenue     ?? 0, color: "#16A34A" },
                 { label: "Platform Fee",      value: s?.platformFee      ?? 0, color: "#3B82F6" },
                 { label: "GST on Fees (18%)", value: s?.gstOnFees        ?? 0, color: "#6366F1" },
                 { label: "Shipping Charges",  value: s?.shippingCharge   ?? 0, color: "#8B5CF6" },
@@ -183,7 +183,7 @@ export default function AdminFinancePage() {
                 { label: "Marketplace Fee",   value: s?.marketplaceFee   ?? 0, color: "#DC2626" },
                 { label: "Supplier Payable",  value: s?.supplierPayable  ?? 0, color: "#D97706" },
                 { label: "Net Payable (Sellers)", value: s?.netPayable   ?? 0, color: "#A78BFA" },
-                { label: "Platform Earnings", value: s?.platformEarnings ?? 0, color: "#00C67A", bold: true },
+                { label: "Platform Earnings", value: s?.platformEarnings ?? 0, color: "#16A34A", bold: true },
               ].map(({ label, value, color, bold }) => (
                 <div key={label} className="flex items-center justify-between py-1"
                   style={{ borderBottom: "1px solid var(--border)" }}>
@@ -223,7 +223,7 @@ export default function AdminFinancePage() {
                   <h3 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Supplier Payments</h3>
                 </div>
                 {[
-                  { label: "Total Paid to Suppliers", value: fmt(report.supplierPayments.total), icon: CheckCircle2, color: "#00C67A" },
+                  { label: "Total Paid to Suppliers", value: fmt(report.supplierPayments.total), icon: CheckCircle2, color: "#16A34A" },
                   { label: "Pending Payments",        value: fmt(report.supplierPayments.pendingAmount), icon: Clock, color: "#F59E0B" },
                   { label: "Pending Count",           value: `${report.supplierPayments.pendingCount} orders`, icon: IndianRupee, color: "#6366F1" },
                 ].map(({ label, value, icon: Icon, color }) => (
@@ -312,12 +312,12 @@ export default function AdminFinancePage() {
                               </p>
                               <p className="text-xs" style={{ color: "var(--text-400)" }}>{s.seller?.email ?? ""}</p>
                             </td>
-                            <td className="px-4 py-3 font-semibold text-xs" style={{ color: "#00C67A" }}>{fmt(s.sellingPrice)}</td>
+                            <td className="px-4 py-3 font-semibold text-xs" style={{ color: "#16A34A" }}>{fmt(s.sellingPrice)}</td>
                             <td className="px-4 py-3 text-xs" style={{ color: "#3B82F6" }}>{fmt(s.platformFee)}</td>
                             <td className="px-4 py-3 text-xs" style={{ color: "#6366F1" }}>{fmt(s.gstOnFees)}</td>
                             <td className="px-4 py-3 text-xs font-semibold" style={{ color: "#A78BFA" }}>{fmt(s.netPayable)}</td>
                             <td className="px-4 py-3 text-xs" style={{ color: "#D97706" }}>{fmt(s.supplierPayable)}</td>
-                            <td className="px-4 py-3 text-xs font-semibold" style={{ color: s.netProfit > 0 ? "#00C67A" : "#EF4444" }}>
+                            <td className="px-4 py-3 text-xs font-semibold" style={{ color: s.netProfit > 0 ? "#16A34A" : "#EF4444" }}>
                               {fmt(s.netProfit ?? 0)}
                             </td>
                             <td className="px-4 py-3">
@@ -394,7 +394,7 @@ export default function AdminFinancePage() {
                     <button onClick={() => paySupplier(paying)}
                       disabled={!payRef.trim()}
                       className="flex-1 py-2 rounded-xl text-xs font-semibold text-white disabled:opacity-40"
-                      style={{ background: "#00C67A" }}>
+                      style={{ background: "#16A34A" }}>
                       Confirm Payment
                     </button>
                   </div>

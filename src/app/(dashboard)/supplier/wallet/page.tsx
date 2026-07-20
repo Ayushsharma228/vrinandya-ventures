@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { RefreshCw, Package, CheckCircle, XCircle, Truck, Wallet, ArrowDownCircle } from "lucide-react";
@@ -35,7 +35,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   PROCESSING: { label: "Processing", color: "#F59E0B", bg: "#FFF7ED" },
   SHIPPED:    { label: "Shipped",    color: "#7C3AED", bg: "#F5F3FF" },
   IN_TRANSIT: { label: "In Transit", color: "#025864", bg: "#ECFDF5" },
-  DELIVERED:  { label: "Delivered",  color: "#00C67A", bg: "#F0FDF4" },
+  DELIVERED:  { label: "Delivered",  color: "#16A34A", bg: "#F0FDF4" },
   RTO:        { label: "RTO",        color: "#EF4444", bg: "#FEF2F2" },
   CANCELLED:  { label: "Cancelled",  color: "#6B7280", bg: "#F9FAFB" },
 };
@@ -67,7 +67,7 @@ export default function SupplierWalletPage() {
         actions={
           <button onClick={() => fetchData(true)} disabled={refreshing}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
-            style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+            style={{ background: "var(--bg-muted)", color: "var(--text-primary)", border: "1px solid var(--border)" }}>
             <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
             Refresh
           </button>
@@ -78,7 +78,7 @@ export default function SupplierWalletPage() {
             <div className="rounded-2xl px-6 py-5"
               style={{ background: "rgba(0,198,122,0.12)", border: "1px solid rgba(0,198,122,0.2)" }}>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.5)" }}>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
                   Wallet Balance
                 </p>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(0,198,122,0.2)" }}>
@@ -86,14 +86,14 @@ export default function SupplierWalletPage() {
                 </div>
               </div>
               <p className="text-3xl font-bold text-white mb-1">₹{fmt(stats?.walletBalance ?? 0)}</p>
-              <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>After remittances deducted</p>
+              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>After remittances deducted</p>
             </div>
 
             {/* Total Remittances */}
             <div className="rounded-2xl px-6 py-5"
               style={{ background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.2)" }}>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.5)" }}>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
                   Total Remittances
                 </p>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(124,58,237,0.2)" }}>
@@ -101,26 +101,26 @@ export default function SupplierWalletPage() {
                 </div>
               </div>
               <p className="text-3xl font-bold text-white mb-1">₹{fmt(stats?.totalRemittances ?? 0)}</p>
-              <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>Amount received from admin</p>
+              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Amount received from admin</p>
             </div>
 
             {/* Order Stats */}
             <div className="rounded-2xl px-6 py-5"
-              style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-4" style={{ color: "rgba(255,255,255,0.5)" }}>
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-4" style={{ color: "var(--text-secondary)" }}>
                 Order Breakdown
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { label: "Delivered",   value: stats?.delivered ?? 0,   icon: CheckCircle, color: "#00C67A" },
+                  { label: "Delivered",   value: stats?.delivered ?? 0,   icon: CheckCircle, color: "#16A34A" },
                   { label: "In Transit",  value: stats?.inTransit ?? 0,   icon: Truck,       color: "#3B82F6" },
                   { label: "Cancelled",   value: stats?.cancelled ?? 0,   icon: XCircle,     color: "#EF4444" },
                   { label: "Total",       value: stats?.totalOrders ?? 0, icon: Package,     color: "#F59E0B" },
                 ].map(({ label, value, icon: Icon, color }) => (
                   <div key={label} className="flex items-center gap-2">
                     <Icon style={{ color, width: 14, height: 14 }} />
-                    <span className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>{label}:</span>
-                    <span className="text-sm font-bold text-white">{value}</span>
+                    <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{label}:</span>
+                    <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{value}</span>
                   </div>
                 ))}
               </div>

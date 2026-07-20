@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { ShieldCheck, RefreshCw, CheckCircle2, XCircle, ExternalLink, Filter } from "lucide-react";
@@ -70,14 +70,14 @@ export default function AdminKycPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: "Pending Review", value: countFor("SUBMITTED"),     color: "#3B82F6" },
-              { label: "Approved",       value: countFor("APPROVED"),      color: "#00C67A" },
+              { label: "Approved",       value: countFor("APPROVED"),      color: "#16A34A" },
               { label: "Rejected",       value: countFor("REJECTED"),      color: "#EF4444" },
               { label: "Not Submitted",  value: countFor("NOT_SUBMITTED"), color: "#F59E0B" },
             ].map(({ label, value, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <p className="text-xs font-medium uppercase tracking-wide mb-1"
-                  style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
+                  style={{ color: "var(--text-muted)" }}>{label}</p>
                 <p className="text-2xl font-bold" style={{ color }}>{value}</p>
               </div>
             ))}
@@ -93,12 +93,12 @@ export default function AdminKycPage() {
             <button key={s} onClick={() => setTab(s)}
               className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
               style={tab === s
-                ? { background: "var(--bg-sidebar)", color: "white" }
+                ? { background: "var(--bg-sidebar)", color: "var(--text-primary)" }
                 : { color: "var(--text-400)" }}>
               {s.replace("_", " ")}
               {countFor(s) > 0 && (
                 <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-xs"
-                  style={{ background: "rgba(255,255,255,0.15)" }}>{countFor(s)}</span>
+                  style={{ background: "var(--bg-muted)" }}>{countFor(s)}</span>
               )}
             </button>
           ))}
@@ -146,7 +146,7 @@ export default function AdminKycPage() {
                           <button onClick={e => { e.stopPropagation(); act(seller.id, "APPROVED"); }}
                             disabled={acting === seller.id}
                             className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
-                            style={{ background: "#00C67A" }}>
+                            style={{ background: "#16A34A" }}>
                             <CheckCircle2 className="w-3.5 h-3.5" /> Approve
                           </button>
                           <button onClick={e => { e.stopPropagation(); setExpanded(isOpen ? null : seller.id); }}

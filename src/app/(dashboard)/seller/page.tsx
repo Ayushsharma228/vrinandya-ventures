@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
@@ -50,7 +50,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   PROCESSING: { label: "Processing", color: "#F59E0B", bg: "#FFF7ED" },
   SHIPPED:    { label: "Shipped",    color: "#7C3AED", bg: "#F5F3FF" },
   IN_TRANSIT: { label: "In Transit", color: "#025864", bg: "#ECFDF5" },
-  DELIVERED:  { label: "Delivered",  color: "#00C67A", bg: "#F0FDF4" },
+  DELIVERED:  { label: "Delivered",  color: "#16A34A", bg: "#F0FDF4" },
   RTO:        { label: "RTO",        color: "#EF4444", bg: "#FEF2F2" },
   CANCELLED:  { label: "Cancelled",  color: "#6B7280", bg: "#F9FAFB" },
 };
@@ -124,7 +124,7 @@ export default function SellerDashboard() {
       value: `₹${fmt(analytics?.totalRevenue ?? 0)}`,
       icon: IndianRupee,
       iconBg: "#F0FDF4",
-      iconColor: "#00C67A",
+      iconColor: "#16A34A",
       sub: wallet ? `₹${fmt(wallet.totalCredit)} remitted` : "—",
     },
     {
@@ -140,7 +140,7 @@ export default function SellerDashboard() {
       value: `₹${fmt(Math.max(0, netProfit))}`,
       icon: TrendingUp,
       iconBg: netProfit >= 0 ? "#F0FDF4" : "#FEF2F2",
-      iconColor: netProfit >= 0 ? "#00C67A" : "#EF4444",
+      iconColor: netProfit >= 0 ? "#16A34A" : "#EF4444",
       sub: `After deductions`,
     },
   ];
@@ -163,13 +163,13 @@ export default function SellerDashboard() {
 
         <div className="relative flex flex-col md:flex-row md:items-start md:justify-between gap-3">
           <div>
-            <p className="text-sm font-medium mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>
+            <p className="text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
               {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
             </p>
             <h1 className="text-3xl font-bold text-white mb-1">
               {getGreeting()}, {name}! 👋
             </h1>
-            <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
               Here&apos;s what&apos;s happening with your store today
             </p>
           </div>
@@ -177,7 +177,7 @@ export default function SellerDashboard() {
           <div className="flex items-center gap-3">
             {analytics?.store ? (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm"
-                style={{ background: "rgba(0,198,122,0.15)", color: "#00C67A", border: "1px solid rgba(0,198,122,0.3)" }}>
+                style={{ background: "rgba(0,198,122,0.15)", color: "#16A34A", border: "1px solid rgba(0,198,122,0.3)" }}>
                 <CheckCircle2 className="w-4 h-4" />
                 {analytics.store.storeUrl}
               </div>
@@ -197,22 +197,22 @@ export default function SellerDashboard() {
           {loading ? (
             [...Array(4)].map((_, i) => (
               <div key={i} className="h-20 rounded-xl animate-pulse"
-                style={{ background: "rgba(255,255,255,0.07)" }} />
+                style={{ background: "var(--bg-card)" }} />
             ))
           ) : stats.map((s) => {
             const Icon = s.icon;
             return (
               <div key={s.label} className="rounded-xl px-4 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>{s.label}</p>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>{s.label}</p>
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center"
                     style={{ background: s.iconBg }}>
                     <Icon className="w-3.5 h-3.5" style={{ color: s.iconColor }} />
                   </div>
                 </div>
-                <p className="text-xl font-bold text-white">{s.value}</p>
-                <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>{s.sub}</p>
+                <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{s.value}</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{s.sub}</p>
               </div>
             );
           })}
@@ -229,20 +229,20 @@ export default function SellerDashboard() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ background: "rgba(0,198,122,0.2)" }}>
-                <Clock className="w-5 h-5" style={{ color: "#00C67A" }} />
+                <Clock className="w-5 h-5" style={{ color: "#16A34A" }} />
               </div>
               <div>
-                <p className="text-sm font-bold text-white">
+                <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
                   ₹{fmt(wallet.upcomingAmount)} upcoming remittance
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                   {nextPayoutDate ? `Expected on ${nextPayoutDate}` : "Payment scheduled"}
                 </p>
               </div>
             </div>
             <Link href="/seller/wallet"
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex-shrink-0"
-              style={{ background: "rgba(0,198,122,0.2)", color: "#00C67A", border: "1px solid rgba(0,198,122,0.3)" }}>
+              style={{ background: "rgba(0,198,122,0.2)", color: "#16A34A", border: "1px solid rgba(0,198,122,0.3)" }}>
               View Wallet <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -252,7 +252,7 @@ export default function SellerDashboard() {
         <div className="flex flex-wrap items-center gap-2 md:gap-3">
           {[
             { label: "View Orders",    href: "/seller/orders",   icon: ShoppingCart, color: "#3B82F6" },
-            { label: "Product Catalog", href: "/seller/catalog",  icon: Package,      color: "#00C67A" },
+            { label: "Product Catalog", href: "/seller/catalog",  icon: Package,      color: "#16A34A" },
             { label: "Deliveries",     href: "/seller/deliveries", icon: Truck,        color: "#7C3AED" },
             { label: "Wallet",         href: "/seller/wallet",   icon: Wallet,       color: "#F59E0B" },
             { label: "Shopify Store",  href: "/seller/shopify",  icon: Store,        color: "#EF4444" },
@@ -295,7 +295,7 @@ export default function SellerDashboard() {
                 </div>
                 <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-400)" }}>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#00C67A" }} />
+                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#16A34A" }} />
                     Delivered
                   </span>
                   <span className="flex items-center gap-1.5">
@@ -321,7 +321,7 @@ export default function SellerDashboard() {
                   <YAxis tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
                   <Bar dataKey="Orders" fill="#3B82F6" radius={[4, 4, 0, 0]} maxBarSize={18} />
-                  <Bar dataKey="Delivered" fill="#00C67A" radius={[4, 4, 0, 0]} maxBarSize={18} />
+                  <Bar dataKey="Delivered" fill="#16A34A" radius={[4, 4, 0, 0]} maxBarSize={18} />
                   <Bar dataKey="RTO" fill="#EF4444" radius={[4, 4, 0, 0]} maxBarSize={18} />
                 </BarChart>
               </ResponsiveContainer>
@@ -340,7 +340,7 @@ export default function SellerDashboard() {
             ) : (
               <div className="space-y-3">
                 {[
-                  { label: "Delivered",  count: analytics?.deliveredCount ?? 0, color: "#00C67A", icon: CheckCircle2 },
+                  { label: "Delivered",  count: analytics?.deliveredCount ?? 0, color: "#16A34A", icon: CheckCircle2 },
                   { label: "In Transit", count: analytics?.inTransitCount ?? 0, color: "#025864", icon: Truck },
                   { label: "RTO",        count: analytics?.rtoCount ?? 0,       color: "#EF4444", icon: TrendingDown },
                   { label: "Cancelled",  count: analytics?.cancelledCount ?? 0, color: "#6B7280", icon: XCircle },
@@ -372,17 +372,17 @@ export default function SellerDashboard() {
 
             {/* Wallet summary */}
             <div className="mt-5 pt-4 rounded-xl p-3" style={{ background: "var(--bg-sidebar)" }}>
-              <p className="text-xs mb-2" style={{ color: "rgba(255,255,255,0.4)" }}>Wallet Balance</p>
-              <p className="text-xl font-bold text-white">₹{fmt(wallet?.balance ?? 0)}</p>
+              <p className="text-xs mb-2" style={{ color: "var(--text-secondary)" }}>Wallet Balance</p>
+              <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>₹{fmt(wallet?.balance ?? 0)}</p>
               {wallet?.upcomingAmount ? (
-                <p className="text-xs mt-1 flex items-center gap-1" style={{ color: "#00C67A" }}>
+                <p className="text-xs mt-1 flex items-center gap-1" style={{ color: "#16A34A" }}>
                   <Clock className="w-3 h-3" />
                   ₹{fmt(wallet.upcomingAmount)} upcoming
                 </p>
               ) : null}
               <Link href="/seller/wallet"
                 className="mt-2 flex items-center gap-1 text-xs font-medium"
-                style={{ color: "rgba(255,255,255,0.4)" }}>
+                style={{ color: "var(--text-secondary)" }}>
                 View details <ArrowRight className="w-3 h-3" />
               </Link>
             </div>

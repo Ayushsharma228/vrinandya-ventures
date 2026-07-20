@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import {
@@ -72,14 +72,14 @@ export default function SellerListingsPage() {
               { label: "Failed",      value: stats.failed,     icon: XCircle,     color: "#DC2626" },
             ].map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="rounded-2xl px-4 py-4 flex items-center gap-3"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(255,255,255,0.1)" }}>
+                  style={{ background: "var(--bg-muted)" }}>
                   <Icon className="w-4 h-4" style={{ color }} />
                 </div>
                 <div>
-                  <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
-                  <p className="text-xl font-bold text-white">{value}</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>{label}</p>
+                  <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{value}</p>
                 </div>
               </div>
             ))}
@@ -109,7 +109,7 @@ export default function SellerListingsPage() {
               <button key={f} onClick={() => setFilter(f)}
                 className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
                 style={isActive
-                  ? { background: cfg ? cfg.color : "var(--bg-sidebar)", color: "white" }
+                  ? { background: cfg ? cfg.color : "var(--bg-sidebar)", color: "var(--text-primary)" }
                   : { background: cfg ? cfg.bg : "#F3F4F6", color: cfg ? cfg.color : "var(--text-600)" }}>
                 {f === "ALL" ? "All" : STATUS_CONFIG[f]?.label ?? f}
               </button>

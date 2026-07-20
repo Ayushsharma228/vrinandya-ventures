@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -86,7 +86,7 @@ export default function SalesLeadsPage() {
                 <button key={s} onClick={() => setStage(s)}
                   className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
                   style={isActive
-                    ? { background: s === "ALL" ? "var(--bg-sidebar)" : (cfg?.color ?? "#374151"), color: "white" }
+                    ? { background: s === "ALL" ? "var(--bg-sidebar)" : (cfg?.color ?? "#374151"), color: "var(--text-primary)" }
                     : { background: cfg?.bg ?? "#F3F4F6", color: cfg?.color ?? "#374151" }}>
                   {STAGE_LABEL[s]}
                 </button>
@@ -96,7 +96,7 @@ export default function SalesLeadsPage() {
           <button onClick={() => setShowNI(p => !p)}
             className="ml-auto px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
             style={showNI
-              ? { background: "#DC2626", color: "white" }
+              ? { background: "#DC2626", color: "var(--text-primary)" }
               : { background: "#FEF2F2", color: "#DC2626" }}>
             {showNI ? "Showing NI" : "Show NI"}
           </button>

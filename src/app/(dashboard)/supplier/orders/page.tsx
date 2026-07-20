@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import {
@@ -41,7 +41,7 @@ const TABS: Array<{ key: string | null; label: string; icon: React.ElementType; 
   { key: "PROCESSING",     label: "Processing",  icon: RefreshCw,    color: "#8B5CF6" },
   { key: "PACKED",         label: "Packed",      icon: Package,      color: "#0EA5E9" },
   { key: "READY_TO_SHIP",  label: "Ready",       icon: AlertCircle,  color: "#F97316" },
-  { key: "DISPATCHED",     label: "Dispatched",  icon: Truck,        color: "#00C67A" },
+  { key: "DISPATCHED",     label: "Dispatched",  icon: Truck,        color: "#16A34A" },
   { key: "REJECTED",       label: "Rejected",    icon: XCircle,      color: "#EF4444" },
 ];
 
@@ -56,7 +56,7 @@ const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> 
 };
 
 const NEXT_ACTION: Record<string, { action: string; label: string; color: string } | null> = {
-  ASSIGNED:      { action: "ACCEPT",          label: "Accept",          color: "#00C67A" },
+  ASSIGNED:      { action: "ACCEPT",          label: "Accept",          color: "#16A34A" },
   ACCEPTED:      { action: "MARK_PROCESSING", label: "Mark Processing", color: "#8B5CF6" },
   PROCESSING:    { action: "MARK_PACKED",     label: "Mark Packed",     color: "#0EA5E9" },
   PACKED:        { action: "READY_TO_SHIP",   label: "Ready to Ship",   color: "#F97316" },
@@ -203,10 +203,10 @@ export default function SupplierOrdersPage() {
           <div className="flex flex-wrap gap-3">
             {TABS.filter((t) => t.key).map((t) => (
               <div key={t.key} className="flex items-center gap-2 px-4 py-2 rounded-xl"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <t.icon className="w-4 h-4" style={{ color: t.color }} />
                 <span className="text-white text-sm font-bold">{counts[t.key!] ?? 0}</span>
-                <span className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>{t.label}</span>
+                <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{t.label}</span>
               </div>
             ))}
           </div>
@@ -254,7 +254,7 @@ export default function SupplierOrdersPage() {
               {checkedAssigned > 0 && (
                 <button onClick={() => runBulkAction("ACCEPT", "ASSIGNED")} disabled={bulkActioning}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
-                  style={{ background: "#00C67A" }}>
+                  style={{ background: "#16A34A" }}>
                   {bulkActioning ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
                   Accept ({checkedAssigned})
                 </button>
@@ -384,22 +384,22 @@ export default function SupplierOrdersPage() {
                                   Reject
                                 </button>
                                 <button onClick={() => runAction(order.id, "ACCEPT")} disabled={isActioning}
-                                  className="px-2 py-1 rounded-lg text-xs font-semibold text-white"
-                                  style={{ background: "#00C67A", opacity: isActioning ? 0.6 : 1 }}>
+                                  className="px-2 py-1 rounded-lg text-xs font-semibold" style={{ color: "var(--text-primary)" }}
+                                  style={{ background: "#16A34A", opacity: isActioning ? 0.6 : 1 }}>
                                   {isActioning ? "..." : "Accept"}
                                 </button>
                               </>
                             )}
                             {order.supplierStatus === "READY_TO_SHIP" && (
                               <button onClick={() => openDispatch(order.id)} disabled={isActioning}
-                                className="px-2 py-1 rounded-lg text-xs font-semibold text-white"
-                                style={{ background: "#00C67A" }}>
+                                className="px-2 py-1 rounded-lg text-xs font-semibold" style={{ color: "var(--text-primary)" }}
+                                style={{ background: "#16A34A" }}>
                                 Dispatch
                               </button>
                             )}
                             {nextAction && order.supplierStatus !== "ASSIGNED" && order.supplierStatus !== "READY_TO_SHIP" && (
                               <button onClick={() => runAction(order.id, nextAction.action)} disabled={isActioning}
-                                className="px-2 py-1 rounded-lg text-xs font-semibold text-white"
+                                className="px-2 py-1 rounded-lg text-xs font-semibold" style={{ color: "var(--text-primary)" }}
                                 style={{ background: nextAction.color, opacity: isActioning ? 0.6 : 1 }}>
                                 {isActioning ? "..." : nextAction.label}
                               </button>
@@ -508,7 +508,7 @@ export default function SupplierOrdersPage() {
                 className="flex-1 px-4 py-2 rounded-xl text-sm font-medium border text-gray-600">Cancel</button>
               <button onClick={() => runAction(showReject, "REJECT", { note: rejectNote })}
                 disabled={!rejectNote.trim() || actioning === showReject}
-                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold" style={{ color: "var(--text-primary)" }}
                 style={{ background: "#EF4444", opacity: !rejectNote.trim() ? 0.5 : 1 }}>
                 Confirm Reject
               </button>
@@ -553,7 +553,7 @@ export default function SupplierOrdersPage() {
                     </select>
                     <button onClick={handleAutoDispatch} disabled={autoDispatching || !selectedProviderId}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
-                      style={{ background: "#00C67A" }}>
+                      style={{ background: "#16A34A" }}>
                       {autoDispatching ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating shipment...</> : <><Zap className="w-4 h-4" /> Auto-Dispatch</>}
                     </button>
                   </div>
@@ -596,7 +596,7 @@ export default function SupplierOrdersPage() {
                 <button onClick={() => runAction(showDispatch, "DISPATCH", dispatchData)}
                   disabled={actioning === showDispatch || (!dispatchData.trackingNo && !dispatchData.courier)}
                   className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
-                  style={{ background: "#00C67A" }}>
+                  style={{ background: "#16A34A" }}>
                   {actioning === showDispatch ? "..." : "Confirm Manual"}
                 </button>
               </div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { BanknoteIcon, RefreshCw, CheckCircle2, XCircle, Filter, Clock } from "lucide-react";
@@ -72,13 +72,13 @@ export default function AdminWithdrawalsPage() {
           <div className="grid grid-cols-3 gap-4">
             {[
               { label: "Pending",  value: totalPending,  color: "#F59E0B" },
-              { label: "Approved", value: totalApproved, color: "#00C67A" },
+              { label: "Approved", value: totalApproved, color: "#16A34A" },
               { label: "Rejected", value: totalRejected, color: "#EF4444" },
             ].map(({ label, value, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <p className="text-xs font-medium uppercase tracking-wide mb-1"
-                  style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
+                  style={{ color: "var(--text-muted)" }}>{label}</p>
                 <p className="text-2xl font-bold" style={{ color }}>{value}</p>
               </div>
             ))}
@@ -94,12 +94,12 @@ export default function AdminWithdrawalsPage() {
             <button key={s} onClick={() => setTab(s)}
               className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
               style={tab === s
-                ? { background: "var(--bg-sidebar)", color: "white" }
+                ? { background: "var(--bg-sidebar)", color: "var(--text-primary)" }
                 : { color: "var(--text-400)" }}>
               {s}
               {countFor(s) > 0 && (
                 <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-xs"
-                  style={{ background: "rgba(255,255,255,0.15)" }}>{countFor(s)}</span>
+                  style={{ background: "var(--bg-muted)" }}>{countFor(s)}</span>
               )}
             </button>
           ))}
@@ -127,7 +127,7 @@ export default function AdminWithdrawalsPage() {
                       {/* Amount */}
                       <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                         style={{ background: "rgba(0,198,122,0.1)" }}>
-                        <BanknoteIcon className="w-5 h-5" style={{ color: "#00C67A" }} />
+                        <BanknoteIcon className="w-5 h-5" style={{ color: "#16A34A" }} />
                       </div>
 
                       <div className="flex-1 min-w-0">
@@ -150,8 +150,8 @@ export default function AdminWithdrawalsPage() {
                       {tab === "PENDING" && (
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <button onClick={e => { e.stopPropagation(); setExpanded(isOpen ? null : req.id); }}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
-                            style={{ background: "#00C67A" }}>
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ color: "var(--text-primary)" }}
+                            style={{ background: "#16A34A" }}>
                             <CheckCircle2 className="w-3.5 h-3.5" /> Approve
                           </button>
                           <button onClick={e => { e.stopPropagation(); setExpanded(isOpen ? null : req.id); }}
@@ -220,7 +220,7 @@ export default function AdminWithdrawalsPage() {
                             <div className="flex items-center gap-2">
                               <button onClick={() => act(req.id, "APPROVED")} disabled={acting === req.id}
                                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
-                                style={{ background: "#00C67A" }}>
+                                style={{ background: "#16A34A" }}>
                                 <CheckCircle2 className="w-4 h-4" />
                                 {acting === req.id ? "Processing…" : "Confirm Approval"}
                               </button>

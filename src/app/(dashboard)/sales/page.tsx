@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -70,18 +70,18 @@ export default function SalesDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               { label: "Assigned Leads",    value: data.totalLeads,     icon: UserCheck,    color: "#3B82F6" },
-              { label: "Paid This Month",   value: data.paidThisMonth,  icon: TrendingUp,   color: "#00C67A" },
+              { label: "Paid This Month",   value: data.paidThisMonth,  icon: TrendingUp,   color: "#16A34A" },
               { label: "Follow-ups Today",  value: data.followUpsToday.length, icon: CalendarClock, color: "#F59E0B" },
             ].map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4 flex items-center gap-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(255,255,255,0.1)" }}>
+                  style={{ background: "var(--bg-muted)" }}>
                   <Icon className="w-5 h-5" style={{ color }} />
                 </div>
                 <div>
-                  <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
-                  <p className="text-2xl font-bold text-white">{value}</p>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}</p>
+                  <p className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{value}</p>
                 </div>
               </div>
             ))}
@@ -139,7 +139,7 @@ export default function SalesDashboard() {
                   return (
                     <Link key={f.id} href={`/sales/leads/${f.id}`}
                       className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50/50 transition-colors">
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold text-white"
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold" style={{ color: "var(--text-primary)" }}
                         style={{ background: "var(--green-500)" }}>
                         {f.name[0]?.toUpperCase()}
                       </div>

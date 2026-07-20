@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { ClipboardList, RefreshCw, Package } from "lucide-react";
@@ -79,9 +79,9 @@ export default function SupplierPurchaseOrdersPage() {
               { label: "Dispatched", value: pos.filter((p) => p.status === "DISPATCHED").length },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <p className="text-xs font-medium uppercase tracking-wide mb-1" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
-                <p className="text-2xl font-bold text-white">{value}</p>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+                <p className="text-xs font-medium uppercase tracking-wide mb-1" style={{ color: "var(--text-muted)" }}>{label}</p>
+                <p className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{value}</p>
               </div>
             ))}
           </div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { Settings, RefreshCw, CheckCircle2, AlertTriangle } from "lucide-react";
@@ -60,11 +60,11 @@ export default function AdminConfigPage() {
               { label: "Remittance Days",   value: configs.find(c => c.key === "REMITTANCE_DAYS")?.value   ?? "7",  unit: "days" },
             ].map(({ label, value, unit }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <p className="text-xs font-medium uppercase tracking-wide mb-1"
-                  style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
-                <p className="text-2xl font-bold" style={{ color: "#00C67A" }}>
-                  {value}<span className="text-sm font-normal ml-1" style={{ color: "rgba(255,255,255,0.5)" }}>{unit}</span>
+                  style={{ color: "var(--text-muted)" }}>{label}</p>
+                <p className="text-2xl font-bold" style={{ color: "#16A34A" }}>
+                  {value}<span className="text-sm font-normal ml-1" style={{ color: "var(--text-secondary)" }}>{unit}</span>
                 </p>
               </div>
             ))}
@@ -107,7 +107,7 @@ export default function AdminConfigPage() {
                           </span>
                         )}
                         {isSaved && (
-                          <span className="flex items-center gap-1 text-xs font-semibold" style={{ color: "#00C67A" }}>
+                          <span className="flex items-center gap-1 text-xs font-semibold" style={{ color: "#16A34A" }}>
                             <CheckCircle2 className="w-3.5 h-3.5" /> Saved
                           </span>
                         )}
@@ -125,7 +125,7 @@ export default function AdminConfigPage() {
                               style={{
                                 background:   "var(--bg-muted)",
                                 color:        "var(--text-900)",
-                                borderColor:  dirty ? "#00C67A" : "var(--border)",
+                                borderColor:  dirty ? "#16A34A" : "var(--border)",
                                 boxShadow:    dirty ? "0 0 0 2px rgba(0,198,122,0.15)" : "none",
                               }}
                             />
@@ -141,7 +141,7 @@ export default function AdminConfigPage() {
                                 style={{
                                   background:   "var(--bg-muted)",
                                   color:        "var(--text-900)",
-                                  borderColor:  dirty ? "#00C67A" : "var(--border)",
+                                  borderColor:  dirty ? "#16A34A" : "var(--border)",
                                   boxShadow:    dirty ? "0 0 0 2px rgba(0,198,122,0.15)" : "none",
                                 }}
                               />
@@ -157,7 +157,7 @@ export default function AdminConfigPage() {
                           onClick={() => save(c.key)}
                           disabled={!dirty || isSaving}
                           className="px-4 py-2 rounded-xl text-xs font-semibold text-white transition-all disabled:opacity-40"
-                          style={{ background: dirty ? "#00C67A" : "var(--bg-muted)" }}>
+                          style={{ background: dirty ? "#16A34A" : "var(--bg-muted)" }}>
                           {isSaving ? "Saving…" : "Save"}
                         </button>
 

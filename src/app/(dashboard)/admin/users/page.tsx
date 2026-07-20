@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { Search, Plus, Trash2, RefreshCw, Users, Store, Package, Eye, EyeOff } from "lucide-react";
@@ -117,12 +117,12 @@ export default function AdminUsersPage() {
           <div className="flex items-center gap-2">
             <button onClick={() => fetchUsers(true)} disabled={refreshing}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
-              style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+              style={{ background: "var(--bg-muted)", color: "var(--text-primary)", border: "1px solid var(--border)" }}>
               <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               Refresh
             </button>
             <button onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ color: "var(--text-primary)" }}
               style={{ background: "var(--green-500)" }}>
               <Plus className="w-4 h-4" /> Create User
             </button>
@@ -130,8 +130,8 @@ export default function AdminUsersPage() {
         }
         filters={
           <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl text-white outline-none"
-            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+            className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)" }}
+            style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
             <option value="ALL" className="text-gray-900 bg-white">All Roles</option>
             <option value="SELLER" className="text-gray-900 bg-white">Sellers</option>
             <option value="SUPPLIER" className="text-gray-900 bg-white">Suppliers</option>
@@ -142,17 +142,17 @@ export default function AdminUsersPage() {
             {[
               { label: "Total Users", value: users.length, icon: Users,   color: "#7C3AED" },
               { label: "Sellers",     value: sellers,      icon: Store,   color: "#3B82F6" },
-              { label: "Suppliers",   value: suppliers,    icon: Package, color: "#00C67A" },
+              { label: "Suppliers",   value: suppliers,    icon: Package, color: "#16A34A" },
             ].map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)" }}>
+                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--bg-muted)" }}>
                     <Icon className="w-4 h-4" style={{ color }} />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-white">{value}</p>
+                <p className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{value}</p>
               </div>
             ))}
           </div>

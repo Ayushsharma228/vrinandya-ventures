@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, Truck, Clock, XCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
@@ -16,7 +16,7 @@ interface Stats { pending: number; delivered: number; inTransit: number; rto: nu
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   SHIPPED:    { label: "Shipped",    color: "#7C3AED", bg: "#F5F3FF" },
   IN_TRANSIT: { label: "In Transit", color: "#025864", bg: "#ECFDF5" },
-  DELIVERED:  { label: "Delivered",  color: "#00C67A", bg: "#F0FDF4" },
+  DELIVERED:  { label: "Delivered",  color: "#16A34A", bg: "#F0FDF4" },
   CANCELLED:  { label: "Cancelled",  color: "#6B7280", bg: "#F9FAFB" },
   NEW:        { label: "Pending",    color: "#3B82F6", bg: "#EFF6FF" },
   PROCESSING: { label: "Processing", color: "#F59E0B", bg: "#FFF7ED" },
@@ -28,7 +28,7 @@ const STATUS_FILTERS = ["ALL", "NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DE
 const STAT_CARDS = [
   { key: "pending",   label: "Pending",    icon: Clock,         color: "#7C3AED", bg: "#F5F3FF" },
   { key: "inTransit", label: "In Transit", icon: Truck,         color: "#3B82F6", bg: "#EFF6FF" },
-  { key: "delivered", label: "Delivered",  icon: CheckCircle2,  color: "#00C67A", bg: "#F0FDF4" },
+  { key: "delivered", label: "Delivered",  icon: CheckCircle2,  color: "#16A34A", bg: "#F0FDF4" },
   { key: "rto",       label: "RTO",        icon: AlertTriangle, color: "#EF4444", bg: "#FEF2F2" },
   { key: "cancelled", label: "Cancelled",  icon: XCircle,       color: "#6B7280", bg: "#F9FAFB" },
 ];
@@ -77,10 +77,10 @@ export default function ManageDeliveryPage() {
         onSearchSubmit={() => fetchDeliveries()}
         actions={
           <div className="flex items-center gap-2">
-            {syncMsg && <span className="text-xs" style={{ color: "#00C67A" }}>{syncMsg}</span>}
+            {syncMsg && <span className="text-xs" style={{ color: "#16A34A" }}>{syncMsg}</span>}
             <button onClick={handleRefreshTracking} disabled={refreshing}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
-              style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}>
+              style={{ background: "var(--bg-muted)", color: "var(--text-primary)", border: "1px solid var(--border)" }}>
               <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               Refresh Tracking
             </button>
@@ -90,14 +90,14 @@ export default function ManageDeliveryPage() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {STAT_CARDS.map(({ key, label, icon: Icon, color }) => (
               <div key={key} className="rounded-2xl px-4 py-4 flex items-center gap-3"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(255,255,255,0.1)" }}>
+                  style={{ background: "var(--bg-muted)" }}>
                   <Icon className="w-5 h-5" style={{ color }} />
                 </div>
                 <div>
-                  <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
-                  <p className="text-2xl font-bold text-white">{stats[key as keyof Stats]}</p>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}</p>
+                  <p className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{stats[key as keyof Stats]}</p>
                 </div>
               </div>
             ))}
@@ -115,7 +115,7 @@ export default function ManageDeliveryPage() {
               <button key={s} onClick={() => setStatusFilter(s)}
                 className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
                 style={isActive
-                  ? { background: cfg ? cfg.color : "var(--bg-sidebar)", color: "white" }
+                  ? { background: cfg ? cfg.color : "var(--bg-sidebar)", color: "var(--text-primary)" }
                   : { background: cfg ? cfg.bg : "#F3F4F6", color: cfg ? cfg.color : "var(--text-600)" }
                 }>
                 {s === "ALL" ? "All" : cfg?.label ?? s}

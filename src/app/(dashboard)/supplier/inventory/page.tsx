@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { Boxes, RefreshCw, AlertTriangle, CheckCircle, Edit2, Save, X } from "lucide-react";
@@ -78,17 +78,17 @@ export default function SupplierInventoryPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: "Products",       value: items.length,     icon: Boxes,         color: "#3B82F6" },
-              { label: "Available Units", value: totalAvailable,  icon: CheckCircle,   color: "#00C67A" },
+              { label: "Available Units", value: totalAvailable,  icon: CheckCircle,   color: "#16A34A" },
               { label: "Reserved",       value: totalReserved,    icon: RefreshCw,     color: "#8B5CF6" },
               { label: "Low / Out",      value: `${lowStock} / ${outOfStock}`, icon: AlertTriangle, color: "#EF4444" },
             ].map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
                   <Icon className="w-4 h-4" style={{ color }} />
                 </div>
-                <p className="text-2xl font-bold text-white">{value}</p>
+                <p className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{value}</p>
               </div>
             ))}
           </div>
@@ -188,7 +188,7 @@ export default function SupplierInventoryPage() {
                             <div className="flex items-center gap-1">
                               <button onClick={() => saveEdit(item.productId)} disabled={saving}
                                 className="p-1.5 rounded-lg text-white"
-                                style={{ background: "#00C67A" }}>
+                                style={{ background: "#16A34A" }}>
                                 <Save className="w-3.5 h-3.5" />
                               </button>
                               <button onClick={() => setEditingId(null)}

@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+﻿import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
@@ -73,7 +73,7 @@ export default async function SupplierDashboard() {
         subtitle="Your fulfillment dashboard"
         actions={
           <Link href="/supplier/products/new"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ color: "var(--text-primary)" }}
             style={{ background: "var(--green-500)" }}>
             <Plus className="w-4 h-4" /> Add Product
           </Link>
@@ -84,17 +84,17 @@ export default async function SupplierDashboard() {
               { label: "Pending Orders",  value: pendingOrders,   icon: Clock,       color: "#F59E0B" },
               { label: "Active Orders",   value: activeOrders,    icon: ShoppingCart, color: "#3B82F6" },
               { label: "Pending POs",     value: pendingPOs,      icon: ClipboardList, color: "#8B5CF6" },
-              { label: "Products",        value: approvedProducts, icon: Package,     color: "#00C67A" },
+              { label: "Products",        value: approvedProducts, icon: Package,     color: "#16A34A" },
             ].map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4 flex items-center gap-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(255,255,255,0.1)" }}>
+                  style={{ background: "var(--bg-muted)" }}>
                   <Icon className="w-5 h-5" style={{ color }} />
                 </div>
                 <div>
-                  <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
-                  <p className="text-2xl font-bold text-white">{value}</p>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}</p>
+                  <p className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{value}</p>
                 </div>
               </div>
             ))}

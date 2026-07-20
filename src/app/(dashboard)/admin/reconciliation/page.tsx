@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
@@ -141,10 +141,10 @@ export default function ReconciliationPage() {
               { label: "Direct Settlement", value: "Marketplace → Seller → AXQEN" },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <p className="text-xs font-medium uppercase tracking-wide mb-2"
-                  style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
-                <p className="text-xl font-bold text-white">{value}</p>
+                  style={{ color: "var(--text-muted)" }}>{label}</p>
+                <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{value}</p>
               </div>
             ))}
           </div>
@@ -165,7 +165,7 @@ export default function ReconciliationPage() {
                 <button key={mp} onClick={() => setUploadMp(mp)}
                   className="flex-1 py-1.5 rounded-xl text-xs font-bold transition-all"
                   style={uploadMp === mp
-                    ? { background: MP_COLOR[mp], color: "white" }
+                    ? { background: MP_COLOR[mp], color: "var(--text-primary)" }
                     : { background: "var(--bg-muted)", color: "var(--text-400)", border: "1px solid var(--border)" }}>
                   {mp === "AMAZON" ? "Amazon" : mp === "FLIPKART" ? "Flipkart" : "Meesho"}
                 </button>
@@ -314,7 +314,7 @@ export default function ReconciliationPage() {
                   onClick={handleApply}
                   disabled={applying || selected.matchedRows === 0}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white disabled:opacity-40"
-                  style={{ background: "#00C67A" }}>
+                  style={{ background: "#16A34A" }}>
                   {applying
                     ? <><RefreshCw className="w-3 h-3 animate-spin" /> Applying…</>
                     : <><Play className="w-3 h-3" /> Apply Settlements</>}
@@ -338,7 +338,7 @@ export default function ReconciliationPage() {
                   <button key={st} onClick={() => { setEntryStatus(st); setEntryPage(1); }}
                     className="px-3 py-1 rounded-full text-xs font-semibold transition-all"
                     style={entryStatus === st
-                      ? { background: "var(--bg-sidebar)", color: "white" }
+                      ? { background: "var(--bg-sidebar)", color: "var(--text-primary)" }
                       : { color: "var(--text-400)" }}>
                     {st === "" ? "All" : st === "MATCHED" ? "Matched" : st === "UNMATCHED" ? "Unmatched" : st === "DISCREPANCY" ? "Discrepancy" : "Settled"}
                   </button>
@@ -379,7 +379,7 @@ export default function ReconciliationPage() {
                               <td className="px-3 py-2.5 font-mono font-medium" style={{ color: "var(--text-900)" }}>
                                 {e.marketplaceOrderId}
                               </td>
-                              <td className="px-3 py-2.5" style={{ color: "#00C67A" }}>{fmt(e.grossAmount)}</td>
+                              <td className="px-3 py-2.5" style={{ color: "#16A34A" }}>{fmt(e.grossAmount)}</td>
                               <td className="px-3 py-2.5" style={{ color: "#EF4444" }}>{fmt(e.marketplaceFee)}</td>
                               <td className="px-3 py-2.5" style={{ color: "#6366F1" }}>{fmt(e.tds)}</td>
                               <td className="px-3 py-2.5 font-semibold" style={{ color: "#3B82F6" }}>{fmt(e.netAmount)}</td>

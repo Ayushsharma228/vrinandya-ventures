@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { Receipt, TrendingUp, Clock, CheckCircle, RefreshCw, ChevronLeft, ChevronRight, IndianRupee } from "lucide-react";
@@ -94,18 +94,18 @@ export default function SupplierSettlementsPage() {
         cards={
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Available Balance", value: `₹${balance.toLocaleString()}`,        icon: CheckCircle, color: "#00C67A" },
+              { label: "Available Balance", value: `₹${balance.toLocaleString()}`,        icon: CheckCircle, color: "#16A34A" },
               { label: "On Hold",           value: `₹${pending.toLocaleString()}`,        icon: Clock,       color: "#F59E0B" },
               { label: "Total Earned",      value: `₹${totalCredits.toLocaleString()}`,   icon: TrendingUp,  color: "#3B82F6" },
               { label: "Total Debited",     value: `₹${totalDebits.toLocaleString()}`,    icon: Receipt,     color: "#EF4444" },
             ].map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
                   <Icon className="w-4 h-4" style={{ color }} />
                 </div>
-                <p className="text-xl font-bold text-white">{value}</p>
+                <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{value}</p>
               </div>
             ))}
           </div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { Wallet, TrendingUp, TrendingDown, Clock, CheckCircle2, ArrowUpRight, ArrowDownRight, BanknoteIcon, XCircle } from "lucide-react";
@@ -19,7 +19,7 @@ interface WithdrawalRequest {
 }
 const WD_BADGE: Record<string, { color: string }> = {
   PENDING:  { color: "#F59E0B" },
-  APPROVED: { color: "#00C67A" },
+  APPROVED: { color: "#16A34A" },
   REJECTED: { color: "#EF4444" },
 };
 
@@ -83,7 +83,7 @@ export default function SellerWalletPage() {
             {/* Paid Till Now */}
             <div className="rounded-2xl px-6 py-5" style={{ background: "rgba(0,198,122,0.12)", border: "1px solid rgba(0,198,122,0.2)" }}>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.5)" }}>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
                   Paid Till Now
                 </p>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(0,198,122,0.2)" }}>
@@ -93,8 +93,8 @@ export default function SellerWalletPage() {
               <p className="text-3xl font-bold text-white mb-1">
                 {loading ? "—" : `₹${fmt(data?.totalCredit ?? 0)}`}
               </p>
-              <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>Total paid to your account</p>
-              <div className="mt-4 pt-4 flex items-center gap-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Total paid to your account</p>
+              <div className="mt-4 pt-4 flex items-center gap-2" style={{ borderTop: "1px solid var(--border)" }}>
                 <TrendingUp style={{ color: "var(--green-500)", width: 14, height: 14 }} />
                 <span className="text-xs" style={{ color: "var(--green-500)" }}>
                   {paid.length} payment{paid.length !== 1 ? "s" : ""} completed
@@ -105,7 +105,7 @@ export default function SellerWalletPage() {
             {/* Upcoming Payout */}
             <div className="rounded-2xl px-6 py-5" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)" }}>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.5)" }}>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
                   Upcoming Payout
                 </p>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(245,158,11,0.15)" }}>
@@ -115,7 +115,7 @@ export default function SellerWalletPage() {
               <p className="text-3xl font-bold text-white mb-1">
                 {loading ? "—" : `₹${fmt(data?.upcomingAmount ?? 0)}`}
               </p>
-              <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
                 {upcoming[0]?.remittanceDate
                   ? `Expected ${new Date(upcoming[0].remittanceDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`
                   : "No upcoming payout"}
@@ -125,7 +125,7 @@ export default function SellerWalletPage() {
             {/* Deductions */}
             <div className="rounded-2xl px-6 py-5" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.5)" }}>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
                   Total Deductions
                 </p>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(239,68,68,0.15)" }}>
@@ -135,7 +135,7 @@ export default function SellerWalletPage() {
               <p className="text-3xl font-bold text-white mb-1">
                 {loading ? "—" : `₹${fmt(data?.totalDebit ?? 0)}`}
               </p>
-              <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>RTO charges & adjustments</p>
+              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>RTO charges & adjustments</p>
             </div>
           </div>
         }
@@ -145,7 +145,7 @@ export default function SellerWalletPage() {
         {/* Request Payout */}
         <div className="card p-5">
           <div className="flex items-center gap-2 mb-4">
-            <BanknoteIcon className="w-5 h-5" style={{ color: "#00C67A" }} />
+            <BanknoteIcon className="w-5 h-5" style={{ color: "#16A34A" }} />
             <h2 className="text-sm font-bold" style={{ color: "var(--text-900)" }}>Request Payout</h2>
           </div>
           <form onSubmit={submitWithdrawal} className="flex items-center gap-3 flex-wrap">
@@ -162,12 +162,12 @@ export default function SellerWalletPage() {
             </div>
             <button type="submit" disabled={wdLoading}
               className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
-              style={{ background: "#00C67A" }}>
+              style={{ background: "#16A34A" }}>
               {wdLoading ? "Submitting…" : "Request Payout"}
             </button>
           </form>
           {wdError   && <p className="text-xs mt-2" style={{ color: "#EF4444" }}>{wdError}</p>}
-          {wdSuccess && <p className="text-xs mt-2" style={{ color: "#00C67A" }}>Payout request submitted! Admin will process it shortly.</p>}
+          {wdSuccess && <p className="text-xs mt-2" style={{ color: "#16A34A" }}>Payout request submitted! Admin will process it shortly.</p>}
           <p className="text-xs mt-3" style={{ color: "var(--text-400)" }}>
             Payouts are transferred to your registered bank account. Only settled (paid) wallet balance is eligible.
           </p>
@@ -187,7 +187,7 @@ export default function SellerWalletPage() {
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                       style={{ background: "rgba(0,198,122,0.1)" }}>
                       {wd.status === "APPROVED"
-                        ? <CheckCircle2 className="w-4 h-4" style={{ color: "#00C67A" }} />
+                        ? <CheckCircle2 className="w-4 h-4" style={{ color: "#16A34A" }} />
                         : wd.status === "REJECTED"
                         ? <XCircle className="w-4 h-4" style={{ color: "#EF4444" }} />
                         : <Clock className="w-4 h-4" style={{ color: "#F59E0B" }} />}
@@ -216,7 +216,7 @@ export default function SellerWalletPage() {
               <button key={t} onClick={() => setTab(t)}
                 className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
                 style={tab === t
-                  ? { background: "var(--bg-sidebar)", color: "white" }
+                  ? { background: "var(--bg-sidebar)", color: "var(--text-primary)" }
                   : { color: "var(--text-400)" }}>
                 {t}
               </button>
@@ -240,7 +240,7 @@ export default function SellerWalletPage() {
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                       style={{ background: isCredit ? "#F0FDF4" : "#FEF2F2" }}>
                       {isCredit
-                        ? <ArrowDownRight style={{ color: "#00C67A", width: 16, height: 16 }} />
+                        ? <ArrowDownRight style={{ color: "#16A34A", width: 16, height: 16 }} />
                         : <ArrowUpRight style={{ color: "#EF4444", width: 16, height: 16 }} />
                       }
                     </div>
@@ -257,12 +257,12 @@ export default function SellerWalletPage() {
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold" style={{ color: isCredit ? "#00C67A" : "#EF4444" }}>
+                      <p className="text-sm font-bold" style={{ color: isCredit ? "#16A34A" : "#EF4444" }}>
                         {isCredit ? "+" : "−"}₹{fmt(tx.amount)}
                       </p>
                       <div className="flex items-center justify-end gap-1 mt-0.5">
                         {isPaid
-                          ? <><CheckCircle2 style={{ color: "#00C67A", width: 12, height: 12 }} /><span className="text-xs" style={{ color: "#00C67A" }}>Paid</span></>
+                          ? <><CheckCircle2 style={{ color: "#16A34A", width: 12, height: 12 }} /><span className="text-xs" style={{ color: "#16A34A" }}>Paid</span></>
                           : <><Clock style={{ color: "#F59E0B", width: 12, height: 12 }} /><span className="text-xs" style={{ color: "#F59E0B" }}>Upcoming</span></>
                         }
                       </div>

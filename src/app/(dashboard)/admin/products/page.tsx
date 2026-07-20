@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, Package, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
@@ -76,13 +76,13 @@ export default function AdminProductsPage() {
         title="Product Approvals"
         subtitle="Review and approve supplier product submissions"
         filters={
-          <div className="flex gap-1 p-1 rounded-xl" style={{ background: "rgba(255,255,255,0.1)" }}>
+          <div className="flex gap-1 p-1 rounded-xl" style={{ background: "var(--bg-muted)" }}>
             {tabs.map((tab) => (
               <button key={tab} onClick={() => setFilter(tab)}
                 className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
                 style={filter === tab
                   ? { background: "white", color: "var(--text-900)" }
-                  : { color: "rgba(255,255,255,0.6)" }}>
+                  : { color: "var(--text-secondary)" }}>
                 {tab}
               </button>
             ))}

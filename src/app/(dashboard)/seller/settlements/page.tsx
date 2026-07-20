@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -72,15 +72,15 @@ export default function SellerSettlementsPage() {
         cards={
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Gross Revenue",   value: s ? fmt(s.grossRevenue) : "—",  color: "#00C67A" },
+              { label: "Gross Revenue",   value: s ? fmt(s.grossRevenue) : "—",  color: "#16A34A" },
               { label: "Platform Fee",    value: s ? fmt(s.platformFee)  : "—",  color: "#3B82F6" },
               { label: "Net Payable",     value: s ? fmt(s.netPayable)   : "—",  color: "#A78BFA" },
               { label: "Net Profit",      value: s ? fmt(s.netProfit)    : "—",  color: "#F59E0B" },
             ].map(({ label, value, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <p className="text-xs font-medium uppercase tracking-wide mb-2"
-                  style={{ color: "rgba(255,255,255,0.45)" }}>{label}</p>
+                  style={{ color: "var(--text-muted)" }}>{label}</p>
                 <p className="text-2xl font-bold" style={{ color }}>{value}</p>
               </div>
             ))}
@@ -151,7 +151,7 @@ export default function SellerSettlementsPage() {
                           </p>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className="text-sm font-bold" style={{ color: "#00C67A" }}>{fmt(s.sellingPrice)}</p>
+                          <p className="text-sm font-bold" style={{ color: "#16A34A" }}>{fmt(s.sellingPrice)}</p>
                           <p className="text-xs" style={{ color: "#A78BFA" }}>→ {fmt(s.netPayable)} to you</p>
                         </div>
                       </div>
@@ -161,7 +161,7 @@ export default function SellerSettlementsPage() {
                           style={{ background: "var(--bg-muted)", borderTop: "1px solid var(--border)" }}>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
                             {[
-                              { label: "Selling Price",   value: fmt(s.sellingPrice),   color: "#00C67A" },
+                              { label: "Selling Price",   value: fmt(s.sellingPrice),   color: "#16A34A" },
                               { label: "Platform Fee",    value: fmt(s.platformFee),    color: "#3B82F6" },
                               { label: "GST (18%)",       value: fmt(s.gstOnFees),      color: "#6366F1" },
                               { label: "Shipping",        value: fmt(s.shippingCharge), color: "#8B5CF6" },
@@ -170,7 +170,7 @@ export default function SellerSettlementsPage() {
                               { label: "Ad Spend",        value: fmt(s.adSpend),        color: "#EF4444" },
                               { label: "Marketplace Fee", value: fmt(s.marketplaceFee), color: "#DC2626" },
                               { label: "Net Payable",     value: fmt(s.netPayable),     color: "#A78BFA" },
-                              { label: "Net Profit",      value: fmt(s.netProfit ?? 0), color: (s.netProfit ?? 0) >= 0 ? "#00C67A" : "#EF4444" },
+                              { label: "Net Profit",      value: fmt(s.netProfit ?? 0), color: (s.netProfit ?? 0) >= 0 ? "#16A34A" : "#EF4444" },
                             ].map(({ label, value, color }) => (
                               <div key={label} className="rounded-xl p-3"
                                 style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
