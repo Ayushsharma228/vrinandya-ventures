@@ -4,12 +4,10 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Razorpay from "razorpay";
 
-// Plan amounts in paise (₹ × 100)
-const TIER_AMOUNTS: Record<string, number> = {
-  starter:    1000000,  // ₹10,000
-  growth:     2500000,  // ₹25,000
-  scale:      5000000,  // ₹50,000
-  enterprise: 5000000,  // custom — overridden manually
+// Paise = ₹ × 100
+const AMOUNTS: Record<string, Record<string, number>> = {
+  dropshipping: { starter: 1000000, growth: 2500000, scale: 5000000 },
+  marketplace:  { starter:  500000, growth: 1000000, scale: 2000000 },
 };
 
 export async function POST() {
@@ -20,13 +18,14 @@ export async function POST() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { planTier: true, paymentConfirmed: true, name: true, email: true, phone: true },
+    select: { planTier: true, plan: true, paymentConfirmed: true, name: true, email: true, phone: true },
   });
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
   if (user.paymentConfirmed) return NextResponse.json({ error: "Payment already completed" }, { status: 400 });
 
-  const tier  = (user.planTier ?? "starter").toLowerCase();
-  const amount = TIER_AMOUNTS[tier] ?? TIER_AMOUNTS.starter;
+  const service = (user.plan ?? "dropshipping").toLowerCase();
+  const tier    = (user.planTier ?? "starter").toLowerCase();
+  const amount  = AMOUNTS[service]?.[tier] ?? AMOUNTS.dropshipping.starter;
 
   if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
     return NextResponse.json({ error: "Razorpay keys not configured on server" }, { status: 503 });

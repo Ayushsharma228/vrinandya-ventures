@@ -6,8 +6,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Eye, EyeOff, Check, ChevronRight, Store, Package,
-  Zap, TrendingUp, Crown, Copy, CheckCheck,
+  Zap, TrendingUp, Crown, Loader2,
 } from "lucide-react";
+
+declare global {
+  interface Window { Razorpay: any; }
+}
 
 const BLUE   = "#0048DF";
 const BLUEDIM = "rgba(0,72,223,0.08)";
@@ -50,11 +54,6 @@ const PLANS = {
   ],
 };
 
-const BANK_NAME    = process.env.NEXT_PUBLIC_BANK_NAME    ?? "HDFC Bank";
-const BANK_HOLDER  = process.env.NEXT_PUBLIC_BANK_HOLDER  ?? "Axiqen";
-const BANK_ACCOUNT = process.env.NEXT_PUBLIC_BANK_ACCOUNT ?? "XXXXXXXXXXXX";
-const BANK_IFSC    = process.env.NEXT_PUBLIC_BANK_IFSC    ?? "HDFC0000000";
-const UPI_ID       = process.env.NEXT_PUBLIC_UPI_ID       ?? "vrinandya@upi";
 
 const STEPS = ["Account", "Service", "Plan", "Payment"];
 
@@ -111,14 +110,7 @@ export default function SignupPage() {
 
   const [service, setService]     = useState<"DROPSHIPPING" | "MARKETPLACE" | "">("");
   const [planTier, setPlanTier]   = useState("");
-  const [paymentRef, setPaymentRef] = useState("");
-  const [copied, setCopied]       = useState<string | null>(null);
-
-  function copyText(text: string, key: string) {
-    navigator.clipboard.writeText(text);
-    setCopied(key);
-    setTimeout(() => setCopied(null), 1800);
-  }
+  const [rzpLoading, setRzpLoading] = useState(false);
 
   async function handleCreateAccount(e: React.FormEvent) {
     e.preventDefault();
@@ -164,12 +156,57 @@ export default function SignupPage() {
     if (ok) { setStep(3); setLoading(false); }
   }
 
-  async function handlePayment(e: React.FormEvent) {
-    e.preventDefault();
-    if (!paymentRef.trim()) { setError("Enter your payment reference / UTR number"); return; }
-    setError(""); setLoading(true);
-    const ok = await saveStep({ step: "payment", paymentReference: paymentRef });
-    if (ok) router.push("/onboarding");
+  async function handleRazorpay() {
+    setError(""); setRzpLoading(true);
+
+    // Load Razorpay script if not already loaded
+    if (!window.Razorpay) {
+      await new Promise<void>((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = "https://checkout.razorpay.com/v1/checkout.js";
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error("Failed to load Razorpay"));
+        document.body.appendChild(s);
+      });
+    }
+
+    const res = await fetch("/api/payments/create-order", { method: "POST" });
+    const data = await res.json();
+
+    if (!res.ok) { setError(data.error ?? "Could not create order"); setRzpLoading(false); return; }
+
+    const rzp = new window.Razorpay({
+      key:         data.key,
+      amount:      data.amount,
+      currency:    data.currency,
+      order_id:    data.orderId,
+      name:        "Axiqen",
+      description: `${data.tierLabel} Plan`,
+      image:       "/favicon.ico",
+      prefill: { name: data.name, email: data.email, contact: data.phone },
+      theme: { color: BLUE },
+      handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+        const verify = await fetch("/api/payments/verify", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            razorpay_order_id:   response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature:  response.razorpay_signature,
+          }),
+        });
+        if (verify.ok) {
+          router.push("/onboarding");
+        } else {
+          const d = await verify.json().catch(() => ({}));
+          setError(d.error ?? "Payment verification failed. Contact support.");
+          setRzpLoading(false);
+        }
+      },
+      modal: { ondismiss: () => setRzpLoading(false) },
+    });
+
+    rzp.open();
   }
 
   const selectedPlan = service ? PLANS[service].find((p) => p.tier === planTier) : null;
@@ -391,90 +428,47 @@ export default function SignupPage() {
 
           {/* ── Step 3: Payment ── */}
           {step === 3 && (
-            <form onSubmit={handlePayment}>
+            <div>
               <h2 className="text-xl font-bold mb-1" style={{ color: "#0A0E1A" }}>Complete payment</h2>
-              <p className="text-sm mb-5" style={{ color: "#6B7280" }}>
-                Transfer ₹{planAmount.toLocaleString("en-IN")} to the details below, then enter your UTR.
+              <p className="text-sm mb-6" style={{ color: "#6B7280" }}>
+                Pay securely via Razorpay — UPI, cards, net banking all accepted.
               </p>
 
-              {/* Amount box */}
-              <div className="rounded-xl p-4 mb-5 text-center" style={{ background: BLUEDIM, border: `1px solid ${BLUEBORDER}` }}>
+              {/* Amount summary */}
+              <div className="rounded-xl p-5 mb-6 text-center" style={{ background: BLUEDIM, border: `1px solid ${BLUEBORDER}` }}>
                 <p className="text-xs font-medium mb-1" style={{ color: "#6B7280" }}>Amount to pay</p>
-                <p className="text-3xl font-bold" style={{ color: "#0A0E1A" }}>₹{planAmount.toLocaleString("en-IN")}</p>
-                <p className="text-xs mt-1 font-semibold" style={{ color: BLUE }}>
+                <p className="text-4xl font-black mb-1" style={{ color: "#0A0E1A", fontFamily: "var(--font-space)" }}>
+                  ₹{planAmount.toLocaleString("en-IN")}
+                </p>
+                <p className="text-xs font-semibold" style={{ color: BLUE }}>
                   {selectedPlan?.label} Plan · {service === "MARKETPLACE" ? "Marketplace" : "Dropshipping"}
                 </p>
+                <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>+ 18% GST · One-time payment</p>
               </div>
 
-              {/* Bank details */}
-              <div className="rounded-xl p-4 mb-5 space-y-3" style={{ background: "#fafafa", border: "1px solid #e5e7eb" }}>
-                <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "#9CA3AF" }}>Bank Transfer</p>
-                {[
-                  { label: "Account Name",   value: BANK_HOLDER  },
-                  { label: "Account Number", value: BANK_ACCOUNT },
-                  { label: "IFSC Code",      value: BANK_IFSC    },
-                  { label: "Bank Name",      value: BANK_NAME    },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex items-center justify-between">
-                    <span className="text-xs" style={{ color: "#9CA3AF" }}>{label}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono font-semibold" style={{ color: "#0A0E1A" }}>{value}</span>
-                      <button type="button" onClick={() => copyText(value, label)}
-                        className="p-1 rounded transition-colors"
-                        style={{ color: copied === label ? BLUE : "#D1D5DB" }}>
-                        {copied === label ? <CheckCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  </div>
+              {/* Payment methods note */}
+              <div className="flex flex-wrap justify-center gap-2 mb-6">
+                {["UPI", "Credit Card", "Debit Card", "Net Banking", "Wallets"].map((m) => (
+                  <span key={m} className="text-xs px-3 py-1 rounded-full"
+                    style={{ background: "#f3f4f6", color: "#6B7280" }}>{m}</span>
                 ))}
-
-                <div className="border-t pt-3 space-y-3" style={{ borderColor: "#e5e7eb" }}>
-                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#9CA3AF" }}>UPI</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs" style={{ color: "#9CA3AF" }}>UPI ID</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono font-semibold" style={{ color: "#0A0E1A" }}>{UPI_ID}</span>
-                      <button type="button" onClick={() => copyText(UPI_ID, "upi")}
-                        className="p-1 rounded"
-                        style={{ color: copied === "upi" ? BLUE : "#D1D5DB" }}>
-                        {copied === "upi" ? <CheckCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-center gap-2 pt-1">
-                    <div className="bg-white p-2 rounded-xl border border-gray-100">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(BANK_HOLDER)}&am=${planAmount}&cu=INR&tn=${encodeURIComponent("Axiqen Plan Payment")}`)}`}
-                        alt="Scan to pay via UPI"
-                        width={160} height={160}
-                        className="rounded-lg"
-                      />
-                    </div>
-                    <p className="text-xs" style={{ color: "#9CA3AF" }}>Scan with any UPI app · ₹{planAmount.toLocaleString("en-IN")}</p>
-                  </div>
-                </div>
               </div>
 
-              {/* UTR input */}
-              <div className="mb-5">
-                <label className="block text-xs font-medium mb-1.5" style={{ color: "#374151" }}>
-                  Payment Reference / UTR Number *
-                </label>
-                <input value={paymentRef} onChange={(e) => setPaymentRef(e.target.value)}
-                  placeholder="Enter UTR or transaction reference"
-                  className={`${inputCls} font-mono`} style={inputStyle} />
-                <p className="text-xs mt-1.5" style={{ color: "#9CA3AF" }}>
-                  Found in your bank app after transfer. Account activated within 24–48 hrs.
-                </p>
-              </div>
-
-              <button type="submit" disabled={loading || !paymentRef.trim()}
-                className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40 text-white"
-                style={{ background: BLUE }}>
-                {loading ? "Submitting..." : "Submit Payment & Continue →"}
+              <button
+                onClick={handleRazorpay}
+                disabled={rzpLoading}
+                className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 text-white transition-all hover:opacity-90"
+                style={{ background: BLUE }}
+              >
+                {rzpLoading
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening payment…</>
+                  : <>Pay ₹{planAmount.toLocaleString("en-IN")} Securely →</>}
               </button>
-            </form>
+
+              <p className="text-center text-xs mt-3" style={{ color: "#9CA3AF" }}>
+                Secured by Razorpay · 256-bit SSL encryption
+              </p>
+            </div>
           )}
 
         </div>
