@@ -201,6 +201,19 @@ export default function OnboardingPage() {
     if (status === "unauthenticated") router.replace("/login?zone=seller");
   }, [status, router]);
 
+  // Handle return from Razorpay redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success") {
+      setPaymentConfirmed(true);
+      setStep(2);
+      window.history.replaceState({}, "", "/onboarding");
+    } else if (params.get("payment") === "failed") {
+      setError("Payment failed or was cancelled. Please try again.");
+      window.history.replaceState({}, "", "/onboarding");
+    }
+  }, []);
+
   useEffect(() => {
     fetch("/api/seller/onboarding")
       .then((r) => r.json())
@@ -267,30 +280,18 @@ export default function OnboardingPage() {
       if (!loaded) { setError("Could not load payment gateway. Please check your connection."); setPayingNow(false); return; }
 
       const rzp = new window.Razorpay({
-        key:         data.key,
-        amount:      data.amount,
-        currency:    data.currency,
-        order_id:    data.orderId,
-        name:        "Axiqen",
-        description: `${data.tierLabel} Plan Setup Fee`,
-        prefill:           { name: data.name, email: data.email },
-        theme:             { color: "#4361EE" },
+        key:              data.key,
+        amount:           data.amount,
+        currency:         data.currency,
+        order_id:         data.orderId,
+        name:             "Axiqen",
+        description:      `${data.tierLabel} Plan Setup Fee`,
+        prefill:          { name: data.name, email: data.email },
+        theme:            { color: "#4361EE" },
         remember_customer: false,
-        handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
-          const vRes = await fetch("/api/payments/verify", {
-            method:  "POST",
-            headers: { "Content-Type": "application/json" },
-            body:    JSON.stringify(response),
-          });
-          const vData = await vRes.json();
-          if (!vRes.ok) { setError(vData.error ?? "Payment verification failed."); setPayingNow(false); return; }
-          setPaymentConfirmed(true);
-          setPayingNow(false);
-          setStep(2); // advance to Business step
-        },
-        modal: {
-          ondismiss: () => setPayingNow(false),
-        },
+        // Redirect mode — opens Razorpay's hosted page (shows all payment methods)
+        redirect:         true,
+        callback_url:     `${window.location.origin}/api/payments/callback`,
       });
       rzp.open();
     } catch {
