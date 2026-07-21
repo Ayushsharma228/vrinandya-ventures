@@ -27,26 +27,36 @@ export async function POST() {
   const tier  = (user.planTier ?? "Launch").toLowerCase();
   const amount = TIER_AMOUNTS[tier] ?? TIER_AMOUNTS.launch;
 
-  const razorpay = new Razorpay({
-    key_id:     process.env.RAZORPAY_KEY_ID!,
-    key_secret: process.env.RAZORPAY_KEY_SECRET!,
-  });
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    return NextResponse.json({ error: "Razorpay keys not configured on server" }, { status: 503 });
+  }
 
-  const order = await razorpay.orders.create({
-    amount,
-    currency: "INR",
-    receipt:  `axiqen_${session.user.id.slice(-8)}_${Date.now()}`,
-    notes: { sellerId: session.user.id, planTier: user.planTier ?? "Launch" },
-  });
+  try {
+    const razorpay = new Razorpay({
+      key_id:     process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
 
-  return NextResponse.json({
-    orderId:  order.id,
-    amount:   order.amount,
-    currency: order.currency,
-    key:      process.env.RAZORPAY_KEY_ID,
-    tierLabel: user.planTier ?? "Launch",
-    name:     user.name  ?? "Axiqen Seller",
-    email:    user.email ?? "",
-    phone:    user.phone ?? "",
-  });
+    const order = await razorpay.orders.create({
+      amount,
+      currency: "INR",
+      receipt:  `axiqen_${session.user.id.slice(-8)}_${Date.now()}`,
+      notes: { sellerId: session.user.id, planTier: user.planTier ?? "Launch" },
+    });
+
+    return NextResponse.json({
+      orderId:   order.id,
+      amount:    order.amount,
+      currency:  order.currency,
+      key:       process.env.RAZORPAY_KEY_ID,
+      tierLabel: user.planTier ?? "Launch",
+      name:      user.name  ?? "Axiqen Seller",
+      email:     user.email ?? "",
+      phone:     user.phone ?? "",
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : JSON.stringify(err);
+    console.error("Razorpay create-order error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }

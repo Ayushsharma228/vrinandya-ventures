@@ -273,8 +273,9 @@ export default function OnboardingPage() {
     setPayingNow(true); setError("");
     try {
       const res  = await fetch("/api/payments/create-order", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Could not initiate payment."); setPayingNow(false); return; }
+      let data: Record<string, unknown> = {};
+      try { data = await res.json(); } catch { /* non-JSON response */ }
+      if (!res.ok) { setError((data.error as string) ?? `Server error ${res.status}. Check console.`); setPayingNow(false); return; }
 
       const loaded = await loadRazorpay();
       if (!loaded) { setError("Could not load payment gateway. Please check your connection."); setPayingNow(false); return; }
@@ -294,8 +295,9 @@ export default function OnboardingPage() {
         callback_url:     `${window.location.origin}/api/payments/callback`,
       });
       rzp.open();
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setError(msg);
       setPayingNow(false);
     }
   }
