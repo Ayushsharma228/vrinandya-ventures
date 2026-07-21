@@ -20,5 +20,5 @@ export const C = {
   borderStrong: "rgba(255,255,255,0.1)",
 } as const;
 
-export const WA_LINK = "https://wa.me/918533949379";
+export const WA_LINK = "https://wa.me/918679993305";
 export const APPLY_ID = "apply";
