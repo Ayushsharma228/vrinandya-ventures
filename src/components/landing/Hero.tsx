@@ -5,14 +5,14 @@ import { C } from "./constants";
 export function Hero() {
   return (
     <section
-      className="relative pt-32 pb-20 px-6 overflow-hidden"
+      className="relative pt-40 pb-20 px-6 overflow-hidden"
       style={{ background: C.navy }}
     >
       {/* Subtle radial glow */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse at 50% 0%, rgba(124,111,240,0.12) 0%, transparent 70%)",
+          background: `radial-gradient(ellipse at 50% 0%, ${C.indigoDim} 0%, transparent 70%)`,
         }}
       />
 

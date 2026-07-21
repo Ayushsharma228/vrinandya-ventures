@@ -9,12 +9,12 @@ export function AnnouncementBar() {
   return (
     <div
       className="relative flex items-center justify-center gap-2 py-2.5 px-6 text-sm font-semibold"
-      style={{ background: C.gold, color: C.navy }}
+      style={{ background: C.indigo, color: "#ffffff" }}
     >
       🎉{" "}
       <span>
         <strong>Free onboarding this week</strong> — first 10 orders fulfilled on us. Limited slots.{" "}
-        <a href="#apply" className="underline font-bold" style={{ color: C.navy }}>
+        <a href="#apply" className="underline font-bold" style={{ color: "#ffffff" }}>
           Claim yours →
         </a>
       </span>
@@ -22,7 +22,7 @@ export function AnnouncementBar() {
         onClick={() => setDismissed(true)}
         aria-label="Dismiss announcement"
         className="absolute right-4 opacity-60 hover:opacity-100 transition-opacity text-xl leading-none"
-        style={{ color: C.navy }}
+        style={{ color: "#ffffff" }}
       >
         ×
       </button>

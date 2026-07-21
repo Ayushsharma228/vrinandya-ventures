@@ -19,8 +19,11 @@ import { C }                from "./constants";
 export default function LandingPage() {
   return (
     <div style={{ background: C.navy, minHeight: "100vh" }}>
-      <AnnouncementBar />
-      <Navbar />
+      {/* Single fixed header — announcement bar + navbar stacked, no overlap */}
+      <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50 }}>
+        <AnnouncementBar />
+        <Navbar />
+      </header>
       <main>
         <Hero />
         <StatsBar />
