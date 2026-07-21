@@ -111,7 +111,7 @@ export function ProductCatalogue() {
   const [products, setProducts] = useState<CatalogueProduct[]>(FALLBACK);
 
   useEffect(() => {
-    fetch("/api/catalogue")
+    fetch("/api/catalogue?limit=6")
       .then((r) => r.json())
       .then((data) => {
         if (data.products?.length > 0) setProducts(data.products);
@@ -153,14 +153,14 @@ export function ProductCatalogue() {
 
         <div className="text-center">
           <a
-            href="#apply"
+            href="/catalogue"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-lg text-base font-black transition-all hover:opacity-90 active:scale-95"
             style={{ background: C.gold, color: C.navy, borderRadius: 8 }}
           >
             Browse the full catalogue →
           </a>
           <p className="mt-3 text-xs" style={{ color: C.muted }}>
-            Full catalogue unlocked after applying — free, no commitment.
+            Full catalogue — free, no commitment.
           </p>
         </div>
       </div>
