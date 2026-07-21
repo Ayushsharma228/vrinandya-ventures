@@ -225,11 +225,13 @@ export function ApplyForm() {
   const [category,   setCategory]   = useState<"ds" | "mp" | "bb" | null>(null);
   const [qIndex,     setQIndex]     = useState(0);
   const [answers,    setAnswers]    = useState<string[]>([]);
-  const [name,       setName]       = useState("");
-  const [phone,      setPhone]      = useState("");
-  const [city,       setCity]       = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error,      setError]      = useState("");
+  const [name,          setName]          = useState("");
+  const [phone,         setPhone]         = useState("");
+  const [email,         setEmail]         = useState("");
+  const [city,          setCity]          = useState("");
+  const [timeToContact, setTimeToContact] = useState("");
+  const [submitting,    setSubmitting]    = useState(false);
+  const [error,         setError]         = useState("");
 
   // Progress: category(0) → Q1-Q6(1-6) → contact(7) → done
   const totalSteps = 8;
@@ -287,7 +289,9 @@ export function ApplyForm() {
         body: JSON.stringify({
           name,
           phone,
+          email,
           city,
+          timeToContact,
           category: category === "ds" ? "Dropshipping"
                   : category === "mp" ? "Marketplace Management"
                   : "Brand Building",
@@ -486,9 +490,10 @@ export function ApplyForm() {
                   )}
                   <div className="space-y-4">
                     {[
-                      { label: "Full Name *",       val: name,  set: setName,  type: "text", placeholder: "e.g. Rahul Sharma" },
-                      { label: "WhatsApp Number *", val: phone, set: setPhone, type: "tel",  placeholder: "10-digit mobile number" },
-                      { label: "City",              val: city,  set: setCity,  type: "text", placeholder: "e.g. Surat" },
+                      { label: "Full Name *",       val: name,  set: setName,  type: "text",  placeholder: "e.g. Rahul Sharma" },
+                      { label: "WhatsApp Number *", val: phone, set: setPhone, type: "tel",   placeholder: "10-digit mobile number" },
+                      { label: "Email Address",     val: email, set: setEmail, type: "email", placeholder: "e.g. rahul@gmail.com" },
+                      { label: "City",              val: city,  set: setCity,  type: "text",  placeholder: "e.g. Surat" },
                     ].map((f) => (
                       <div key={f.label}>
                         <label
@@ -508,11 +513,49 @@ export function ApplyForm() {
                             border:     `1px solid ${C.border}`,
                             color:      C.heading,
                           }}
-                          onFocus={(e)  => (e.currentTarget.style.borderColor = C.gold)}
-                          onBlur={(e)   => (e.currentTarget.style.borderColor = C.border)}
+                          onFocus={(e) => (e.currentTarget.style.borderColor = C.gold)}
+                          onBlur={(e)  => (e.currentTarget.style.borderColor = C.border)}
                         />
                       </div>
                     ))}
+
+                    {/* Best time to contact */}
+                    <div>
+                      <label
+                        className="block text-xs font-bold mb-2"
+                        style={{ color: C.body }}
+                      >
+                        Best time to contact you
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { emoji: "🌅", label: "Morning",   sub: "9 AM – 12 PM" },
+                          { emoji: "☀️", label: "Afternoon", sub: "12 PM – 3 PM" },
+                          { emoji: "🌇", label: "Evening",   sub: "3 PM – 6 PM" },
+                          { emoji: "🌙", label: "Night",     sub: "6 PM – 9 PM" },
+                        ].map((t) => (
+                          <button
+                            key={t.label}
+                            type="button"
+                            onClick={() => setTimeToContact(t.label)}
+                            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-left transition-all"
+                            style={{
+                              border:     `1.5px solid ${timeToContact === t.label ? C.gold : C.border}`,
+                              background: timeToContact === t.label ? C.goldDim : C.navy,
+                              color:      timeToContact === t.label ? C.gold : C.heading,
+                            }}
+                          >
+                            <span>{t.emoji}</span>
+                            <div>
+                              <p className="text-xs font-semibold leading-none">{t.label}</p>
+                              <p className="text-[10px] mt-0.5" style={{ color: timeToContact === t.label ? C.gold : C.muted }}>
+                                {t.sub}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
                     <button
                       onClick={handleSubmit}

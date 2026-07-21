@@ -6,12 +6,14 @@ type QA = { q: string; a: string };
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, phone, city, category, answers } = body as {
-      name:     string;
-      phone:    string;
-      city?:    string;
-      category?: string;
-      answers?:  QA[];
+    const { name, phone, email, city, timeToContact, category, answers } = body as {
+      name:           string;
+      phone:          string;
+      email?:         string;
+      city?:          string;
+      timeToContact?: string;
+      category?:      string;
+      answers?:       QA[];
     };
 
     if (!name?.trim() || !phone?.trim()) {
@@ -19,8 +21,10 @@ export async function POST(req: NextRequest) {
     }
 
     const noteLines: string[] = [];
-    if (category)       noteLines.push(`Service: ${category}`);
-    if (city?.trim())   noteLines.push(`City: ${city.trim()}`);
+    if (category)             noteLines.push(`Service: ${category}`);
+    if (city?.trim())         noteLines.push(`City: ${city.trim()}`);
+    if (email?.trim())        noteLines.push(`Email: ${email.trim()}`);
+    if (timeToContact?.trim()) noteLines.push(`Best time to call: ${timeToContact}`);
     if (answers?.length) {
       answers.forEach(({ q, a }) => {
         if (a) noteLines.push(`${q}: ${a}`);
@@ -60,7 +64,7 @@ export async function POST(req: NextRequest) {
         type:    "LISTING_REQUEST",
         title:   "New Website Lead",
         message: `${name.trim()} (${phone.trim()}) applied via the website${preview ? ` — ${preview}` : ""}.`,
-        data:    { phone: phone.trim(), category, plan, city, answers },
+        data:    { phone: phone.trim(), category, plan, email, city, timeToContact, answers },
       },
     }).catch(() => {});
 
