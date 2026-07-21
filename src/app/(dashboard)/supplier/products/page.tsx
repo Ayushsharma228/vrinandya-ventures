@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Plus, Package, Clock, CheckCircle, XCircle } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
+import { CsvImport } from "./CsvImport";
 
 export default async function MyProductsPage() {
   const session = await getServerSession(authOptions);
@@ -34,13 +35,16 @@ export default async function MyProductsPage() {
         title="My Products"
         subtitle="Manage your submitted products"
         actions={
-          <Link
-            href="/supplier/products/new"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-            style={{ background: "var(--green-500)" }}
-          >
-            <Plus className="w-4 h-4" /> Add Product
-          </Link>
+          <div className="flex items-center gap-3">
+            <CsvImport />
+            <Link
+              href="/supplier/products/new"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+              style={{ background: "var(--green-500)" }}
+            >
+              <Plus className="w-4 h-4" /> Add Product
+            </Link>
+          </div>
         }
         cards={
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
