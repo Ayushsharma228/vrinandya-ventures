@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import {
   FileText, Building2, Landmark, ShieldCheck, CheckCircle2,
   ChevronRight, ChevronLeft, Zap, TrendingUp, Crown, Upload,
-  Loader2, Check, ArrowRight, Sparkles, CreditCard, Lock,
+  Loader2, Check, ArrowRight, Sparkles,
 } from "lucide-react";
 
 // ─── Plan display data ────────────────────────────────────────────────────────
@@ -17,55 +17,21 @@ function Store(props: React.SVGProps<SVGSVGElement>) {
 }
 
 const PLAN_META: Record<string, { label: string; color: string; bg: string; icon: React.ElementType; price: string }> = {
-  STARTER:      { label: "Starter",      color: "#3B82F6", bg: "#EFF6FF", icon: Zap,        price: "₹5,000/mo" },
-  GROWTH:       { label: "Growth",       color: "#7C3AED", bg: "#F5F3FF", icon: TrendingUp,  price: "₹15,000/mo" },
-  PRO:          { label: "Pro",          color: "#4361EE", bg: "#EEF2FF", icon: Crown,       price: "₹30,000/mo" },
-  BASIC:        { label: "Basic",        color: "#3B82F6", bg: "#EFF6FF", icon: Zap,        price: "₹15,000/mo" },
-  STANDARD:     { label: "Standard",     color: "#7C3AED", bg: "#F5F3FF", icon: TrendingUp,  price: "₹25,000/mo" },
-  PREMIUM:      { label: "Premium",      color: "#4361EE", bg: "#EEF2FF", icon: Crown,       price: "₹30,000/mo" },
-  DROPSHIPPING: { label: "Dropshipping", color: "#4361EE", bg: "#EEF2FF", icon: Zap,        price: "" },
+  STARTER:      { label: "Starter",      color: "#3B82F6", bg: "#EFF6FF", icon: Zap,        price: "₹10,000" },
+  GROWTH:       { label: "Growth",       color: "#7C3AED", bg: "#F5F3FF", icon: TrendingUp,  price: "₹25,000" },
+  SCALE:        { label: "Scale",        color: "#4361EE", bg: "#EEF2FF", icon: Crown,       price: "₹50,000" },
   MARKETPLACE:  { label: "Marketplace",  color: "#7C3AED", bg: "#F5F3FF", icon: Store,       price: "" },
-  // New tiers from landing page
-  LAUNCH:       { label: "Launch",       color: "#4361EE", bg: "#EEF2FF", icon: Zap,        price: "₹25,000" },
-  SCALE:        { label: "Scale",        color: "#7C3AED", bg: "#F5F3FF", icon: TrendingUp,  price: "₹35,000" },
-  ENTERPRISE:   { label: "Enterprise",   color: "#D4AF37", bg: "#FFFBEB", icon: Crown,       price: "₹50,000" },
-};
-
-// Display label for plan payment amounts
-const TIER_DISPLAY: Record<string, string> = {
-  launch:     "₹25,000",
-  scale:      "₹35,000",
-  enterprise: "₹50,000",
+  DROPSHIPPING: { label: "Dropshipping", color: "#4361EE", bg: "#EEF2FF", icon: Zap,        price: "" },
 };
 
 // ─── Steps ────────────────────────────────────────────────────────────────────
 
 const STEPS = [
   { id: "agreement", label: "Agreement",    icon: FileText    },
-  { id: "payment",   label: "Payment",      icon: CreditCard  },
   { id: "business",  label: "Business",     icon: Building2   },
   { id: "bank",      label: "Bank Account", icon: Landmark    },
   { id: "kyc",       label: "KYC",          icon: ShieldCheck },
 ];
-
-// ─── Razorpay global type ─────────────────────────────────────────────────────
-
-declare global {
-  interface Window {
-    Razorpay: new (opts: Record<string, unknown>) => { open(): void };
-  }
-}
-
-function loadRazorpay(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (typeof window !== "undefined" && window.Razorpay) { resolve(true); return; }
-    const s = document.createElement("script");
-    s.src = "https://checkout.razorpay.com/v1/checkout.js";
-    s.onload  = () => resolve(true);
-    s.onerror = () => resolve(false);
-    document.body.appendChild(s);
-  });
-}
 
 // ─── Terms ────────────────────────────────────────────────────────────────────
 
@@ -178,17 +144,15 @@ export default function OnboardingPage() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
 
-  const [step,    setStep]    = useState(0);
-  const [saving,  setSaving]  = useState(false);
-  const [error,   setError]   = useState("");
-  const [done,    setDone]    = useState(false);
+  const [step,   setStep]   = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [error,  setError]  = useState("");
+  const [done,   setDone]   = useState(false);
 
   // Seller info
-  const [sellerName,       setSellerName]       = useState("");
-  const [plan,             setPlan]             = useState("");
-  const [planTier,         setPlanTier]         = useState("");
-  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
-  const [payingNow,        setPayingNow]        = useState(false);
+  const [sellerName, setSellerName] = useState("");
+  const [plan,       setPlan]       = useState("");
+  const [planTier,   setPlanTier]   = useState("");
 
   // Step fields
   const [agreed,    setAgreed]    = useState(false);
@@ -200,19 +164,6 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/login?zone=seller");
   }, [status, router]);
-
-  // Handle return from Razorpay redirect
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("payment") === "success") {
-      setPaymentConfirmed(true);
-      setStep(2);
-      window.history.replaceState({}, "", "/onboarding");
-    } else if (params.get("payment") === "failed") {
-      setError("Payment failed or was cancelled. Please try again.");
-      window.history.replaceState({}, "", "/onboarding");
-    }
-  }, []);
 
   useEffect(() => {
     fetch("/api/seller/onboarding")
@@ -233,13 +184,11 @@ export default function OnboardingPage() {
         if (d.bankIfsc)        setBank((b) => ({ ...b, bankIfsc:    d.bankIfsc }));
         if (d.aadhaarNumber)   setKyc((k) => ({ ...k, aadhaarNumber: d.aadhaarNumber }));
         if (d.agreementAccepted) setAgreed(true);
-        // Resume past payment step if already paid
-        if (d.paymentConfirmed) {
-          setPaymentConfirmed(true);
-          if (d.agreementAccepted) setStep(2);
-        } else if (d.agreementAccepted) {
-          setStep(1); // go straight to payment
-        }
+
+        // Resume to the furthest incomplete step
+        if (d.bankAccount && d.agreementAccepted) setStep(3);       // past bank → KYC
+        else if (d.businessName && d.agreementAccepted) setStep(2); // past business → bank
+        else if (d.agreementAccepted) setStep(1);                   // past agreement → business
       })
       .catch(() => {});
   }, []);
@@ -269,39 +218,6 @@ export default function OnboardingPage() {
     setUploading(false);
   }
 
-  async function handlePayNow() {
-    setPayingNow(true); setError("");
-    try {
-      const res  = await fetch("/api/payments/create-order", { method: "POST" });
-      let data: Record<string, unknown> = {};
-      try { data = await res.json(); } catch { /* non-JSON response */ }
-      if (!res.ok) { setError((data.error as string) ?? `Server error ${res.status}. Check console.`); setPayingNow(false); return; }
-
-      const loaded = await loadRazorpay();
-      if (!loaded) { setError("Could not load payment gateway. Please check your connection."); setPayingNow(false); return; }
-
-      const rzp = new window.Razorpay({
-        key:              data.key,
-        amount:           data.amount,
-        currency:         data.currency,
-        order_id:         data.orderId,
-        name:             "Axiqen",
-        description:      `${data.tierLabel} Plan Setup Fee`,
-        prefill:          { name: data.name, email: data.email },
-        theme:            { color: "#4361EE" },
-        remember_customer: false,
-        // Redirect mode — opens Razorpay's hosted page (shows all payment methods)
-        redirect:         true,
-        callback_url:     `${window.location.origin}/api/payments/callback`,
-      });
-      rzp.open();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
-      setError(msg);
-      setPayingNow(false);
-    }
-  }
-
   async function handleNext() {
     setError("");
     if (step === 0) {
@@ -309,19 +225,19 @@ export default function OnboardingPage() {
       const ok = await save({ agreed: true }, "agreement");
       if (ok) setStep(1);
     } else if (step === 1) {
-      // Payment handled by handlePayNow — this branch shouldn't normally be hit
-      if (!paymentConfirmed) { setError("Please complete payment to continue."); return; }
-      setStep(2);
-    } else if (step === 2) {
       const ok = await save(business, "business");
-      if (ok) setStep(3);
-    } else if (step === 3) {
+      if (ok) {
+        // Generate Razorpay invoice with billing details in background
+        fetch("/api/payments/invoice", { method: "POST" }).catch(() => {});
+        setStep(2);
+      }
+    } else if (step === 2) {
       if (!bank.bankHolder || !bank.bankAccount || !bank.bankIfsc) {
         setError("Account holder, account number, and IFSC are required."); return;
       }
       const ok = await save(bank, "bank");
-      if (ok) setStep(4);
-    } else if (step === 4) {
+      if (ok) setStep(3);
+    } else if (step === 3) {
       if (!kyc.aadhaarNumber) { setError("Aadhaar number is required."); return; }
       const ok = await save(kyc, "kyc");
       if (ok) {
@@ -335,7 +251,6 @@ export default function OnboardingPage() {
   const planMeta = PLAN_META[planKey] ?? null;
   const PlanIcon = planMeta?.icon ?? Sparkles;
   const firstName = (session?.user?.name ?? sellerName ?? "there").split(" ")[0];
-  const tierDisplay = TIER_DISPLAY[(planTier || "Launch").toLowerCase()] ?? "₹25,000";
 
   if (status === "loading") {
     return (
@@ -493,70 +408,8 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* ── Step 1: Payment ────────────────────────────────────────────── */}
+        {/* ── Step 1: Business Details ───────────────────────────────────── */}
         {step === 1 && (
-          <div className="space-y-5">
-            {paymentConfirmed ? (
-              <div className="flex items-center gap-3 px-4 py-4 rounded-xl"
-                style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)" }}>
-                <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-green-500" />
-                <div>
-                  <p className="text-sm font-semibold text-green-700">Payment confirmed!</p>
-                  <p className="text-xs text-green-600">Your setup fee has been received. Continue to fill in your details.</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Plan summary card */}
-                <div className="rounded-xl p-5 text-center"
-                  style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>
-                    Setup Fee
-                  </p>
-                  <p className="text-4xl font-black mb-1" style={{ color: "var(--text-primary)" }}>
-                    {tierDisplay}
-                  </p>
-                  <p className="text-sm font-semibold mb-0.5" style={{ color: "var(--accent)" }}>
-                    {planTier || "Launch"} Plan
-                  </p>
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                    One-time · No monthly charges · Platform fee per fulfilled order
-                  </p>
-                </div>
-
-                {/* Trust points */}
-                <div className="space-y-2">
-                  {[
-                    "Secured by Razorpay — UPI, cards, net banking accepted",
-                    "Instant payment confirmation",
-                    "Receipt sent to your registered email",
-                  ].map((t) => (
-                    <div key={t} className="flex items-center gap-2.5 text-sm" style={{ color: "var(--text-secondary)" }}>
-                      <Lock className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--accent)" }} />
-                      {t}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Pay button */}
-                <button
-                  onClick={handlePayNow}
-                  disabled={payingNow}
-                  className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-sm font-bold text-white disabled:opacity-60 transition-opacity"
-                  style={{ background: "var(--accent)" }}
-                >
-                  {payingNow
-                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening payment...</>
-                    : <><CreditCard className="w-4 h-4" /> Pay {tierDisplay} Now</>
-                  }
-                </button>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* ── Step 2: Business Details ───────────────────────────────────── */}
-        {step === 2 && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <Field label="Brand Name">
@@ -583,8 +436,8 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* ── Step 3: Bank Account ───────────────────────────────────────── */}
-        {step === 3 && (
+        {/* ── Step 2: Bank Account ───────────────────────────────────────── */}
+        {step === 2 && (
           <div className="space-y-4">
             <div className="px-4 py-3 rounded-xl text-xs" style={{ background: "rgba(67,97,238,0.06)", color: "var(--text-secondary)", border: "1px solid rgba(67,97,238,0.15)" }}>
               Your bank details are used solely for settlement payouts. All data is encrypted and secure.
@@ -604,8 +457,8 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* ── Step 4: KYC ───────────────────────────────────────────────── */}
-        {step === 4 && (
+        {/* ── Step 3: KYC ───────────────────────────────────────────────── */}
+        {step === 3 && (
           <div className="space-y-4">
             <div className="px-4 py-3 rounded-xl text-xs" style={{ background: "rgba(67,97,238,0.06)", color: "var(--text-secondary)", border: "1px solid rgba(67,97,238,0.15)" }}>
               KYC is required to comply with Indian regulations. Your documents are stored securely and never shared.
@@ -648,30 +501,28 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* Navigation — hidden on payment step when payment not done */}
-        {(step !== 1 || paymentConfirmed) && (
-          <div className="flex items-center justify-between mt-8 pt-5" style={{ borderTop: "1px solid var(--border)" }}>
-            <button
-              onClick={() => { setError(""); setStep((s) => s - 1); }}
-              disabled={step === 0}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-30"
-              style={{ color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
-              <ChevronLeft className="w-4 h-4" /> Back
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={saving || uploading}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
-              style={{ background: "var(--accent)" }}>
-              {saving
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
-                : step === STEPS.length - 1
-                ? <><Check className="w-4 h-4" /> Complete Onboarding</>
-                : <>Continue <ChevronRight className="w-4 h-4" /></>
-              }
-            </button>
-          </div>
-        )}
+        {/* Navigation */}
+        <div className="flex items-center justify-between mt-8 pt-5" style={{ borderTop: "1px solid var(--border)" }}>
+          <button
+            onClick={() => { setError(""); setStep((s) => s - 1); }}
+            disabled={step === 0}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-30"
+            style={{ color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
+            <ChevronLeft className="w-4 h-4" /> Back
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={saving || uploading}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+            style={{ background: "var(--accent)" }}>
+            {saving
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+              : step === STEPS.length - 1
+              ? <><Check className="w-4 h-4" /> Complete Onboarding</>
+              : <>Continue <ChevronRight className="w-4 h-4" /></>
+            }
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-4 mt-6 text-xs" style={{ color: "var(--text-muted)" }}>

@@ -9,6 +9,12 @@ import {
   Zap, TrendingUp, Crown, Loader2,
 } from "lucide-react";
 
+declare global {
+  interface Window {
+    Razorpay: new (opts: Record<string, unknown>) => { open(): void };
+  }
+}
+
 
 const BLUE   = "#0048DF";
 const BLUEDIM = "rgba(0,72,223,0.08)";
