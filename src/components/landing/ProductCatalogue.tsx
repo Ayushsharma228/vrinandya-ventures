@@ -1,54 +1,42 @@
 "use client";
+import { useEffect, useState } from "react";
 import { C } from "./constants";
 import { useInView } from "./useInView";
 
-/* TODO: Replace with real product images and data from your catalog */
-const PRODUCTS = [
-  {
-    name: "Stainless Steel Water Bottle 1L",
-    image: null, // TODO: replace with real image path
-    sellingPrice: 1299,
-    supplierCost: 420,
-    badge: { label: "🔥 Trending", color: C.amber },
-  },
-  {
-    name: "Portable Neck Fan USB Rechargeable",
-    image: null,
-    sellingPrice: 999,
-    supplierCost: 310,
-    badge: { label: "⚡ Fast Dispatch", color: C.indigo },
-  },
-  {
-    name: "Acupressure Foot Mat & Pillow Set",
-    image: null,
-    sellingPrice: 1499,
-    supplierCost: 520,
-    badge: { label: "✅ Low RTO", color: C.green },
-  },
-  {
-    name: "LED Strip Lights 5m Smart RGB",
-    image: null,
-    sellingPrice: 799,
-    supplierCost: 240,
-    badge: { label: "🔥 Trending", color: C.amber },
-  },
-  {
-    name: "Bamboo Wooden Watch Unisex",
-    image: null,
-    sellingPrice: 1799,
-    supplierCost: 580,
-    badge: { label: "⚡ Fast Dispatch", color: C.indigo },
-  },
-  {
-    name: "Car Dashboard Phone Holder 360°",
-    image: null,
-    sellingPrice: 649,
-    supplierCost: 195,
-    badge: { label: "✅ Low RTO", color: C.green },
-  },
+const BADGES = [
+  { label: "🔥 Trending",      color: C.amber  },
+  { label: "⚡ Fast Dispatch", color: C.indigo },
+  { label: "✅ Low RTO",       color: C.green  },
 ];
 
-function ProductCard({ p, locked }: { p: typeof PRODUCTS[0]; locked: boolean }) {
+const FALLBACK = [
+  { id: "1", name: "Stainless Steel Water Bottle 1L",    image: null, sellingPrice: 1299, supplierCost: 420 },
+  { id: "2", name: "Portable Neck Fan USB Rechargeable", image: null, sellingPrice: 999,  supplierCost: 310 },
+  { id: "3", name: "Acupressure Foot Mat & Pillow Set",  image: null, sellingPrice: 1499, supplierCost: 520 },
+  { id: "4", name: "LED Strip Lights 5m Smart RGB",      image: null, sellingPrice: 799,  supplierCost: 240 },
+  { id: "5", name: "Bamboo Wooden Watch Unisex",         image: null, sellingPrice: 1799, supplierCost: 580 },
+  { id: "6", name: "Car Dashboard Phone Holder 360°",   image: null, sellingPrice: 649,  supplierCost: 195 },
+];
+
+type CatalogueProduct = {
+  id:           string;
+  name:         string;
+  image:        string | null;
+  sellingPrice: number;
+  supplierCost: number;
+  category?:    string | null;
+};
+
+function ProductCard({
+  p,
+  locked,
+  badgeIndex,
+}: {
+  p: CatalogueProduct;
+  locked: boolean;
+  badgeIndex: number;
+}) {
+  const badge  = BADGES[badgeIndex % 3];
   const margin = p.sellingPrice - p.supplierCost;
 
   return (
@@ -58,23 +46,29 @@ function ProductCard({ p, locked }: { p: typeof PRODUCTS[0]; locked: boolean }) 
     >
       {/* Product image */}
       <div
-        className="w-full h-44 flex items-center justify-center text-4xl"
+        className="w-full h-44 flex items-center justify-center overflow-hidden"
         style={{ background: "rgba(255,255,255,0.03)", borderBottom: `1px solid ${C.border}` }}
       >
-        {/* TODO: replace with <Image src={p.image} fill alt={p.name} /> */}
-        📦
+        {p.image ? (
+          <img
+            src={p.image}
+            alt={p.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-4xl">📦</span>
+        )}
       </div>
 
       <div className="p-5">
-        {/* Badge */}
         <span
           className="inline-block text-xs font-bold px-2.5 py-1 rounded-full mb-3"
-          style={{ background: `${p.badge.color}20`, color: p.badge.color }}
+          style={{ background: `${badge.color}20`, color: badge.color }}
         >
-          {p.badge.label}
+          {badge.label}
         </span>
 
-        <h3 className="text-sm font-bold mb-4 leading-snug" style={{ color: C.heading }}>
+        <h3 className="text-sm font-bold mb-4 leading-snug line-clamp-2" style={{ color: C.heading }}>
           {p.name}
         </h3>
 
@@ -97,7 +91,6 @@ function ProductCard({ p, locked }: { p: typeof PRODUCTS[0]; locked: boolean }) 
         </div>
       </div>
 
-      {/* Lock overlay on mobile for cards 4-6 */}
       {locked && (
         <div
           className="absolute inset-0 flex flex-col items-center justify-center gap-2 md:hidden"
@@ -115,6 +108,16 @@ function ProductCard({ p, locked }: { p: typeof PRODUCTS[0]; locked: boolean }) 
 
 export function ProductCatalogue() {
   const { ref, inView } = useInView();
+  const [products, setProducts] = useState<CatalogueProduct[]>(FALLBACK);
+
+  useEffect(() => {
+    fetch("/api/catalogue")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.products?.length > 0) setProducts(data.products);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <section
@@ -143,12 +146,11 @@ export function ProductCatalogue() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mb-12">
-          {PRODUCTS.map((p, i) => (
-            <ProductCard key={p.name} p={p} locked={i >= 3} />
+          {products.map((p, i) => (
+            <ProductCard key={p.id} p={p} locked={i >= 3} badgeIndex={i} />
           ))}
         </div>
 
-        {/* CTA — catalogue is gated, drives to apply form */}
         <div className="text-center">
           <a
             href="#apply"
