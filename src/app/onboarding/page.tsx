@@ -1,39 +1,73 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
   FileText, Building2, Landmark, ShieldCheck, CheckCircle2,
   ChevronRight, ChevronLeft, Zap, TrendingUp, Crown, Upload,
-  Loader2, Check, ArrowRight, Sparkles,
+  Loader2, Check, ArrowRight, Sparkles, CreditCard, Lock,
 } from "lucide-react";
 
 // ─── Plan display data ────────────────────────────────────────────────────────
 
-const PLAN_META: Record<string, { label: string; color: string; bg: string; icon: React.ElementType; price: string }> = {
-  STARTER:   { label: "Starter",   color: "#3B82F6", bg: "#EFF6FF", icon: Zap,        price: "₹5,000/mo" },
-  GROWTH:    { label: "Growth",    color: "#7C3AED", bg: "#F5F3FF", icon: TrendingUp,  price: "₹15,000/mo" },
-  PRO:       { label: "Pro",       color: "#4361EE", bg: "#EEF2FF", icon: Crown,       price: "₹30,000/mo" },
-  BASIC:     { label: "Basic",     color: "#3B82F6", bg: "#EFF6FF", icon: Zap,        price: "₹15,000/mo" },
-  STANDARD:  { label: "Standard",  color: "#7C3AED", bg: "#F5F3FF", icon: TrendingUp,  price: "₹25,000/mo" },
-  PREMIUM:   { label: "Premium",   color: "#4361EE", bg: "#EEF2FF", icon: Crown,       price: "₹30,000/mo" },
-  DROPSHIPPING: { label: "Dropshipping", color: "#4361EE", bg: "#EEF2FF", icon: Zap,  price: "" },
-  MARKETPLACE:  { label: "Marketplace", color: "#7C3AED", bg: "#F5F3FF", icon: Store, price: "" },
-};
 function Store(props: React.SVGProps<SVGSVGElement>) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} {...props}><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
 }
 
-// ─── Steps config ─────────────────────────────────────────────────────────────
+const PLAN_META: Record<string, { label: string; color: string; bg: string; icon: React.ElementType; price: string }> = {
+  STARTER:      { label: "Starter",      color: "#3B82F6", bg: "#EFF6FF", icon: Zap,        price: "₹5,000/mo" },
+  GROWTH:       { label: "Growth",       color: "#7C3AED", bg: "#F5F3FF", icon: TrendingUp,  price: "₹15,000/mo" },
+  PRO:          { label: "Pro",          color: "#4361EE", bg: "#EEF2FF", icon: Crown,       price: "₹30,000/mo" },
+  BASIC:        { label: "Basic",        color: "#3B82F6", bg: "#EFF6FF", icon: Zap,        price: "₹15,000/mo" },
+  STANDARD:     { label: "Standard",     color: "#7C3AED", bg: "#F5F3FF", icon: TrendingUp,  price: "₹25,000/mo" },
+  PREMIUM:      { label: "Premium",      color: "#4361EE", bg: "#EEF2FF", icon: Crown,       price: "₹30,000/mo" },
+  DROPSHIPPING: { label: "Dropshipping", color: "#4361EE", bg: "#EEF2FF", icon: Zap,        price: "" },
+  MARKETPLACE:  { label: "Marketplace",  color: "#7C3AED", bg: "#F5F3FF", icon: Store,       price: "" },
+  // New tiers from landing page
+  LAUNCH:       { label: "Launch",       color: "#4361EE", bg: "#EEF2FF", icon: Zap,        price: "₹25,000" },
+  SCALE:        { label: "Scale",        color: "#7C3AED", bg: "#F5F3FF", icon: TrendingUp,  price: "₹35,000" },
+  ENTERPRISE:   { label: "Enterprise",   color: "#D4AF37", bg: "#FFFBEB", icon: Crown,       price: "₹50,000" },
+};
+
+// Display label for plan payment amounts
+const TIER_DISPLAY: Record<string, string> = {
+  launch:     "₹25,000",
+  scale:      "₹35,000",
+  enterprise: "₹50,000",
+};
+
+// ─── Steps ────────────────────────────────────────────────────────────────────
 
 const STEPS = [
-  { id: "agreement", label: "Agreement",       icon: FileText    },
-  { id: "business",  label: "Business",        icon: Building2   },
-  { id: "bank",      label: "Bank Account",    icon: Landmark    },
-  { id: "kyc",       label: "KYC",             icon: ShieldCheck },
+  { id: "agreement", label: "Agreement",    icon: FileText    },
+  { id: "payment",   label: "Payment",      icon: CreditCard  },
+  { id: "business",  label: "Business",     icon: Building2   },
+  { id: "bank",      label: "Bank Account", icon: Landmark    },
+  { id: "kyc",       label: "KYC",          icon: ShieldCheck },
 ];
+
+// ─── Razorpay global type ─────────────────────────────────────────────────────
+
+declare global {
+  interface Window {
+    Razorpay: new (opts: Record<string, unknown>) => { open(): void };
+  }
+}
+
+function loadRazorpay(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window !== "undefined" && window.Razorpay) { resolve(true); return; }
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload  = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+}
+
+// ─── Terms ────────────────────────────────────────────────────────────────────
 
 const TERMS = `VRINANDYA VENTURES PRIVATE LIMITED
 CLIENT SERVICE AGREEMENT
@@ -111,7 +145,7 @@ This Agreement shall be governed by the laws of India. Courts at Agra, Uttar Pra
 
 Email: connect@vrinandyaventures.in | Contact: +91 7060401016`;
 
-// ─── Field component ──────────────────────────────────────────────────────────
+// ─── Shared components ────────────────────────────────────────────────────────
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -150,22 +184,21 @@ export default function OnboardingPage() {
   const [done,    setDone]    = useState(false);
 
   // Seller info
-  const [sellerName,  setSellerName]  = useState("");
-  const [plan,        setPlan]        = useState("");
-  const [planTier,    setPlanTier]    = useState("");
+  const [sellerName,       setSellerName]       = useState("");
+  const [plan,             setPlan]             = useState("");
+  const [planTier,         setPlanTier]         = useState("");
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+  const [payingNow,        setPayingNow]        = useState(false);
 
   // Step fields
-  const [agreed,   setAgreed]   = useState(false);
-  const [business, setBusiness] = useState({ brandName: "", businessName: "", gstNumber: "", phone: "", businessAddress: "", pincode: "" });
-  const [bank,     setBank]     = useState({ bankName: "", bankHolder: "", bankAccount: "", bankIfsc: "" });
-  const [kyc,      setKyc]      = useState({ aadhaarNumber: "", aadhaarDocUrl: "" });
+  const [agreed,    setAgreed]    = useState(false);
+  const [business,  setBusiness]  = useState({ brandName: "", businessName: "", gstNumber: "", phone: "", businessAddress: "", pincode: "" });
+  const [bank,      setBank]      = useState({ bankName: "", bankHolder: "", bankAccount: "", bankIfsc: "" });
+  const [kyc,       setKyc]       = useState({ aadhaarNumber: "", aadhaarDocUrl: "" });
   const [uploading, setUploading] = useState(false);
 
-  // Redirect unauthenticated users to login
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/login?zone=seller");
-    }
+    if (status === "unauthenticated") router.replace("/login?zone=seller");
   }, [status, router]);
 
   useEffect(() => {
@@ -175,23 +208,30 @@ export default function OnboardingPage() {
         setSellerName(d.name ?? "");
         setPlan(d.plan ?? "");
         setPlanTier(d.planTier ?? "");
-        if (d.brandName)       setBusiness((b) => ({ ...b, brandName:    d.brandName }));
-        if (d.businessName)    setBusiness((b) => ({ ...b, businessName: d.businessName }));
-        if (d.gstNumber)       setBusiness((b) => ({ ...b, gstNumber:    d.gstNumber }));
-        if (d.phone)           setBusiness((b) => ({ ...b, phone:        d.phone }));
+        if (d.brandName)       setBusiness((b) => ({ ...b, brandName:       d.brandName }));
+        if (d.businessName)    setBusiness((b) => ({ ...b, businessName:    d.businessName }));
+        if (d.gstNumber)       setBusiness((b) => ({ ...b, gstNumber:       d.gstNumber }));
+        if (d.phone)           setBusiness((b) => ({ ...b, phone:           d.phone }));
         if (d.businessAddress) setBusiness((b) => ({ ...b, businessAddress: d.businessAddress }));
-        if (d.pincode)         setBusiness((b) => ({ ...b, pincode:      d.pincode }));
+        if (d.pincode)         setBusiness((b) => ({ ...b, pincode:         d.pincode }));
         if (d.bankName)        setBank((b) => ({ ...b, bankName:    d.bankName }));
         if (d.bankHolder)      setBank((b) => ({ ...b, bankHolder:  d.bankHolder }));
         if (d.bankAccount)     setBank((b) => ({ ...b, bankAccount: d.bankAccount }));
         if (d.bankIfsc)        setBank((b) => ({ ...b, bankIfsc:    d.bankIfsc }));
         if (d.aadhaarNumber)   setKyc((k) => ({ ...k, aadhaarNumber: d.aadhaarNumber }));
         if (d.agreementAccepted) setAgreed(true);
+        // Resume past payment step if already paid
+        if (d.paymentConfirmed) {
+          setPaymentConfirmed(true);
+          if (d.agreementAccepted) setStep(2);
+        } else if (d.agreementAccepted) {
+          setStep(1); // go straight to payment
+        }
       })
       .catch(() => {});
   }, []);
 
-  async function save(data: Record<string, unknown>, stepName: string): Promise<boolean> {
+  const save = useCallback(async (data: Record<string, unknown>, stepName: string): Promise<boolean> => {
     setSaving(true); setError("");
     const r = await fetch("/api/seller/onboarding", {
       method:  "PATCH",
@@ -202,7 +242,7 @@ export default function OnboardingPage() {
     if (!r.ok) { setError(json.error ?? "Failed to save. Please try again."); setSaving(false); return false; }
     setSaving(false);
     return true;
-  }
+  }, []);
 
   async function handleAadhaarUpload(file: File) {
     setUploading(true);
@@ -216,6 +256,48 @@ export default function OnboardingPage() {
     setUploading(false);
   }
 
+  async function handlePayNow() {
+    setPayingNow(true); setError("");
+    try {
+      const res  = await fetch("/api/payments/create-order", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Could not initiate payment."); setPayingNow(false); return; }
+
+      const loaded = await loadRazorpay();
+      if (!loaded) { setError("Could not load payment gateway. Please check your connection."); setPayingNow(false); return; }
+
+      const rzp = new window.Razorpay({
+        key:         data.key,
+        amount:      data.amount,
+        currency:    data.currency,
+        order_id:    data.orderId,
+        name:        "Axiqen",
+        description: `${data.tierLabel} Plan Setup Fee`,
+        prefill: { name: data.name, email: data.email, contact: data.phone },
+        theme:       { color: "#4361EE" },
+        handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
+          const vRes = await fetch("/api/payments/verify", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify(response),
+          });
+          const vData = await vRes.json();
+          if (!vRes.ok) { setError(vData.error ?? "Payment verification failed."); setPayingNow(false); return; }
+          setPaymentConfirmed(true);
+          setPayingNow(false);
+          setStep(2); // advance to Business step
+        },
+        modal: {
+          ondismiss: () => setPayingNow(false),
+        },
+      });
+      rzp.open();
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setPayingNow(false);
+    }
+  }
+
   async function handleNext() {
     setError("");
     if (step === 0) {
@@ -223,15 +305,19 @@ export default function OnboardingPage() {
       const ok = await save({ agreed: true }, "agreement");
       if (ok) setStep(1);
     } else if (step === 1) {
-      const ok = await save(business, "business");
-      if (ok) setStep(2);
+      // Payment handled by handlePayNow — this branch shouldn't normally be hit
+      if (!paymentConfirmed) { setError("Please complete payment to continue."); return; }
+      setStep(2);
     } else if (step === 2) {
+      const ok = await save(business, "business");
+      if (ok) setStep(3);
+    } else if (step === 3) {
       if (!bank.bankHolder || !bank.bankAccount || !bank.bankIfsc) {
         setError("Account holder, account number, and IFSC are required."); return;
       }
       const ok = await save(bank, "bank");
-      if (ok) setStep(3);
-    } else if (step === 3) {
+      if (ok) setStep(4);
+    } else if (step === 4) {
       if (!kyc.aadhaarNumber) { setError("Aadhaar number is required."); return; }
       const ok = await save(kyc, "kyc");
       if (ok) {
@@ -241,11 +327,12 @@ export default function OnboardingPage() {
     }
   }
 
-  const planMeta = PLAN_META[planTier] ?? PLAN_META[plan] ?? null;
+  const planKey  = (planTier || plan || "").toUpperCase();
+  const planMeta = PLAN_META[planKey] ?? null;
   const PlanIcon = planMeta?.icon ?? Sparkles;
   const firstName = (session?.user?.name ?? sellerName ?? "there").split(" ")[0];
+  const tierDisplay = TIER_DISPLAY[(planTier || "Launch").toLowerCase()] ?? "₹25,000";
 
-  // Session loading spinner
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-page)" }}>
@@ -311,7 +398,7 @@ export default function OnboardingPage() {
         <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-base"
           style={{ background: "var(--accent)" }}>A</div>
         <div>
-          <p className="font-bold text-sm leading-tight" style={{ color: "var(--text-primary)" }}>AXQEN</p>
+          <p className="font-bold text-sm leading-tight" style={{ color: "var(--text-primary)" }}>Axiqen</p>
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>Seller Onboarding</p>
         </div>
       </div>
@@ -329,24 +416,24 @@ export default function OnboardingPage() {
       <div className="w-full max-w-lg mb-6">
         <div className="flex items-center justify-between">
           {STEPS.map((s, i) => {
-            const done    = i < step;
-            const active  = i === step;
-            const Icon    = s.icon;
+            const isDone   = i < step;
+            const isActive = i === step;
+            const Icon     = s.icon;
             return (
               <div key={s.id} className="flex items-center flex-1">
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-9 h-9 rounded-full flex items-center justify-center transition-all"
                     style={{
-                      background: done ? "var(--accent)" : active ? "var(--accent)" : "var(--bg-muted)",
-                      border:     done || active ? "none" : "1.5px solid var(--border)",
+                      background: isDone || isActive ? "var(--accent)" : "var(--bg-muted)",
+                      border:     isDone || isActive ? "none" : "1.5px solid var(--border)",
                     }}>
-                    {done
+                    {isDone
                       ? <Check className="w-4 h-4 text-white" />
-                      : <Icon className="w-4 h-4" style={{ color: active ? "white" : "var(--text-muted)" }} />
+                      : <Icon className="w-4 h-4" style={{ color: isActive ? "white" : "var(--text-muted)" }} />
                     }
                   </div>
                   <span className="text-[10px] font-semibold hidden sm:block"
-                    style={{ color: active || done ? "var(--accent)" : "var(--text-muted)" }}>
+                    style={{ color: isActive || isDone ? "var(--accent)" : "var(--text-muted)" }}>
                     {s.label}
                   </span>
                 </div>
@@ -402,8 +489,70 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* ── Step 1: Business Details ───────────────────────────────────── */}
+        {/* ── Step 1: Payment ────────────────────────────────────────────── */}
         {step === 1 && (
+          <div className="space-y-5">
+            {paymentConfirmed ? (
+              <div className="flex items-center gap-3 px-4 py-4 rounded-xl"
+                style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)" }}>
+                <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-green-500" />
+                <div>
+                  <p className="text-sm font-semibold text-green-700">Payment confirmed!</p>
+                  <p className="text-xs text-green-600">Your setup fee has been received. Continue to fill in your details.</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Plan summary card */}
+                <div className="rounded-xl p-5 text-center"
+                  style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>
+                    Setup Fee
+                  </p>
+                  <p className="text-4xl font-black mb-1" style={{ color: "var(--text-primary)" }}>
+                    {tierDisplay}
+                  </p>
+                  <p className="text-sm font-semibold mb-0.5" style={{ color: "var(--accent)" }}>
+                    {planTier || "Launch"} Plan
+                  </p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    One-time · No monthly charges · Platform fee per fulfilled order
+                  </p>
+                </div>
+
+                {/* Trust points */}
+                <div className="space-y-2">
+                  {[
+                    "Secured by Razorpay — UPI, cards, net banking accepted",
+                    "Instant payment confirmation",
+                    "Receipt sent to your registered email",
+                  ].map((t) => (
+                    <div key={t} className="flex items-center gap-2.5 text-sm" style={{ color: "var(--text-secondary)" }}>
+                      <Lock className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--accent)" }} />
+                      {t}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Pay button */}
+                <button
+                  onClick={handlePayNow}
+                  disabled={payingNow}
+                  className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-sm font-bold text-white disabled:opacity-60 transition-opacity"
+                  style={{ background: "var(--accent)" }}
+                >
+                  {payingNow
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening payment...</>
+                    : <><CreditCard className="w-4 h-4" /> Pay {tierDisplay} Now</>
+                  }
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── Step 2: Business Details ───────────────────────────────────── */}
+        {step === 2 && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <Field label="Brand Name">
@@ -430,8 +579,8 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* ── Step 2: Bank Account ───────────────────────────────────────── */}
-        {step === 2 && (
+        {/* ── Step 3: Bank Account ───────────────────────────────────────── */}
+        {step === 3 && (
           <div className="space-y-4">
             <div className="px-4 py-3 rounded-xl text-xs" style={{ background: "rgba(67,97,238,0.06)", color: "var(--text-secondary)", border: "1px solid rgba(67,97,238,0.15)" }}>
               Your bank details are used solely for settlement payouts. All data is encrypted and secure.
@@ -451,8 +600,8 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* ── Step 3: KYC ───────────────────────────────────────────────── */}
-        {step === 3 && (
+        {/* ── Step 4: KYC ───────────────────────────────────────────────── */}
+        {step === 4 && (
           <div className="space-y-4">
             <div className="px-4 py-3 rounded-xl text-xs" style={{ background: "rgba(67,97,238,0.06)", color: "var(--text-secondary)", border: "1px solid rgba(67,97,238,0.15)" }}>
               KYC is required to comply with Indian regulations. Your documents are stored securely and never shared.
@@ -495,28 +644,30 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between mt-8 pt-5" style={{ borderTop: "1px solid var(--border)" }}>
-          <button
-            onClick={() => { setError(""); setStep((s) => s - 1); }}
-            disabled={step === 0}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-30"
-            style={{ color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
-            <ChevronLeft className="w-4 h-4" /> Back
-          </button>
-          <button
-            onClick={handleNext}
-            disabled={saving || uploading}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
-            style={{ background: "var(--accent)" }}>
-            {saving
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
-              : step === STEPS.length - 1
-              ? <><Check className="w-4 h-4" /> Complete Onboarding</>
-              : <>Continue <ChevronRight className="w-4 h-4" /></>
-            }
-          </button>
-        </div>
+        {/* Navigation — hidden on payment step when payment not done */}
+        {(step !== 1 || paymentConfirmed) && (
+          <div className="flex items-center justify-between mt-8 pt-5" style={{ borderTop: "1px solid var(--border)" }}>
+            <button
+              onClick={() => { setError(""); setStep((s) => s - 1); }}
+              disabled={step === 0}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-30"
+              style={{ color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
+              <ChevronLeft className="w-4 h-4" /> Back
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={saving || uploading}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+              style={{ background: "var(--accent)" }}>
+              {saving
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+                : step === STEPS.length - 1
+                ? <><Check className="w-4 h-4" /> Complete Onboarding</>
+                : <>Continue <ChevronRight className="w-4 h-4" /></>
+              }
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-4 mt-6 text-xs" style={{ color: "var(--text-muted)" }}>

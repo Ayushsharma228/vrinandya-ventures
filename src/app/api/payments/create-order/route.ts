@@ -1,0 +1,52 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import Razorpay from "razorpay";
+
+// Plan amounts in paise (₹ × 100)
+const TIER_AMOUNTS: Record<string, number> = {
+  launch:     2500000,  // ₹25,000
+  scale:      3500000,  // ₹35,000
+  enterprise: 5000000,  // ₹50,000
+};
+
+export async function POST() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "SELLER") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { planTier: true, paymentConfirmed: true, name: true, email: true, phone: true },
+  });
+  if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+  if (user.paymentConfirmed) return NextResponse.json({ error: "Payment already completed" }, { status: 400 });
+
+  const tier  = (user.planTier ?? "Launch").toLowerCase();
+  const amount = TIER_AMOUNTS[tier] ?? TIER_AMOUNTS.launch;
+
+  const razorpay = new Razorpay({
+    key_id:     process.env.RAZORPAY_KEY_ID!,
+    key_secret: process.env.RAZORPAY_KEY_SECRET!,
+  });
+
+  const order = await razorpay.orders.create({
+    amount,
+    currency: "INR",
+    receipt:  `axiqen_${session.user.id.slice(-8)}_${Date.now()}`,
+    notes: { sellerId: session.user.id, planTier: user.planTier ?? "Launch" },
+  });
+
+  return NextResponse.json({
+    orderId:  order.id,
+    amount:   order.amount,
+    currency: order.currency,
+    key:      process.env.RAZORPAY_KEY_ID,
+    tierLabel: user.planTier ?? "Launch",
+    name:     user.name  ?? "Axiqen Seller",
+    email:    user.email ?? "",
+    phone:    user.phone ?? "",
+  });
+}
