@@ -273,8 +273,9 @@ export default function OnboardingPage() {
         order_id:    data.orderId,
         name:        "Axiqen",
         description: `${data.tierLabel} Plan Setup Fee`,
-        prefill: { name: data.name, email: data.email },
-        theme:   { color: "#4361EE" },
+        prefill:           { name: data.name, email: data.email },
+        theme:             { color: "#4361EE" },
+        remember_customer: false,
         handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
           const vRes = await fetch("/api/payments/verify", {
             method:  "POST",
