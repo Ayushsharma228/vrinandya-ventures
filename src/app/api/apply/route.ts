@@ -3,16 +3,17 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, phone, store, budget, niche } = await req.json();
+    const { name, phone, store, budget, timeline, city } = await req.json();
 
     if (!name?.trim() || !phone?.trim()) {
       return NextResponse.json({ error: "Name and phone are required" }, { status: 400 });
     }
 
     const notes = [
-      store  ? `Store: ${store}`   : null,
-      budget ? `Budget: ${budget}` : null,
-      niche  ? `Niche: ${niche}`   : null,
+      store    ? `Store: ${store}`       : null,
+      budget   ? `Budget: ${budget}`     : null,
+      timeline ? `Timeline: ${timeline}` : null,
+      city     ? `City: ${city}`         : null,
     ].filter(Boolean).join(" · ");
 
     const admin = await prisma.user.findFirst({ where: { role: "ADMIN" } });
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
         type: "LISTING_REQUEST",
         title: "New Website Lead",
         message: `${name.trim()} (${phone.trim()}) applied via the website.${notes ? " " + notes : ""}`,
-        data: { phone: phone.trim(), store, budget, niche },
+        data: { phone: phone.trim(), store, budget, timeline, city },
       },
     }).catch(() => {});
 

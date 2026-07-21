@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Playfair_Display, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 
@@ -16,6 +16,12 @@ const playfair = Playfair_Display({
   style: ["normal", "italic"],
 });
 
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "Axiqen",
   description: "Modern Dropshipping & Marketplace Platform",
@@ -27,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable} h-full antialiased`}>
+    <html lang="en" className={`${inter.variable} ${playfair.variable} ${spaceGrotesk.variable} h-full antialiased`}>
       <body className="min-h-full" style={{ fontFamily: "var(--font-inter), Inter, system-ui, sans-serif" }}>
         <Providers>{children}</Providers>
       </body>
