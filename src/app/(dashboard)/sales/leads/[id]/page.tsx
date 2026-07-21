@@ -49,7 +49,24 @@ interface Lead {
   id: string; name: string; email: string | null; phone: string;
   city: string | null; investment: number | null; stage: string;
   isNI: boolean; followUpDate: string | null; notes: string | null;
-  createdAt: string; activities: Activity[];
+  createdAt: string; source: string;
+  businessStage: string | null; recommendedPlan: string | null; timeline: string | null;
+  activities: Activity[];
+}
+
+const SERVICE_STYLE: Record<string, { bg: string; color: string; emoji: string }> = {
+  "Dropshipping":           { bg: "rgba(59,130,246,0.12)", color: "#3B82F6", emoji: "🛒" },
+  "Marketplace Management": { bg: "rgba(5,150,105,0.12)",  color: "#059669", emoji: "🏪" },
+  "Brand Building":         { bg: "rgba(124,58,237,0.12)", color: "#7C3AED", emoji: "🏷️" },
+};
+
+function parseFormQA(raw: string | null): { q: string; a: string }[] {
+  if (!raw) return [];
+  return raw.split(" | ").map(part => {
+    const idx = part.indexOf(": ");
+    if (idx === -1) return null;
+    return { q: part.substring(0, idx).trim(), a: part.substring(idx + 2).trim() };
+  }).filter((x): x is { q: string; a: string } => !!x?.q && !!x?.a);
 }
 
 export default function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -159,20 +176,65 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           {/* Info card */}
           <div className="card p-5 space-y-3">
             <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Lead Info</h2>
+
+            {/* Website application badges */}
+            {lead.businessStage && (() => {
+              const svc = SERVICE_STYLE[lead.businessStage] ?? { bg: "#F3F4F6", color: "#6B7280", emoji: "📋" };
+              return (
+                <div className="rounded-xl p-3 space-y-2" style={{ background: svc.bg }}>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold" style={{ color: svc.color }}>
+                      {svc.emoji} {lead.businessStage}
+                    </span>
+                    {lead.recommendedPlan && (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                        style={{ background: "rgba(0,0,0,0.08)", color: svc.color }}>
+                        {lead.recommendedPlan.split("—")?.[0]?.trim() ?? lead.recommendedPlan}
+                      </span>
+                    )}
+                  </div>
+                  {lead.timeline && (
+                    <p className="text-xs font-medium" style={{ color: svc.color }}>
+                      ⏰ Best time to call: {lead.timeline}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+
             {[
               { label: "Email",      value: lead.email },
               { label: "Phone",      value: lead.phone },
               { label: "City",       value: lead.city },
               { label: "Investment", value: lead.investment ? `₹${lead.investment.toLocaleString("en-IN")}` : null },
-              { label: "Source",     value: "Meta Ads" },
+              { label: "Source",     value: lead.source === "WEBSITE" ? "Website Form" : lead.source === "META_ADS" ? "Meta Ads" : lead.source },
               { label: "Added",      value: new Date(lead.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) },
             ].filter(r => r.value).map(({ label, value }) => (
               <div key={label} className="flex justify-between text-sm">
                 <span style={{ color: "var(--text-400)" }}>{label}</span>
-                <span className="font-medium" style={{ color: "var(--text-900)" }}>{value}</span>
+                <span className="font-medium text-right" style={{ color: "var(--text-900)" }}>{value}</span>
               </div>
             ))}
           </div>
+
+          {/* Website form Q&A */}
+          {lead.source === "WEBSITE" && lead.notes && (() => {
+            const qas = parseFormQA(lead.notes);
+            if (!qas.length) return null;
+            return (
+              <div className="card p-5 space-y-3">
+                <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Application Responses</h2>
+                <div className="space-y-2.5">
+                  {qas.map(({ q, a }, i) => (
+                    <div key={i} className="rounded-lg p-2.5" style={{ background: "var(--bg-muted)" }}>
+                      <p className="text-[11px] font-semibold mb-0.5" style={{ color: "var(--text-400)" }}>{q}</p>
+                      <p className="text-sm font-medium" style={{ color: "var(--text-900)" }}>{a}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Update card */}
           <div className="card p-5 space-y-4">

@@ -20,11 +20,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Name and phone are required" }, { status: 400 });
     }
 
+    const selectedPlan = answers?.[0]?.a ?? null;
+
+    // Store all Q&A in notes for full context
     const noteLines: string[] = [];
-    if (category)             noteLines.push(`Service: ${category}`);
-    if (city?.trim())         noteLines.push(`City: ${city.trim()}`);
-    if (email?.trim())        noteLines.push(`Email: ${email.trim()}`);
-    if (timeToContact?.trim()) noteLines.push(`Best time to call: ${timeToContact}`);
     if (answers?.length) {
       answers.forEach(({ q, a }) => {
         if (a) noteLines.push(`${q}: ${a}`);
@@ -37,26 +36,34 @@ export async function POST(req: NextRequest) {
 
     const existing = await prisma.lead.findFirst({ where: { phone: phone.trim() } });
 
+    const coreData = {
+      name:            name.trim(),
+      email:           email?.trim()        || null,
+      city:            city?.trim()         || null,
+      source:          "WEBSITE",
+      notes:           notes                || null,
+      businessStage:   category             || null,
+      recommendedPlan: selectedPlan         || null,
+      timeline:        timeToContact        || null,
+    };
+
     if (existing) {
       await prisma.lead.update({
         where: { id: existing.id },
-        data:  { name: name.trim(), notes: notes || undefined, source: "WEBSITE" },
+        data:  coreData,
       });
     } else {
       await prisma.lead.create({
         data: {
-          name:        name.trim(),
+          ...coreData,
           phone:       phone.trim(),
           stage:       "LEAD",
-          source:      "WEBSITE",
-          notes:       notes || undefined,
           createdById: admin.id,
         },
       });
     }
 
-    const plan = answers?.[0]?.a ?? "";
-    const preview = [category, plan].filter(Boolean).join(" · ");
+    const preview = [category, selectedPlan].filter(Boolean).join(" · ");
 
     await prisma.notification.create({
       data: {
@@ -64,7 +71,7 @@ export async function POST(req: NextRequest) {
         type:    "LISTING_REQUEST",
         title:   "New Website Lead",
         message: `${name.trim()} (${phone.trim()}) applied via the website${preview ? ` — ${preview}` : ""}.`,
-        data:    { phone: phone.trim(), category, plan, email, city, timeToContact, answers },
+        data:    { phone: phone.trim(), category, plan: selectedPlan, email, city, timeToContact, answers },
       },
     }).catch(() => {});
 

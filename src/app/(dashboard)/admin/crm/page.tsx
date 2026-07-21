@@ -34,9 +34,16 @@ interface PerfStat extends SalesPerson { total: number; paid: number; paidThisMo
 interface Lead {
   id: string; name: string; email: string | null; phone: string;
   city: string | null; investment: number | null; stage: string;
-  isNI: boolean; createdAt: string;
+  isNI: boolean; createdAt: string; source: string;
+  businessStage: string | null; recommendedPlan: string | null; timeline: string | null;
   assignedTo: { id: string; name: string | null } | null;
 }
+
+const SERVICE_STYLE: Record<string, { bg: string; color: string; emoji: string }> = {
+  "Dropshipping":           { bg: "rgba(59,130,246,0.12)", color: "#3B82F6", emoji: "🛒" },
+  "Marketplace Management": { bg: "rgba(5,150,105,0.12)",  color: "#059669", emoji: "🏪" },
+  "Brand Building":         { bg: "rgba(124,58,237,0.12)", color: "#7C3AED", emoji: "🏷️" },
+};
 
 export default function AdminCRMPage() {
   const [tab, setTab] = useState<"leads" | "team">("leads");
@@ -785,6 +792,28 @@ export default function AdminCRMPage() {
                             <div>
                               <p className="font-medium text-sm" style={{ color: "var(--text-900)" }}>{lead.name}</p>
                               {lead.email && <p className="text-xs" style={{ color: "var(--text-400)" }}>{lead.email}</p>}
+                              {lead.businessStage && (() => {
+                                const svc = SERVICE_STYLE[lead.businessStage] ?? { bg: "#F3F4F6", color: "#6B7280", emoji: "📋" };
+                                const planShort = lead.recommendedPlan?.split("—")?.[0]?.trim() ?? lead.recommendedPlan;
+                                return (
+                                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold whitespace-nowrap"
+                                      style={{ background: svc.bg, color: svc.color }}>
+                                      {svc.emoji} {lead.businessStage}
+                                    </span>
+                                    {planShort && (
+                                      <span className="text-[10px] font-medium" style={{ color: "var(--text-500)" }}>
+                                        {planShort}
+                                      </span>
+                                    )}
+                                    {lead.timeline && (
+                                      <span className="text-[10px]" style={{ color: "var(--text-400)" }}>
+                                        ⏰ {lead.timeline}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </div>
                         </td>
