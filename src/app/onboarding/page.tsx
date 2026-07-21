@@ -275,6 +275,24 @@ export default function OnboardingPage() {
         description: `${data.tierLabel} Plan Setup Fee`,
         prefill: { name: data.name, email: data.email, contact: data.phone },
         theme:       { color: "#4361EE" },
+        // Force UPI collect (VPA entry) to show alongside QR
+        config: {
+          display: {
+            blocks: {
+              pay: {
+                name: "Pay via UPI / Card / Net Banking",
+                instruments: [
+                  { method: "upi",        flows: ["collect", "intent", "qr"] },
+                  { method: "card" },
+                  { method: "netbanking" },
+                  { method: "wallet" },
+                ],
+              },
+            },
+            sequence:    ["block.pay"],
+            preferences: { show_default_blocks: false },
+          },
+        },
         handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
           const vRes = await fetch("/api/payments/verify", {
             method:  "POST",
