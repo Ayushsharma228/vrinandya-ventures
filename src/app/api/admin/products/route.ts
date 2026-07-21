@@ -40,6 +40,53 @@ export async function GET(req: NextRequest) {
   }
 }
 
+async function approveOrRejectProduct(
+  productId: string,
+  status: ProductStatus,
+  adminNote: string
+) {
+  const product = await prisma.product.update({
+    where: { id: productId },
+    data: { status, adminNote: adminNote || null },
+    include: { supplier: true },
+  });
+
+  await prisma.notification.create({
+    data: {
+      userId: product.supplierId,
+      type:   status === "APPROVED" ? "PRODUCT_APPROVED" : "PRODUCT_REJECTED",
+      title:  status === "APPROVED" ? "Product Approved!" : "Product Rejected",
+      message: status === "APPROVED"
+        ? `Your product "${product.name}" has been approved and is now live on the platform.`
+        : `Your product "${product.name}" was rejected.${adminNote ? ` Reason: ${adminNote}` : ""}`,
+      data: { productId: product.id },
+    },
+  });
+
+  if (status === "APPROVED") {
+    prisma.listingContent.upsert({
+      where:  { productId: product.id },
+      create: {
+        productId:    product.id,
+        title:        product.name,
+        description:  product.description ?? null,
+        category:     product.category    ?? null,
+        hsn:          product.hsn         ?? null,
+        gstRate:      product.gstRate     ?? null,
+        optimizationScore: computeOptimizationScore({
+          title:       product.name,
+          description: product.description,
+          category:    product.category,
+          hsn:         product.hsn,
+          gstRate:     product.gstRate,
+          imageCount:  product.images?.length ?? 0,
+        }),
+      },
+      update: {},
+    }).catch(() => {});
+  }
+}
+
 export async function PATCH(req: NextRequest) {
   try {
     const session = await getRouteSession(req);
@@ -47,56 +94,28 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { productId, status, adminNote } = await req.json();
+    const body = await req.json();
+    const { status, adminNote = "" } = body as { status: string; adminNote?: string };
 
-    if (!productId || !status) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    if (!status) return NextResponse.json({ error: "Missing status" }, { status: 400 });
+
+    // Bulk: productIds array
+    if (Array.isArray(body.productIds) && body.productIds.length > 0) {
+      await Promise.all(
+        body.productIds.map((id: string) =>
+          approveOrRejectProduct(id, status as ProductStatus, adminNote)
+        )
+      );
+      return NextResponse.json({ message: `${body.productIds.length} products ${status.toLowerCase()}` });
     }
 
-    const product = await prisma.product.update({
-      where: { id: productId },
-      data: { status: status as ProductStatus, adminNote: adminNote || null },
-      include: { supplier: true },
-    });
-
-    // Notify supplier
-    await prisma.notification.create({
-      data: {
-        userId: product.supplierId,
-        type: status === "APPROVED" ? "PRODUCT_APPROVED" : "PRODUCT_REJECTED",
-        title: status === "APPROVED" ? "Product Approved!" : "Product Rejected",
-        message: status === "APPROVED"
-          ? `Your product "${product.name}" has been approved and is now live on the platform.`
-          : `Your product "${product.name}" was rejected. ${adminNote ? `Reason: ${adminNote}` : ""}`,
-        data: { productId: product.id },
-      },
-    });
-
-    // Auto-create ListingContent draft when product is approved
-    if (status === "APPROVED") {
-      prisma.listingContent.upsert({
-        where:  { productId: product.id },
-        create: {
-          productId:    product.id,
-          title:        product.name,
-          description:  product.description ?? null,
-          category:     product.category    ?? null,
-          hsn:          product.hsn         ?? null,
-          gstRate:      product.gstRate     ?? null,
-          optimizationScore: computeOptimizationScore({
-            title:      product.name,
-            description: product.description,
-            category:   product.category,
-            hsn:        product.hsn,
-            gstRate:    product.gstRate,
-            imageCount: product.images?.length ?? 0,
-          }),
-        },
-        update: {},
-      }).catch(() => {});
+    // Single: productId string
+    if (body.productId) {
+      await approveOrRejectProduct(body.productId, status as ProductStatus, adminNote);
+      return NextResponse.json({ message: `Product ${status.toLowerCase()} successfully` });
     }
 
-    return NextResponse.json({ message: `Product ${status.toLowerCase()} successfully` });
+    return NextResponse.json({ error: "Missing productId or productIds" }, { status: 400 });
   } catch (error) {
     console.error("Admin product update error:", error);
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
