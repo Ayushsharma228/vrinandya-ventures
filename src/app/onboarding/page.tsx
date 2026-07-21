@@ -1,17 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
-  FileText, Building2, Landmark, ShieldCheck, CheckCircle2, ChevronRight, ChevronLeft,
+  FileText, Building2, Landmark, ShieldCheck, CheckCircle2,
+  ChevronRight, ChevronLeft, Zap, TrendingUp, Crown, Upload,
+  Loader2, Check, ArrowRight, Sparkles,
 } from "lucide-react";
 
+// ─── Plan display data ────────────────────────────────────────────────────────
+
+const PLAN_META: Record<string, { label: string; color: string; bg: string; icon: React.ElementType; price: string }> = {
+  STARTER:   { label: "Starter",   color: "#3B82F6", bg: "#EFF6FF", icon: Zap,        price: "₹5,000/mo" },
+  GROWTH:    { label: "Growth",    color: "#7C3AED", bg: "#F5F3FF", icon: TrendingUp,  price: "₹15,000/mo" },
+  PRO:       { label: "Pro",       color: "#4361EE", bg: "#EEF2FF", icon: Crown,       price: "₹30,000/mo" },
+  BASIC:     { label: "Basic",     color: "#3B82F6", bg: "#EFF6FF", icon: Zap,        price: "₹15,000/mo" },
+  STANDARD:  { label: "Standard",  color: "#7C3AED", bg: "#F5F3FF", icon: TrendingUp,  price: "₹25,000/mo" },
+  PREMIUM:   { label: "Premium",   color: "#4361EE", bg: "#EEF2FF", icon: Crown,       price: "₹30,000/mo" },
+  DROPSHIPPING: { label: "Dropshipping", color: "#4361EE", bg: "#EEF2FF", icon: Zap,  price: "" },
+  MARKETPLACE:  { label: "Marketplace", color: "#7C3AED", bg: "#F5F3FF", icon: Store, price: "" },
+};
+function Store(props: React.SVGProps<SVGSVGElement>) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} {...props}><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
+}
+
+// ─── Steps config ─────────────────────────────────────────────────────────────
+
 const STEPS = [
-  { label: "Agreement",     icon: FileText },
-  { label: "Business",      icon: Building2 },
-  { label: "Bank Account",  icon: Landmark },
-  { label: "KYC",           icon: ShieldCheck },
+  { id: "agreement", label: "Agreement",       icon: FileText    },
+  { id: "business",  label: "Business",        icon: Building2   },
+  { id: "bank",      label: "Bank Account",    icon: Landmark    },
+  { id: "kyc",       label: "KYC",             icon: ShieldCheck },
 ];
 
 const TERMS = `VRINANDYA VENTURES PRIVATE LIMITED
@@ -62,133 +83,115 @@ CIN: U63112UP2025PTC239392 | GST: 09AALCV7054P1ZD
 
 5. ADVERTISING SPEND (META ADS)
 
-(A) The Client shall be solely and entirely responsible for funding all Meta Ads spend. Ad spend shall be deposited directly into the Client's own Meta Ads account.
+(A) The Client shall be solely and entirely responsible for funding all Meta Ads spend.
 (B) The Company shall not fund, advance, reimburse, or guarantee any ad spend on behalf of the Client.
-(C) The Company shall manage campaigns strictly within the ad spend budget made available by the Client. Scale and outcome are directly linked to the ad spend budget provided.
-(D) The Company shall not be liable for any restriction, suspension, or disabling of the Client's Meta Ads account by Meta.
-
-─────────────────────────────────────────
-
-6. INTELLECTUAL PROPERTY
-
-(A) All creatives, ad copies, campaign strategies, listings, content, and other deliverables developed by the Company shall remain the Company's intellectual property until full payment of the applicable Service Charge is received.
-(B) Upon receipt of full payment, the Client is granted a non-exclusive licence to use such deliverables for the Client's own business purposes.
-
-─────────────────────────────────────────
-
-7. CLIENT RESPONSIBILITIES & APPROVAL TIMELINES
-
-(A) The Client shall provide all inputs required (product details, pricing, brand preferences, images, account access) within 3 days of onboarding and within 3 days of any subsequent request.
-(B) Each deliverable carries a 48-hour approval window. If no response is received within 48 hours, the deliverable shall be deemed approved.
-(C) Delays caused by late approvals, delayed inputs, or non-cooperation of the Client shall not be counted against the Company's delivery timelines and shall not entitle the Client to any refund or compensation.
-(D) The Client shall not make unilateral changes to product pricing, listings, ad account settings, or campaign strategy without prior consultation with the Company.
-
-─────────────────────────────────────────
-
-8. GENERAL PERFORMANCE DISCLAIMER
-
-(A) Save as expressly provided under Clause 9, the Company does not guarantee any specific sales, revenue, ROAS, order volume, follower growth, or other performance outcome under any Plan.
-(B) Performance is influenced by multiple external factors including market conditions, product-market fit, pricing, competition, platform algorithms, and consumer behaviour, all outside the Company's control.
+(C) The Company shall manage campaigns strictly within the ad spend budget made available by the Client.
 
 ─────────────────────────────────────────
 
 9. PROFIT GUARANTEE & REFUND OF SERVICE CHARGE
 
-(A) If, at the end of a continuous ad campaign period of 3 consecutive months, the Client has not achieved a positive Net Profit (as defined in Clause 1(G)), the Company shall refund the Service Charge paid for the corresponding 3-month period.
-(B) This refund is strictly limited to the Service Charge and shall not extend to ad spend, product cost, shipping, platform fees, or any other cost incurred by the Client.
-(C) This guarantee is contingent on Meta Ads campaigns having run continuously throughout the 3-month period. If the period is broken or paused for any reason attributable to the Client, the 3-month period shall be deemed reset.
-(D) This guarantee shall not apply if Net Profit is not achieved due to reasons within the Client's control, including unilateral pricing changes, non-cooperation, product unavailability, or platform account suspension not attributable to the Company.
-(E) Any claim for refund must be raised in writing within 15 days of completion of the relevant 3-month period.
+(A) If, at the end of a continuous ad campaign period of 3 consecutive months, the Client has not achieved a positive Net Profit, the Company shall refund the Service Charge paid for the corresponding 3-month period.
+(B) This refund is strictly limited to the Service Charge and shall not extend to ad spend, product cost, shipping, platform fees, or any other cost.
+(C) This guarantee is contingent on Meta Ads campaigns having run continuously throughout the 3-month period.
 (F) This guarantee may be invoked only once during the term of this Agreement.
-
-─────────────────────────────────────────
-
-10. CONFIDENTIALITY
-
-(A) Each Party agrees to keep confidential all business information, strategies, pricing, account data, and other information disclosed during the course of this engagement.
-(B) The Company shall not disclose the Client's business data, sales data, or account information to any third party, except as required to deliver the Services or as required by law.
-(C) This obligation survives termination or expiry of this Agreement for a period of 2 years.
-
-─────────────────────────────────────────
-
-11. THIRD-PARTY DISCLAIMER
-
-The Company shall not be responsible for any disruption, restriction, suspension, policy change, or loss caused by third-party platforms including Meta, Amazon, Flipkart, Meesho, Shopify, Razorpay, courier/logistics partners, or any other third-party service provider.
-
-─────────────────────────────────────────
-
-12. REPRESENTATIONS & WARRANTIES
-
-(A) The Client represents that all information provided is true, accurate, and lawful.
-(B) The Client represents that it holds valid title to sell the products listed and has all necessary licences, registrations, and regulatory approvals.
-(C) The Client represents that the products, listings, and content do not infringe upon any third-party intellectual property rights, and agrees to indemnify the Company against any claim arising from a breach of this representation.
-
-─────────────────────────────────────────
-
-13. INDEMNIFICATION
-
-The Client shall indemnify, defend, and hold harmless the Company, its directors, officers, and employees from and against any claims, losses, damages, liabilities, penalties, and expenses arising out of any breach of the Client's representations, warranties, or obligations; any intellectual property infringement claim; or any regulatory non-compliance, false representation, or illegal product supplied by the Client.
-
-─────────────────────────────────────────
-
-14. LIMITATION OF LIABILITY
-
-(A) Save in cases of fraud, wilful misconduct, or gross negligence, and save as expressly provided under Clause 9, neither Party shall be liable to the other for any indirect, incidental, or consequential damages.
-(B) The Company's total liability shall not exceed the total Service Charge paid by the Client for the period in which the claim arises.
 
 ─────────────────────────────────────────
 
 15. TERM & TERMINATION
 
-(A) This Agreement shall commence on the Effective Date and continue until terminated in accordance with this Clause.
-(B) Either Party may terminate this Agreement by providing 15 days' prior written notice, subject to any minimum engagement period.
-(C) The Company may terminate with immediate effect in the event of non-payment, abusive conduct, breach of these terms, or misuse of the Company's systems.
-(D) Termination shall not affect rights and obligations accrued prior to the date of termination.
-
-─────────────────────────────────────────
-
-16. FORCE MAJEURE
-
-Neither Party shall be liable for any failure or delay in performance caused by circumstances beyond its reasonable control, including acts of God, natural disasters, war, government action, pandemic, or disruption to platform/logistics networks.
+(A) Either Party may terminate this Agreement by providing 15 days' prior written notice.
+(C) The Company may terminate with immediate effect in the event of non-payment, abusive conduct, or breach of these terms.
 
 ─────────────────────────────────────────
 
 18. GOVERNING LAW & JURISDICTION
 
-This Agreement shall be governed by and construed in accordance with the laws of India. The courts at Agra, Uttar Pradesh shall have exclusive jurisdiction over any matters arising out of or in connection with this Agreement.
-
-─────────────────────────────────────────
-
-19. GENERAL PROVISIONS
-
-(A) ENTIRE AGREEMENT: This Agreement constitutes the entire agreement between the Parties and supersedes all prior discussions, negotiations, and understandings.
-(B) AMENDMENT: This Agreement may only be amended by a written instrument signed by authorised representatives of both Parties.
-(C) INDEPENDENT CONTRACTORS: Nothing in this Agreement creates a partnership, joint venture, or employer-employee relationship between the Parties.
-(D) SEVERABILITY: If any provision is held invalid or unenforceable, the remaining provisions shall continue in full force and effect.
-(E) NOTICES: All notices shall be in writing and delivered via email or registered post.
-(F) WAIVER: No failure or delay by either Party in exercising any right shall operate as a waiver of such right.
+This Agreement shall be governed by the laws of India. Courts at Agra, Uttar Pradesh shall have exclusive jurisdiction.
 
 Email: connect@vrinandyaventures.in | Contact: +91 7060401016`;
 
+// ─── Field component ──────────────────────────────────────────────────────────
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>{label}</label>
+      {children}
+      {hint && <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{hint}</p>}
+    </div>
+  );
+}
+
+function Input({ value, onChange, placeholder, type = "text" }: {
+  value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
+}) {
+  return (
+    <input
+      type={type} value={value} onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full px-3 py-2.5 text-sm rounded-xl outline-none"
+      style={{ background: "var(--bg-muted)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+      onFocus={(e) => { e.currentTarget.style.border = "1.5px solid var(--accent)"; }}
+      onBlur={(e)  => { e.currentTarget.style.border = "1px solid var(--border)"; }}
+    />
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
 export default function OnboardingPage() {
-  const { update } = useSession();
-  const router     = useRouter();
+  const { data: session, status, update } = useSession();
+  const router = useRouter();
 
-  const [step,   setStep]   = useState(0);
-  const [saving, setSaving] = useState(false);
-  const [error,  setError]  = useState("");
+  const [step,    setStep]    = useState(0);
+  const [saving,  setSaving]  = useState(false);
+  const [error,   setError]   = useState("");
+  const [done,    setDone]    = useState(false);
 
+  // Seller info
+  const [sellerName,  setSellerName]  = useState("");
+  const [plan,        setPlan]        = useState("");
+  const [planTier,    setPlanTier]    = useState("");
+
+  // Step fields
   const [agreed,   setAgreed]   = useState(false);
-  const [business, setBusiness] = useState({
-    brandName: "", businessName: "", gstNumber: "", phone: "",
-    businessAddress: "", pincode: "",
-  });
-  const [bank, setBank] = useState({
-    bankName: "", bankHolder: "", bankAccount: "", bankIfsc: "",
-  });
-  const [kyc, setKyc] = useState({ aadhaarNumber: "", aadhaarDocUrl: "" });
+  const [business, setBusiness] = useState({ brandName: "", businessName: "", gstNumber: "", phone: "", businessAddress: "", pincode: "" });
+  const [bank,     setBank]     = useState({ bankName: "", bankHolder: "", bankAccount: "", bankIfsc: "" });
+  const [kyc,      setKyc]      = useState({ aadhaarNumber: "", aadhaarDocUrl: "" });
+  const [uploading, setUploading] = useState(false);
 
-  async function save(data: Record<string, unknown>, stepName: string) {
+  // Redirect unauthenticated users to login
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login?zone=seller");
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    fetch("/api/seller/onboarding")
+      .then((r) => r.json())
+      .then((d) => {
+        setSellerName(d.name ?? "");
+        setPlan(d.plan ?? "");
+        setPlanTier(d.planTier ?? "");
+        if (d.brandName)       setBusiness((b) => ({ ...b, brandName:    d.brandName }));
+        if (d.businessName)    setBusiness((b) => ({ ...b, businessName: d.businessName }));
+        if (d.gstNumber)       setBusiness((b) => ({ ...b, gstNumber:    d.gstNumber }));
+        if (d.phone)           setBusiness((b) => ({ ...b, phone:        d.phone }));
+        if (d.businessAddress) setBusiness((b) => ({ ...b, businessAddress: d.businessAddress }));
+        if (d.pincode)         setBusiness((b) => ({ ...b, pincode:      d.pincode }));
+        if (d.bankName)        setBank((b) => ({ ...b, bankName:    d.bankName }));
+        if (d.bankHolder)      setBank((b) => ({ ...b, bankHolder:  d.bankHolder }));
+        if (d.bankAccount)     setBank((b) => ({ ...b, bankAccount: d.bankAccount }));
+        if (d.bankIfsc)        setBank((b) => ({ ...b, bankIfsc:    d.bankIfsc }));
+        if (d.aadhaarNumber)   setKyc((k) => ({ ...k, aadhaarNumber: d.aadhaarNumber }));
+        if (d.agreementAccepted) setAgreed(true);
+      })
+      .catch(() => {});
+  }, []);
+
+  async function save(data: Record<string, unknown>, stepName: string): Promise<boolean> {
     setSaving(true); setError("");
     const r = await fetch("/api/seller/onboarding", {
       method:  "PATCH",
@@ -196,9 +199,21 @@ export default function OnboardingPage() {
       body:    JSON.stringify({ step: stepName, ...data }),
     });
     const json = await r.json();
-    if (!r.ok) { setError(json.error ?? "Failed to save"); setSaving(false); return false; }
+    if (!r.ok) { setError(json.error ?? "Failed to save. Please try again."); setSaving(false); return false; }
     setSaving(false);
     return true;
+  }
+
+  async function handleAadhaarUpload(file: File) {
+    setUploading(true);
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      const res  = await fetch("/api/upload", { method: "POST", body: form });
+      const data = await res.json() as { url?: string };
+      if (data.url) setKyc((k) => ({ ...k, aadhaarDocUrl: data.url! }));
+    } catch {}
+    setUploading(false);
   }
 
   async function handleNext() {
@@ -207,225 +222,308 @@ export default function OnboardingPage() {
       if (!agreed) { setError("Please accept the agreement to continue."); return; }
       const ok = await save({ agreed: true }, "agreement");
       if (ok) setStep(1);
-
     } else if (step === 1) {
       const ok = await save(business, "business");
       if (ok) setStep(2);
-
     } else if (step === 2) {
       if (!bank.bankHolder || !bank.bankAccount || !bank.bankIfsc) {
-        setError("Account holder, account number, and IFSC are required.");
-        return;
+        setError("Account holder, account number, and IFSC are required."); return;
       }
       const ok = await save(bank, "bank");
       if (ok) setStep(3);
-
     } else if (step === 3) {
       if (!kyc.aadhaarNumber) { setError("Aadhaar number is required."); return; }
       const ok = await save(kyc, "kyc");
       if (ok) {
         await update({ onboardingDone: true });
-        router.push("/seller");
+        setDone(true);
       }
     }
   }
 
-  const Icon = STEPS[step].icon;
+  const planMeta = PLAN_META[planTier] ?? PLAN_META[plan] ?? null;
+  const PlanIcon = planMeta?.icon ?? Sparkles;
+  const firstName = (session?.user?.name ?? sellerName ?? "there").split(" ")[0];
 
+  // Session loading spinner
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-page)" }}>
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--accent)" }} />
+      </div>
+    );
+  }
+
+  // ── Completion screen ──────────────────────────────────────────────────────
+  if (done) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
+        style={{ background: "var(--bg-page)" }}>
+        <div className="w-full max-w-md text-center space-y-6">
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto"
+            style={{ background: "rgba(67,97,238,0.1)" }}>
+            <CheckCircle2 className="w-10 h-10" style={{ color: "var(--accent)" }} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
+              You&apos;re all set, {firstName}!
+            </h1>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              Onboarding complete. Our team is reviewing your details and will activate your account within <strong>24–48 hours</strong>.
+            </p>
+          </div>
+          <div className="rounded-2xl p-5 text-left space-y-3"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>What happens next</p>
+            {[
+              "Our team reviews your KYC documents",
+              "Account gets activated within 24–48 hours",
+              "You'll receive a welcome email with access details",
+              "Connect your Shopify store and start selling",
+            ].map((s, i) => (
+              <div key={i} className="flex items-start gap-3 text-sm" style={{ color: "var(--text-secondary)" }}>
+                <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 text-white"
+                  style={{ background: "var(--accent)" }}>{i + 1}</div>
+                {s}
+              </div>
+            ))}
+          </div>
+          <button onClick={() => router.push("/seller")}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white"
+            style={{ background: "var(--accent)" }}>
+            Go to Dashboard <ArrowRight className="w-4 h-4" />
+          </button>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            Questions? <a href="mailto:connect@vrinandyaventures.in" className="underline" style={{ color: "var(--accent)" }}>connect@vrinandyaventures.in</a>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Main onboarding UI ─────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10"
       style={{ background: "var(--bg-page)" }}>
 
       {/* Logo */}
-      <div className="flex items-center gap-2.5 mb-8">
+      <div className="flex items-center gap-2.5 mb-7">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-base"
-          style={{ background: "#00C67A" }}>V</div>
+          style={{ background: "var(--accent)" }}>A</div>
         <div>
-          <p className="font-bold text-base leading-tight" style={{ color: "var(--text-900)" }}>Vrinandya Ventures</p>
-          <p className="text-xs" style={{ color: "#00C67A" }}>Seller Onboarding</p>
+          <p className="font-bold text-sm leading-tight" style={{ color: "var(--text-primary)" }}>AXQEN</p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>Seller Onboarding</p>
         </div>
       </div>
 
-      {/* Progress bar */}
+      {/* Plan badge */}
+      {planMeta && (
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-6"
+          style={{ background: planMeta.bg, color: planMeta.color, border: `1px solid ${planMeta.color}30` }}>
+          <PlanIcon className="w-4 h-4" />
+          {planMeta.label} Plan{planMeta.price ? ` · ${planMeta.price}` : ""}
+        </div>
+      )}
+
+      {/* Step progress */}
       <div className="w-full max-w-lg mb-6">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between">
           {STEPS.map((s, i) => {
-            const done = i < step;
-            const active = i === step;
+            const done    = i < step;
+            const active  = i === step;
+            const Icon    = s.icon;
             return (
-              <div key={s.label} className="flex flex-col items-center gap-1 flex-1">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all"
-                  style={{
-                    background: done ? "#00C67A" : active ? "var(--bg-sidebar)" : "var(--bg-muted)",
-                    color: done || active ? "white" : "var(--text-400)",
-                    border: active ? "2px solid #00C67A" : "none",
-                  }}>
-                  {done ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
+              <div key={s.id} className="flex items-center flex-1">
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center transition-all"
+                    style={{
+                      background: done ? "var(--accent)" : active ? "var(--accent)" : "var(--bg-muted)",
+                      border:     done || active ? "none" : "1.5px solid var(--border)",
+                    }}>
+                    {done
+                      ? <Check className="w-4 h-4 text-white" />
+                      : <Icon className="w-4 h-4" style={{ color: active ? "white" : "var(--text-muted)" }} />
+                    }
+                  </div>
+                  <span className="text-[10px] font-semibold hidden sm:block"
+                    style={{ color: active || done ? "var(--accent)" : "var(--text-muted)" }}>
+                    {s.label}
+                  </span>
                 </div>
-                <span className="text-xs hidden sm:block" style={{ color: active ? "#00C67A" : "var(--text-400)" }}>
-                  {s.label}
-                </span>
+                {i < STEPS.length - 1 && (
+                  <div className="flex-1 h-0.5 mx-2 mb-4 rounded-full transition-all"
+                    style={{ background: i < step ? "var(--accent)" : "var(--border)" }} />
+                )}
               </div>
             );
           })}
-        </div>
-        <div className="h-1 rounded-full" style={{ background: "var(--border)" }}>
-          <div className="h-1 rounded-full transition-all duration-500"
-            style={{ background: "#00C67A", width: `${(step / (STEPS.length - 1)) * 100}%` }} />
         </div>
       </div>
 
       {/* Card */}
       <div className="w-full max-w-lg rounded-2xl p-7"
-        style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+        style={{ background: "var(--bg-card)", border: "1px solid var(--border)", boxShadow: "0 4px 24px rgba(67,97,238,0.06)" }}>
 
+        {/* Step header */}
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "rgba(0,198,122,0.1)" }}>
-            <Icon className="w-5 h-5" style={{ color: "#00C67A" }} />
+            style={{ background: "rgba(67,97,238,0.1)" }}>
+            {(() => { const Icon = STEPS[step].icon; return <Icon className="w-5 h-5" style={{ color: "var(--accent)" }} />; })()}
           </div>
           <div>
-            <h2 className="text-base font-bold" style={{ color: "var(--text-900)" }}>
-              {STEPS[step].label}
-            </h2>
-            <p className="text-xs" style={{ color: "var(--text-400)" }}>
-              Step {step + 1} of {STEPS.length}
-            </p>
+            <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>{STEPS[step].label}</h2>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>Step {step + 1} of {STEPS.length}</p>
           </div>
         </div>
 
+        {/* Error */}
         {error && (
-          <div className="mb-4 px-3 py-2 rounded-xl text-sm"
+          <div className="mb-5 px-4 py-3 rounded-xl text-sm"
             style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
             {error}
           </div>
         )}
 
-        {/* ── Step 0: Agreement ─────────────────────────────── */}
+        {/* ── Step 0: Agreement ──────────────────────────────────────────── */}
         {step === 0 && (
           <div className="space-y-4">
             <div className="rounded-xl p-4 text-xs leading-relaxed whitespace-pre-line overflow-y-auto"
-              style={{ background: "var(--bg-muted)", color: "var(--text-400)", maxHeight: "200px", border: "1px solid var(--border)" }}>
+              style={{ background: "var(--bg-muted)", color: "var(--text-secondary)", maxHeight: "220px", border: "1px solid var(--border)" }}>
               {TERMS}
             </div>
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded accent-green-500 flex-shrink-0" />
-              <span className="text-sm" style={{ color: "var(--text-900)" }}>
-                I have read and agree to the Vrinandya Ventures Seller Agreement and Terms of Service.
+            <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl transition-colors"
+              style={{ background: agreed ? "rgba(67,97,238,0.05)" : "transparent", border: `1px solid ${agreed ? "var(--accent)" : "var(--border)"}` }}>
+              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5 w-4 h-4 flex-shrink-0 rounded accent-[#4361EE]" />
+              <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+                I have read and agree to the <strong>Vrinandya Ventures Seller Agreement</strong> and Terms of Service.
               </span>
             </label>
           </div>
         )}
 
-        {/* ── Step 1: Business Details ──────────────────────── */}
+        {/* ── Step 1: Business Details ───────────────────────────────────── */}
         {step === 1 && (
-          <div className="space-y-3">
-            {[
-              { label: "Brand Name", key: "brandName", placeholder: "Your store/brand name", required: false },
-              { label: "Legal Business Name", key: "businessName", placeholder: "Registered company name", required: false },
-              { label: "GST Number", key: "gstNumber", placeholder: "22AAAAA0000A1Z5", required: false },
-              { label: "Phone Number", key: "phone", placeholder: "10-digit mobile", required: false },
-              { label: "Business Address", key: "businessAddress", placeholder: "Street, City, State", required: false },
-              { label: "Pincode", key: "pincode", placeholder: "400001", required: false },
-            ].map(({ label, key, placeholder }) => (
-              <div key={key}>
-                <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-400)" }}>
-                  {label}
-                </label>
-                <input
-                  value={business[key as keyof typeof business]}
-                  onChange={e => setBusiness(p => ({ ...p, [key]: e.target.value }))}
-                  placeholder={placeholder}
-                  className="w-full text-sm rounded-xl px-3 py-2 border outline-none"
-                  style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }}
-                />
-              </div>
-            ))}
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Brand Name">
+                <Input value={business.brandName} onChange={(v) => setBusiness((b) => ({ ...b, brandName: v }))} placeholder="e.g. StyleHub" />
+              </Field>
+              <Field label="Business / Company Name">
+                <Input value={business.businessName} onChange={(v) => setBusiness((b) => ({ ...b, businessName: v }))} placeholder="e.g. StyleHub Pvt Ltd" />
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="GST Number" hint="15-digit GSTIN">
+                <Input value={business.gstNumber} onChange={(v) => setBusiness((b) => ({ ...b, gstNumber: v.toUpperCase() }))} placeholder="27AAAAA0000A1Z5" />
+              </Field>
+              <Field label="Phone Number">
+                <Input value={business.phone} onChange={(v) => setBusiness((b) => ({ ...b, phone: v }))} placeholder="+91 98765 43210" type="tel" />
+              </Field>
+            </div>
+            <Field label="Business Address">
+              <Input value={business.businessAddress} onChange={(v) => setBusiness((b) => ({ ...b, businessAddress: v }))} placeholder="Street, City, State" />
+            </Field>
+            <Field label="Pincode">
+              <Input value={business.pincode} onChange={(v) => setBusiness((b) => ({ ...b, pincode: v }))} placeholder="400001" />
+            </Field>
           </div>
         )}
 
-        {/* ── Step 2: Bank Account ──────────────────────────── */}
+        {/* ── Step 2: Bank Account ───────────────────────────────────────── */}
         {step === 2 && (
-          <div className="space-y-3">
-            <p className="text-xs mb-2" style={{ color: "var(--text-400)" }}>
-              Settlement payouts will be sent to this account.
-            </p>
-            {[
-              { label: "Account Holder Name *", key: "bankHolder", placeholder: "Full name as on bank records" },
-              { label: "Account Number *",      key: "bankAccount", placeholder: "Enter account number" },
-              { label: "IFSC Code *",           key: "bankIfsc",    placeholder: "e.g. HDFC0001234" },
-              { label: "Bank Name",             key: "bankName",    placeholder: "e.g. HDFC Bank" },
-            ].map(({ label, key, placeholder }) => (
-              <div key={key}>
-                <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-400)" }}>{label}</label>
-                <input
-                  value={bank[key as keyof typeof bank]}
-                  onChange={e => setBank(p => ({ ...p, [key]: e.target.value }))}
-                  placeholder={placeholder}
-                  className="w-full text-sm rounded-xl px-3 py-2 border outline-none"
-                  style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }}
-                />
-              </div>
-            ))}
+          <div className="space-y-4">
+            <div className="px-4 py-3 rounded-xl text-xs" style={{ background: "rgba(67,97,238,0.06)", color: "var(--text-secondary)", border: "1px solid rgba(67,97,238,0.15)" }}>
+              Your bank details are used solely for settlement payouts. All data is encrypted and secure.
+            </div>
+            <Field label="Bank Name">
+              <Input value={bank.bankName} onChange={(v) => setBank((b) => ({ ...b, bankName: v }))} placeholder="e.g. HDFC Bank, SBI" />
+            </Field>
+            <Field label="Account Holder Name" hint="Must match your bank records exactly">
+              <Input value={bank.bankHolder} onChange={(v) => setBank((b) => ({ ...b, bankHolder: v }))} placeholder="Full name as on bank account" />
+            </Field>
+            <Field label="Account Number">
+              <Input value={bank.bankAccount} onChange={(v) => setBank((b) => ({ ...b, bankAccount: v }))} placeholder="Enter account number" type="password" />
+            </Field>
+            <Field label="IFSC Code" hint="11-character code (e.g. HDFC0001234)">
+              <Input value={bank.bankIfsc} onChange={(v) => setBank((b) => ({ ...b, bankIfsc: v.toUpperCase() }))} placeholder="HDFC0001234" />
+            </Field>
           </div>
         )}
 
-        {/* ── Step 3: KYC ──────────────────────────────────── */}
+        {/* ── Step 3: KYC ───────────────────────────────────────────────── */}
         {step === 3 && (
-          <div className="space-y-3">
-            <div className="px-3 py-2 rounded-xl text-xs" style={{ background: "rgba(0,198,122,0.08)", color: "#15803D" }}>
-              KYC verification is required for payouts above ₹50,000. Our team will review your submission within 24–48 hours.
+          <div className="space-y-4">
+            <div className="px-4 py-3 rounded-xl text-xs" style={{ background: "rgba(67,97,238,0.06)", color: "var(--text-secondary)", border: "1px solid rgba(67,97,238,0.15)" }}>
+              KYC is required to comply with Indian regulations. Your documents are stored securely and never shared.
             </div>
-            <div>
-              <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-400)" }}>Aadhaar Number *</label>
-              <input
-                value={kyc.aadhaarNumber}
-                onChange={e => setKyc(p => ({ ...p, aadhaarNumber: e.target.value.replace(/\D/g, "").slice(0, 12) }))}
-                placeholder="12-digit Aadhaar number"
-                className="w-full text-sm rounded-xl px-3 py-2 border outline-none font-mono"
-                style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-400)" }}>
-                Aadhaar Document URL <span style={{ color: "var(--text-300)" }}>(optional)</span>
-              </label>
-              <input
-                value={kyc.aadhaarDocUrl}
-                onChange={e => setKyc(p => ({ ...p, aadhaarDocUrl: e.target.value }))}
-                placeholder="https://drive.google.com/... or any public link"
-                className="w-full text-sm rounded-xl px-3 py-2 border outline-none"
-                style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }}
-              />
-            </div>
+            <Field label="Aadhaar Number" hint="12-digit Aadhaar number">
+              <Input value={kyc.aadhaarNumber} onChange={(v) => setKyc((k) => ({ ...k, aadhaarNumber: v }))} placeholder="XXXX XXXX XXXX" />
+            </Field>
+            <Field label="Aadhaar Document" hint="Upload a clear photo or scan of your Aadhaar card (front side)">
+              <div>
+                {kyc.aadhaarDocUrl ? (
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
+                    style={{ background: "rgba(67,97,238,0.06)", border: "1px solid rgba(67,97,238,0.2)" }}>
+                    <CheckCircle2 className="w-5 h-5 flex-shrink-0" style={{ color: "var(--accent)" }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Document uploaded</p>
+                      <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{kyc.aadhaarDocUrl}</p>
+                    </div>
+                    <button onClick={() => setKyc((k) => ({ ...k, aadhaarDocUrl: "" }))}
+                      className="text-xs underline flex-shrink-0" style={{ color: "#EF4444" }}>Remove</button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center gap-2 px-4 py-6 rounded-xl cursor-pointer transition-colors"
+                    style={{ background: "var(--bg-muted)", border: "2px dashed var(--border)" }}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleAadhaarUpload(f); }}>
+                    {uploading
+                      ? <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--accent)" }} />
+                      : <Upload className="w-6 h-6" style={{ color: "var(--text-muted)" }} />
+                    }
+                    <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+                      {uploading ? "Uploading..." : "Click to upload or drag & drop"}
+                    </p>
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>JPG, PNG or PDF · Max 5MB</p>
+                    <input type="file" className="hidden" accept="image/*,.pdf"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAadhaarUpload(f); }} />
+                  </label>
+                )}
+              </div>
+            </Field>
           </div>
         )}
 
         {/* Navigation */}
-        <div className="flex items-center justify-between mt-6 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+        <div className="flex items-center justify-between mt-8 pt-5" style={{ borderTop: "1px solid var(--border)" }}>
           <button
-            onClick={() => { setStep(s => s - 1); setError(""); }}
+            onClick={() => { setError(""); setStep((s) => s - 1); }}
             disabled={step === 0}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-30 transition-all"
-            style={{ border: "1px solid var(--border)", color: "var(--text-400)" }}>
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-30"
+            style={{ color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
             <ChevronLeft className="w-4 h-4" /> Back
           </button>
-
           <button
             onClick={handleNext}
-            disabled={saving}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all"
-            style={{ background: "#00C67A" }}>
-            {saving ? "Saving…" : step === STEPS.length - 1 ? "Complete Setup" : "Next"}
-            {!saving && <ChevronRight className="w-4 h-4" />}
+            disabled={saving || uploading}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+            style={{ background: "var(--accent)" }}>
+            {saving
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+              : step === STEPS.length - 1
+              ? <><Check className="w-4 h-4" /> Complete Onboarding</>
+              : <>Continue <ChevronRight className="w-4 h-4" /></>
+            }
           </button>
         </div>
       </div>
 
-      <p className="text-xs mt-4" style={{ color: "var(--text-300)" }}>
-        Your data is encrypted and stored securely.
-      </p>
+      <div className="flex items-center gap-4 mt-6 text-xs" style={{ color: "var(--text-muted)" }}>
+        <span>Need help? <a href="mailto:connect@vrinandyaventures.in" className="underline" style={{ color: "var(--accent)" }}>connect@vrinandyaventures.in</a></span>
+        <span>·</span>
+        <Link href="/login?zone=seller" className="underline" style={{ color: "var(--accent)" }}>Sign in to a different account</Link>
+      </div>
     </div>
   );
 }

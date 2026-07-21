@@ -126,6 +126,12 @@ export default function AdminCRMPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Auto-refresh every 30 seconds so new leads appear without clicking Refresh
+  useEffect(() => {
+    const id = setInterval(fetchData, 30_000);
+    return () => clearInterval(id);
+  }, [fetchData]);
+
   async function handleAddLead(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");

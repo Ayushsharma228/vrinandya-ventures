@@ -152,43 +152,52 @@ export default function SignupPage() {
     setLoading(false);
   }
 
+  async function saveStep(payload: Record<string, unknown>): Promise<boolean> {
+    try {
+      const res = await fetch("/api/onboarding/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.status === 401) {
+        setError("Session expired. Please sign in again.");
+        setLoading(false);
+        return false;
+      }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({ error: "Something went wrong" }));
+        setError(d.error ?? "Something went wrong");
+        setLoading(false);
+        return false;
+      }
+      return true;
+    } catch {
+      setError("Network error. Please try again.");
+      setLoading(false);
+      return false;
+    }
+  }
+
   async function handleService() {
     if (!service) return;
     setError(""); setLoading(true);
-    const res = await fetch("/api/onboarding/save", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ step: "service", service }),
-    });
-    if (!res.ok) { const d = await res.json(); setError(d.error); setLoading(false); return; }
-    setStep(2);
-    setLoading(false);
+    const ok = await saveStep({ step: "service", service });
+    if (ok) { setStep(2); setLoading(false); }
   }
 
   async function handlePlan() {
     if (!planTier) return;
     setError(""); setLoading(true);
-    const res = await fetch("/api/onboarding/save", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ step: "plan", planTier }),
-    });
-    if (!res.ok) { const d = await res.json(); setError(d.error); setLoading(false); return; }
-    setStep(3);
-    setLoading(false);
+    const ok = await saveStep({ step: "plan", planTier });
+    if (ok) { setStep(3); setLoading(false); }
   }
 
   async function handlePayment(e: React.FormEvent) {
     e.preventDefault();
     if (!paymentRef.trim()) { setError("Enter your payment reference / UTR number"); return; }
     setError(""); setLoading(true);
-    const res = await fetch("/api/onboarding/save", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ step: "payment", paymentReference: paymentRef }),
-    });
-    if (!res.ok) { const d = await res.json(); setError(d.error); setLoading(false); return; }
-    router.push("/onboarding");
+    const ok = await saveStep({ step: "payment", paymentReference: paymentRef });
+    if (ok) router.push("/onboarding");
   }
 
   const selectedPlan = service ? PLANS[service].find((p) => p.tier === planTier) : null;
@@ -226,7 +235,10 @@ export default function SignupPage() {
           {error && (
             <div className="mb-5 px-4 py-3 rounded-xl text-sm font-medium"
               style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", color: "#FCA5A5" }}>
-              {error}
+              {error}{" "}
+              {(error.includes("sign in") || error.includes("Session")) && (
+                <Link href="/login?zone=seller" className="underline font-bold">Sign in here →</Link>
+              )}
             </div>
           )}
 
@@ -294,6 +306,14 @@ export default function SignupPage() {
                 <Link href="/login?zone=seller" className="text-green-400 hover:text-green-300">Sign in</Link>
               </p>
             </form>
+          )}
+
+          {/* Login link for all other steps */}
+          {step > 0 && (
+            <p className="text-center text-xs mt-5 pt-5" style={{ color: "rgba(255,255,255,0.3)", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+              Already have an account?{" "}
+              <Link href="/login?zone=seller" className="text-green-400 hover:text-green-300">Sign in</Link>
+            </p>
           )}
 
           {/* ── Step 1: Service ── */}

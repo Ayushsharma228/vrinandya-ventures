@@ -65,6 +65,19 @@ export default function SellerOrdersPage() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
+  // Silent Shopify sync on mount, then every 2 minutes
+  useEffect(() => {
+    const syncSilently = () =>
+      fetch("/api/seller/shopify/sync-orders", { method: "POST" }).catch(() => {});
+
+    syncSilently();
+    const id = setInterval(async () => {
+      await syncSilently();
+      fetchOrders();
+    }, 120_000);
+    return () => clearInterval(id);
+  }, [fetchOrders]);
+
   async function handleRefresh() {
     setRefreshing(true);
     setSyncError("");

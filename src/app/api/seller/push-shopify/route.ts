@@ -12,43 +12,87 @@ export async function POST(req: NextRequest) {
 
     const { productId } = await req.json();
 
-    const [product, shopifyStore] = await Promise.all([
-      prisma.product.findUnique({ where: { id: productId } }),
+    const [product, shopifyStore, alreadyPushed] = await Promise.all([
+      prisma.product.findUnique({
+        where:   { id: productId },
+        include: { variants: true },
+      }),
       prisma.shopifyStore.findUnique({ where: { sellerId: session.user.id } }),
+      prisma.listingRequest.findFirst({
+        where: { sellerId: session.user.id, productId, platform: "SHOPIFY", status: "LISTED" },
+      }),
     ]);
 
     if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
     if (!shopifyStore) {
       return NextResponse.json({ error: "No Shopify store connected. Please connect your store first." }, { status: 400 });
     }
+    if (alreadyPushed) {
+      return NextResponse.json({ message: "Already pushed to Shopify", alreadyPushed: true });
+    }
 
-    // Push to Shopify via API
+    // Build variants: use ProductVariant records if they exist, else fall back to single variant
+    const sellPrice = (product.suggestedPrice ?? product.price).toString();
+    const shopifyVariants = product.variants.length > 0
+      ? product.variants.map((v) => ({
+          option1: v.name,
+          price:   (v.price > 0 ? v.price : product.suggestedPrice ?? product.price).toString(),
+          sku:     v.sku ?? product.sku ?? undefined,
+          inventory_quantity: v.stock,
+        }))
+      : [{ price: sellPrice, sku: product.sku ?? undefined, inventory_quantity: product.stock }];
+
+    const shopifyOptions = product.variants.length > 0
+      ? [{ name: "Variant", values: product.variants.map((v) => v.name) }]
+      : undefined;
+
     const shopifyRes = await fetch(
       `https://${shopifyStore.storeUrl}/admin/api/2025-01/products.json`,
       {
-        method: "POST",
+        method:  "POST",
         headers: {
-          "Content-Type": "application/json",
-          "X-Shopify-Access-Token": decrypt(shopifyStore.accessToken),
+          "Content-Type":            "application/json",
+          "X-Shopify-Access-Token":  decrypt(shopifyStore.accessToken),
         },
         body: JSON.stringify({
           product: {
-            title: product.name,
-            body_html: product.description,
-            vendor: "Axiqen",
-            product_type: product.category || "",
-            variants: [{ price: product.price.toString(), sku: product.sku }],
-            images: product.images.map((src) => ({ src })),
+            title:        product.name,
+            body_html:    product.description ?? "",
+            vendor:       "Axiqen",
+            product_type: product.category ?? "",
+            variants:     shopifyVariants,
+            ...(shopifyOptions ? { options: shopifyOptions } : {}),
+            images:       product.images.map((src) => ({ src })),
           },
         }),
       }
     );
 
     if (!shopifyRes.ok) {
-      const err = await shopifyRes.json();
+      const err = await shopifyRes.json().catch(() => ({}));
       console.error("Shopify error:", err);
-      return NextResponse.json({ error: "Failed to push to Shopify" }, { status: 500 });
+      // Record the failed attempt
+      await prisma.listingRequest.create({
+        data: { sellerId: session.user.id, productId, platform: "SHOPIFY", status: "FAILED" },
+      }).catch(() => {});
+      return NextResponse.json({ error: "Failed to push to Shopify. Check that your store is connected and has API access." }, { status: 500 });
     }
+
+    const shopifyData = await shopifyRes.json() as { product?: { id: number } };
+    const shopifyProductId = String(shopifyData.product?.id ?? "");
+
+    // Record successful push
+    await prisma.listingRequest.create({
+      data: {
+        sellerId:  session.user.id,
+        productId,
+        platform:  "SHOPIFY",
+        status:    "LISTED",
+        listedUrl: shopifyProductId
+          ? `https://${shopifyStore.storeUrl}/admin/products/${shopifyProductId}`
+          : undefined,
+      },
+    }).catch(() => {});
 
     return NextResponse.json({ message: "Product pushed to Shopify successfully" });
   } catch (error) {

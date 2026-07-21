@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
       gstNumber: true, bankName: true, bankHolder: true,
       bankAccount: true, bankIfsc: true, aadhaarNumber: true,
       agreementAccepted: true, kycStatus: true, onboardingDone: true,
+      plan: true, planTier: true,
     },
   });
 
@@ -93,12 +94,32 @@ export async function PATCH(req: NextRequest) {
         kycStatus:     "SUBMITTED",
         onboardingDone: true,
       },
-      select: { name: true, email: true },
+      select: { name: true, email: true, plan: true, planTier: true },
     });
+
+    // Welcome email to seller
     emailOnboardingComplete({
       to:   updated.email,
       name: updated.name ?? "Seller",
     }).catch(() => {});
+
+    // Notify all admins
+    const admins = await prisma.user.findMany({
+      where:  { role: "ADMIN" },
+      select: { id: true },
+    });
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map((a) => ({
+          userId:  a.id,
+          type:    "GENERAL",
+          title:   "New Seller Onboarded",
+          message: `${updated.name ?? "A new seller"} has completed onboarding and submitted KYC. Plan: ${updated.planTier ?? updated.plan ?? "—"}`,
+          data:    { sellerId: session.user.id, sellerEmail: updated.email },
+        })),
+      });
+    }
+
     dispatchEvent({ type: "SELLER_ONBOARDED", entityId: session.user.id, entityType: "SELLER",
                     payload: { sellerId: session.user.id } });
     triggerActivationUpdate();

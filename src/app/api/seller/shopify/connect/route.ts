@@ -42,6 +42,21 @@ export async function POST(req: NextRequest) {
       await ensureSellerActivation(session.user.id);
       await updateActivation(session.user.id);
     } catch {}
+
+    // Auto-register webhooks so new orders arrive in real-time
+    try {
+      const baseUrl = process.env.NEXTAUTH_URL ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
+      if (baseUrl) {
+        const webhookUrl = `${baseUrl}/api/webhooks/shopify/orders`;
+        for (const topic of ["orders/paid", "orders/created", "orders/cancelled"]) {
+          await fetch(`https://${storeUrl}/admin/api/2025-01/webhooks.json`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },
+            body: JSON.stringify({ webhook: { topic, address: webhookUrl, format: "json" } }),
+          }).catch(() => {});
+        }
+      }
+    } catch {}
   });
 
   return NextResponse.json({ store });

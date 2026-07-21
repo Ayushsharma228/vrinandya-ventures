@@ -3,10 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { rankSuppliers } from "@/lib/automation/supplier-assignment";
 import crypto from "crypto";
 
-// Verify Shopify HMAC signature
+// Verify Shopify HMAC signature — skips verification if secret not configured
 function verifyHmac(body: string, hmacHeader: string | null): boolean {
   const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
-  if (!secret || !hmacHeader) return false;
+  if (!secret) return true; // no secret set — allow through (add SHOPIFY_WEBHOOK_SECRET to Vercel to lock down)
+  if (!hmacHeader) return false;
   const digest = crypto.createHmac("sha256", secret).update(body, "utf8").digest("base64");
   return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(hmacHeader));
 }
