@@ -16,35 +16,35 @@ const BLUEBORDER = "rgba(0,72,223,0.25)";
 const PLANS = {
   DROPSHIPPING: [
     {
-      tier: "STARTER", label: "Starter", price: 5000,
-      features: ["Up to 50 products", "Shopify integration", "AWB generation", "Order tracking", "Email support"],
+      tier: "STARTER", label: "Starter", price: 10000,
+      features: ["Premium Shopify Store", "1-Year Domain", "Payment Gateway Setup", "Product Import (Up to 100)", "Winning Product Research", "Basic Training", "30 Days Support"],
       icon: Zap,
     },
     {
-      tier: "GROWTH", label: "Growth", price: 15000, popular: true,
-      features: ["Up to 200 products", "Priority AWB", "Advanced analytics", "WhatsApp updates", "RTO protection", "Priority support"],
+      tier: "GROWTH", label: "Growth", price: 25000, popular: true,
+      features: ["AI Dashboard", "Meta Pixel Setup", "Premium Theme", "Product Optimization", "Supplier Management", "NDR Management", "Free Shipping Setup", "Priority Support"],
       icon: TrendingUp,
     },
     {
-      tier: "PRO", label: "Pro", price: 30000,
-      features: ["Unlimited products", "Dedicated manager", "Custom branding", "Fastest AWB", "Full RTO protection", "Custom integrations", "24/7 support"],
+      tier: "SCALE", label: "Scale", price: 50000,
+      features: ["Dedicated Account Manager", "Unlimited Product Import", "AI Commerce Dashboard", "Priority Operations", "Advanced Analytics", "Custom Branding", "Faster Turnaround"],
       icon: Crown,
     },
   ],
   MARKETPLACE: [
     {
-      tier: "BASIC", label: "Basic", price: 15000,
-      features: ["List on 2 marketplaces", "Admin-managed listings", "Order sync", "AWB tracking", "Email support"],
+      tier: "STARTER", label: "Starter", price: 5000,
+      features: ["Amazon Management", "Flipkart Management", "Meesho Management", "Product Listing (Up to 100)", "Inventory Updates", "Order Monitoring", "Basic Reports"],
       icon: Zap,
     },
     {
-      tier: "STANDARD", label: "Standard", price: 25000, popular: true,
-      features: ["List on 4 marketplaces", "Priority listings", "Advanced analytics", "Dedicated support", "WhatsApp updates", "RTO protection"],
+      tier: "GROWTH", label: "Growth", price: 10000, popular: true,
+      features: ["Catalog Optimization", "SEO Listings", "A+ Content Guidance", "Return Management", "NDR Management", "Priority Support", "Weekly Reports"],
       icon: TrendingUp,
     },
     {
-      tier: "PREMIUM", label: "Premium", price: 30000,
-      features: ["All marketplaces", "Unlimited listings", "Dedicated manager", "Priority AWB", "Full RTO protection", "Custom solutions", "24/7 support"],
+      tier: "SCALE", label: "Scale", price: 20000,
+      features: ["Dedicated Account Manager", "Unlimited Listings", "Brand Registry Support", "Performance Dashboard", "Competitor Analysis", "Buy Box Monitoring"],
       icon: Crown,
     },
   ],
