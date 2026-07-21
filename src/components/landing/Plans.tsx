@@ -286,25 +286,21 @@ type Plan = {
 };
 
 function PlanCard({ plan }: { plan: Plan }) {
+  const onBlue = plan.popular; // text on blue card → white
+
   return (
     <div
       className="rounded-2xl p-7 flex flex-col relative transition-all duration-300 hover:translate-y-[-3px]"
       style={{
-        background: plan.popular
-          ? "linear-gradient(135deg, #1a2350 0%, #131A2E 100%)"
-          : C.card,
-        border: plan.popular
-          ? `1px solid ${C.indigoBorder}`
-          : `1px solid ${C.border}`,
-        boxShadow: plan.popular
-          ? "0 8px 40px rgba(63,55,201,0.15)"
-          : "none",
+        background: plan.popular ? C.gold : C.card,
+        border:     plan.popular ? "none" : `1px solid ${C.border}`,
+        boxShadow:  plan.popular ? "0 8px 40px rgba(0,72,223,0.25)" : "none",
       }}
     >
       {plan.popular && (
         <div
           className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full text-xs font-black whitespace-nowrap"
-          style={{ background: C.gold, color: C.navy }}
+          style={{ background: "#fff", color: C.gold }}
         >
           ★ Most Popular
         </div>
@@ -313,7 +309,7 @@ function PlanCard({ plan }: { plan: Plan }) {
       <div className="mb-5">
         <p
           className="text-sm font-bold mb-2"
-          style={{ color: plan.popular ? C.indigo : C.body }}
+          style={{ color: onBlue ? "rgba(255,255,255,0.75)" : C.body }}
         >
           {plan.name}
         </p>
@@ -321,29 +317,26 @@ function PlanCard({ plan }: { plan: Plan }) {
           <span
             className="text-3xl font-black"
             style={{
-              color: plan.enterprise ? C.indigo : C.gold,
+              color: onBlue ? "#fff" : C.gold,
               fontFamily: "var(--font-space)",
             }}
           >
             {plan.price}
           </span>
-          <span className="text-xs" style={{ color: C.muted }}>
+          <span className="text-xs" style={{ color: onBlue ? "rgba(255,255,255,0.55)" : C.muted }}>
             {plan.billing}
           </span>
         </div>
-        <p className="text-sm mt-2" style={{ color: C.body }}>
+        <p className="text-sm mt-2" style={{ color: onBlue ? "rgba(255,255,255,0.7)" : C.body }}>
           {plan.desc}
         </p>
       </div>
 
       <ul className="space-y-2.5 mb-7 flex-1">
         {plan.features.map((f) => (
-          <li
-            key={f}
-            className="flex items-start gap-2 text-sm"
-            style={{ color: C.heading }}
-          >
-            <span style={{ color: C.green, flexShrink: 0, marginTop: 1 }}>✓</span>
+          <li key={f} className="flex items-start gap-2 text-sm"
+            style={{ color: onBlue ? "#fff" : C.heading }}>
+            <span style={{ color: onBlue ? "rgba(255,255,255,0.8)" : C.green, flexShrink: 0, marginTop: 1 }}>✓</span>
             {f}
           </li>
         ))}
@@ -356,18 +349,10 @@ function PlanCard({ plan }: { plan: Plan }) {
         className="block text-center py-3 rounded-lg text-sm font-black transition-all hover:opacity-90 active:scale-95"
         style={
           plan.popular
-            ? { background: C.gold, color: C.navy }
+            ? { background: "#fff", color: C.gold }
             : plan.enterprise
-            ? {
-                background: C.indigoDim,
-                color: C.indigo,
-                border: `1px solid ${C.indigoBorder}`,
-              }
-            : {
-                background: "transparent",
-                border: `1px solid ${C.borderStrong}`,
-                color: C.heading,
-              }
+            ? { background: C.goldDim, color: C.gold, border: `1px solid ${C.goldBorder}` }
+            : { background: "transparent", border: `1px solid ${C.borderStrong}`, color: C.heading }
         }
       >
         {plan.enterprise ? "Talk to Us →" : "Apply for this Plan →"}
@@ -391,7 +376,7 @@ function Tab({
       onClick={onClick}
       className="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all"
       style={{
-        background: active ? C.indigo : "transparent",
+        background: active ? C.gold : "transparent",
         color: active ? "#fff" : C.body,
         border: active ? "none" : `1px solid ${C.border}`,
       }}
@@ -485,13 +470,13 @@ export function Plans() {
               className="rounded-2xl p-8 md:p-10 flex flex-col md:flex-row md:items-center gap-8"
               style={{
                 background: C.card,
-                border: `1px solid ${C.indigoBorder}`,
+                border: `1px solid ${C.goldBorder}`,
               }}
             >
               <div className="flex-1">
                 <span
                   className="inline-block text-xs font-black px-3 py-1 rounded-full mb-4"
-                  style={{ background: C.indigoDim, color: C.indigo }}
+                  style={{ background: C.goldDim, color: C.gold }}
                 >
                   Fully Managed · End-to-End
                 </span>
@@ -546,7 +531,7 @@ export function Plans() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-block px-6 py-3 rounded-lg text-sm font-black transition-all hover:opacity-90 active:scale-95"
-                  style={{ background: C.indigo, color: "#fff" }}
+                  style={{ background: C.gold, color: "#fff" }}
                 >
                   Book a Brand Discovery Call →
                 </a>
@@ -579,7 +564,7 @@ export function Plans() {
                   >
                     <p
                       className="text-sm font-black mb-3"
-                      style={{ color: C.indigo }}
+                      style={{ color: C.gold }}
                     >
                       {cat.label}
                     </p>
@@ -625,9 +610,9 @@ export function Plans() {
                       key={item}
                       className="text-xs px-3 py-1.5 rounded-full font-semibold"
                       style={{
-                        background: C.indigoDim,
-                        color: C.indigo,
-                        border: `1px solid ${C.indigoBorder}`,
+                        background: C.goldDim,
+                        color: C.gold,
+                        border: `1px solid ${C.goldBorder}`,
                       }}
                     >
                       {item}
