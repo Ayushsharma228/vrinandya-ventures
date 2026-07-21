@@ -6,9 +6,10 @@ import Razorpay from "razorpay";
 
 // Plan amounts in paise (₹ × 100)
 const TIER_AMOUNTS: Record<string, number> = {
-  launch:     2500000,  // ₹25,000
-  scale:      3500000,  // ₹35,000
-  enterprise: 5000000,  // ₹50,000
+  starter:    1000000,  // ₹10,000
+  growth:     2500000,  // ₹25,000
+  scale:      5000000,  // ₹50,000
+  enterprise: 5000000,  // custom — overridden manually
 };
 
 export async function POST() {
@@ -24,8 +25,8 @@ export async function POST() {
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
   if (user.paymentConfirmed) return NextResponse.json({ error: "Payment already completed" }, { status: 400 });
 
-  const tier  = (user.planTier ?? "Launch").toLowerCase();
-  const amount = TIER_AMOUNTS[tier] ?? TIER_AMOUNTS.launch;
+  const tier  = (user.planTier ?? "starter").toLowerCase();
+  const amount = TIER_AMOUNTS[tier] ?? TIER_AMOUNTS.starter;
 
   if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
     return NextResponse.json({ error: "Razorpay keys not configured on server" }, { status: 503 });

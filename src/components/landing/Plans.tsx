@@ -1,58 +1,410 @@
 "use client";
-import { C } from "./constants";
+import { useState } from "react";
+import { C, WA_LINK } from "./constants";
 import { useInView } from "./useInView";
 
-const PLANS = [
+// ── Dropshipping plans ────────────────────────────────────────────────────────
+const DS_PLANS = [
   {
-    name: "Launch",
-    price: "₹25,000",
-    tag: "one-time setup",
-    desc: "For your first store. Everything you need to go from zero to first COD order.",
+    name: "Starter",
+    price: "₹10,000",
+    billing: "+ GST · One-Time",
+    desc: "Perfect for first-time sellers",
     popular: false,
+    enterprise: false,
     features: [
-      "1 Shopify store connected",
-      "Up to 200 orders/month",
-      "Delhivery fulfilment",
-      "Product catalog access",
-      "Basic analytics dashboard",
-      "Email + WhatsApp support",
+      "Premium Shopify Store",
+      "1-Year Domain",
+      "Payment Gateway Setup",
+      "Product Import (Up to 100 Products)",
+      "Winning Product Research",
+      "Supplier Integration",
+      "Order Dashboard Access",
+      "Basic Training",
+      "30 Days Support",
+    ],
+  },
+  {
+    name: "Growth",
+    price: "₹25,000",
+    billing: "+ GST · One-Time",
+    desc: "Everything in Starter, plus:",
+    popular: true,
+    enterprise: false,
+    features: [
+      "AI Dashboard",
+      "Meta Pixel Setup",
+      "Premium Theme",
+      "Product Optimization",
+      "Conversion Optimization",
+      "Supplier Management",
+      "NDR Management",
+      "Free Shipping Setup",
+      "Priority Support",
+      "Realtime Reports",
     ],
   },
   {
     name: "Scale",
-    price: "₹35,000",
-    tag: "one-time setup",
-    desc: "For sellers ready to grow. More stores, more products, a dedicated person watching your business.",
-    popular: true,
+    price: "₹50,000",
+    billing: "+ GST · One-Time",
+    desc: "Everything in Growth, plus:",
+    popular: false,
+    enterprise: false,
     features: [
-      "3 Shopify stores connected",
-      "Unlimited orders",
-      "Priority fulfilment queue",
-      "Full analytics & ROAS tracking",
-      "CRM access for your sales team",
-      "Dedicated account manager",
+      "Dedicated Account Manager",
+      "Unlimited Product Import",
+      "AI Commerce Dashboard",
+      "Priority Operations",
+      "Advanced Analytics",
+      "Team Training",
+      "Custom Branding",
+      "Faster Turnaround",
     ],
   },
   {
     name: "Enterprise",
-    price: "₹50,000",
-    tag: "one-time setup",
-    desc: "For teams running serious volume — custom integrations, multi-brand ops, priority everything.",
+    price: "Custom",
+    billing: "Talk to us",
+    desc: "For high-volume operations",
     popular: false,
+    enterprise: true,
     features: [
-      "Unlimited Shopify stores",
-      "Unlimited orders",
-      "Express fulfilment SLA",
-      "Advanced analytics suite",
-      "Full CRM + sales team access",
-      "Custom API integrations",
-      "Priority support 7 days",
+      "Dedicated Operations Team",
+      "AI Workforce",
+      "Warehouse Integration",
+      "ERP Integration",
+      "Custom Automation",
+      "API Integration",
+      "Multi Store Management",
     ],
   },
 ];
 
+// ── Marketplace plans ─────────────────────────────────────────────────────────
+const MP_PLANS = [
+  {
+    name: "Starter",
+    price: "₹5,000",
+    billing: "+ GST / month",
+    desc: "Perfect for sellers already selling online",
+    popular: false,
+    enterprise: false,
+    features: [
+      "Amazon Management",
+      "Flipkart Management",
+      "Meesho Management",
+      "Product Listing (Up to 100)",
+      "Inventory Updates",
+      "Order Monitoring",
+      "Basic Reports",
+    ],
+  },
+  {
+    name: "Growth",
+    price: "₹10,000",
+    billing: "+ GST / month",
+    desc: "Everything in Starter, plus:",
+    popular: true,
+    enterprise: false,
+    features: [
+      "Catalog Optimization",
+      "SEO Listings",
+      "A+ Content Guidance",
+      "Repricing Support",
+      "Return Management",
+      "NDR Management",
+      "Priority Support",
+      "Weekly Reports",
+    ],
+  },
+  {
+    name: "Scale",
+    price: "₹20,000",
+    billing: "+ GST / month",
+    desc: "Everything in Growth, plus:",
+    popular: false,
+    enterprise: false,
+    features: [
+      "Dedicated Account Manager",
+      "Unlimited Listings",
+      "Brand Registry Support",
+      "Listing Audit",
+      "Performance Dashboard",
+      "Competitor Analysis",
+      "Buy Box Monitoring",
+    ],
+  },
+  {
+    name: "Enterprise",
+    price: "Custom",
+    billing: "Talk to us",
+    desc: "Full-scale marketplace operations",
+    popular: false,
+    enterprise: true,
+    features: [
+      "Multi Marketplace Operations",
+      "Dedicated Team",
+      "AI Operations",
+      "Finance Dashboard",
+      "Supplier Dashboard",
+      "Automation Engine",
+    ],
+  },
+];
+
+// ── Brand Building feature categories ────────────────────────────────────────
+const BB_CATEGORIES = [
+  {
+    label: "Product Development",
+    items: [
+      "Product Research",
+      "Market & Competitor Analysis",
+      "Niche Validation",
+      "Profitability Analysis",
+      "Product Roadmap",
+    ],
+  },
+  {
+    label: "Supplier & Manufacturing",
+    items: [
+      "Manufacturer Sourcing",
+      "Supplier Verification",
+      "Price Negotiation",
+      "MOQ Negotiation",
+      "Quality Assurance",
+      "Sample Coordination",
+    ],
+  },
+  {
+    label: "Brand Identity",
+    items: [
+      "Brand Naming",
+      "Logo Design",
+      "Brand Guidelines",
+      "Color Palette",
+      "Typography",
+      "Brand Story",
+      "Positioning Strategy",
+    ],
+  },
+  {
+    label: "Product Design",
+    items: [
+      "Packaging Design",
+      "Label Design",
+      "Box Design",
+      "Compliance & Barcode Guidance",
+      "Print-Ready Files",
+    ],
+  },
+  {
+    label: "Ecommerce Setup",
+    items: [
+      "Premium Shopify Store",
+      "Domain Setup",
+      "Payment Gateway",
+      "Shipping Setup",
+      "Product Upload",
+      "Store Optimization",
+    ],
+  },
+  {
+    label: "Marketplace Launch",
+    items: [
+      "Amazon",
+      "Flipkart",
+      "Meesho",
+      "Product Listings",
+      "SEO Optimization",
+      "A+ Content Guidance",
+    ],
+  },
+  {
+    label: "Marketing",
+    items: [
+      "Meta Ads Setup",
+      "Google Ads Setup",
+      "Social Media Setup",
+      "Creative Strategy",
+      "Content Calendar",
+      "Launch Campaign",
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      "Inventory Planning",
+      "Order Management",
+      "Supplier Coordination",
+      "Dashboard Setup",
+      "Reporting",
+    ],
+  },
+  {
+    label: "AI Commerce Stack",
+    items: [
+      "AXQEN Dashboard",
+      "AI Sales Assistant",
+      "AI Operations",
+      "Real-time Analytics",
+      "Automation Workflows",
+    ],
+  },
+  {
+    label: "Dedicated Team",
+    items: [
+      "Brand Strategist",
+      "Graphic Designer",
+      "Marketplace Specialist",
+      "Shopify Developer",
+      "Performance Marketer",
+      "Operations Manager",
+      "Account Manager",
+    ],
+  },
+];
+
+const BB_IDEAL = [
+  "First-time founders",
+  "D2C startups",
+  "Businesses launching a new brand",
+  "Manufacturers building a consumer brand",
+  "Importers",
+  "Private label businesses",
+];
+
+// ── Plan card component ───────────────────────────────────────────────────────
+type Plan = {
+  name: string;
+  price: string;
+  billing: string;
+  desc: string;
+  popular: boolean;
+  enterprise: boolean;
+  features: string[];
+};
+
+function PlanCard({ plan }: { plan: Plan }) {
+  return (
+    <div
+      className="rounded-2xl p-7 flex flex-col relative transition-all duration-300 hover:translate-y-[-3px]"
+      style={{
+        background: plan.popular
+          ? "linear-gradient(135deg, #1a2350 0%, #131A2E 100%)"
+          : C.card,
+        border: plan.popular
+          ? `1px solid ${C.indigoBorder}`
+          : `1px solid ${C.border}`,
+        boxShadow: plan.popular
+          ? "0 8px 40px rgba(63,55,201,0.15)"
+          : "none",
+      }}
+    >
+      {plan.popular && (
+        <div
+          className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full text-xs font-black whitespace-nowrap"
+          style={{ background: C.gold, color: C.navy }}
+        >
+          ★ Most Popular
+        </div>
+      )}
+
+      <div className="mb-5">
+        <p
+          className="text-sm font-bold mb-2"
+          style={{ color: plan.popular ? C.indigo : C.body }}
+        >
+          {plan.name}
+        </p>
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span
+            className="text-3xl font-black"
+            style={{
+              color: plan.enterprise ? C.indigo : C.gold,
+              fontFamily: "var(--font-space)",
+            }}
+          >
+            {plan.price}
+          </span>
+          <span className="text-xs" style={{ color: C.muted }}>
+            {plan.billing}
+          </span>
+        </div>
+        <p className="text-sm mt-2" style={{ color: C.body }}>
+          {plan.desc}
+        </p>
+      </div>
+
+      <ul className="space-y-2.5 mb-7 flex-1">
+        {plan.features.map((f) => (
+          <li
+            key={f}
+            className="flex items-start gap-2 text-sm"
+            style={{ color: C.heading }}
+          >
+            <span style={{ color: C.green, flexShrink: 0, marginTop: 1 }}>✓</span>
+            {f}
+          </li>
+        ))}
+      </ul>
+
+      <a
+        href={plan.enterprise ? WA_LINK : "#apply"}
+        target={plan.enterprise ? "_blank" : undefined}
+        rel={plan.enterprise ? "noopener noreferrer" : undefined}
+        className="block text-center py-3 rounded-lg text-sm font-black transition-all hover:opacity-90 active:scale-95"
+        style={
+          plan.popular
+            ? { background: C.gold, color: C.navy }
+            : plan.enterprise
+            ? {
+                background: C.indigoDim,
+                color: C.indigo,
+                border: `1px solid ${C.indigoBorder}`,
+              }
+            : {
+                background: "transparent",
+                border: `1px solid ${C.borderStrong}`,
+                color: C.heading,
+              }
+        }
+      >
+        {plan.enterprise ? "Talk to Us →" : "Apply for this Plan →"}
+      </a>
+    </div>
+  );
+}
+
+// ── Tab button ────────────────────────────────────────────────────────────────
+function Tab({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all"
+      style={{
+        background: active ? C.indigo : "transparent",
+        color: active ? "#fff" : C.body,
+        border: active ? "none" : `1px solid ${C.border}`,
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+// ── Main Plans component ──────────────────────────────────────────────────────
 export function Plans() {
   const { ref, inView } = useInView();
+  const [tab, setTab] = useState<"ds" | "mp" | "bb">("ds");
 
   return (
     <section
@@ -63,86 +415,246 @@ export function Plans() {
     >
       <div
         className="max-w-[1200px] mx-auto transition-all duration-700"
-        style={{ opacity: inView ? 1 : 0, transform: inView ? "none" : "translateY(24px)" }}
+        style={{
+          opacity: inView ? 1 : 0,
+          transform: inView ? "none" : "translateY(24px)",
+        }}
       >
-        <div className="text-center mb-16">
+        {/* Header */}
+        <div className="text-center mb-10">
           <h2
             className="text-4xl md:text-5xl font-black mb-4"
-            style={{ color: C.heading, letterSpacing: "-0.025em", fontFamily: "var(--font-space)" }}
+            style={{
+              color: C.heading,
+              letterSpacing: "-0.025em",
+              fontFamily: "var(--font-space)",
+            }}
           >
-            Plans that match your stage
+            Plans for every stage
           </h2>
-          <p className="text-base max-w-xl mx-auto" style={{ color: C.body }}>
-            One-time setup fee. No monthly charges. Platform fee applies per fulfilled order — discussed on your onboarding call.
+          <p
+            className="text-base max-w-xl mx-auto"
+            style={{ color: C.body }}
+          >
+            All prices exclude GST. No hidden charges.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {PLANS.map((plan) => (
+        {/* Tab switcher */}
+        <div className="flex justify-center gap-3 flex-wrap mb-12">
+          <Tab
+            label="Dropshipping"
+            active={tab === "ds"}
+            onClick={() => setTab("ds")}
+          />
+          <Tab
+            label="Marketplace Management"
+            active={tab === "mp"}
+            onClick={() => setTab("mp")}
+          />
+          <Tab
+            label="Brand Building"
+            active={tab === "bb"}
+            onClick={() => setTab("bb")}
+          />
+        </div>
+
+        {/* Dropshipping */}
+        {tab === "ds" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {DS_PLANS.map((p) => (
+              <PlanCard key={p.name} plan={p} />
+            ))}
+          </div>
+        )}
+
+        {/* Marketplace Management */}
+        {tab === "mp" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {MP_PLANS.map((p) => (
+              <PlanCard key={p.name} plan={p} />
+            ))}
+          </div>
+        )}
+
+        {/* Brand Building */}
+        {tab === "bb" && (
+          <div className="space-y-8">
+            {/* Hero pricing card */}
             <div
-              key={plan.name}
-              className="rounded-2xl p-8 flex flex-col relative transition-all duration-300 hover:translate-y-[-3px]"
+              className="rounded-2xl p-8 md:p-10 flex flex-col md:flex-row md:items-center gap-8"
               style={{
-                background: plan.popular ? "linear-gradient(135deg, #1a2350 0%, #131A2E 100%)" : C.card,
-                border: plan.popular ? `1px solid ${C.indigoBorder}` : `1px solid ${C.border}`,
-                boxShadow: plan.popular ? "0 8px 40px rgba(124,111,240,0.15)" : "none",
+                background: C.card,
+                border: `1px solid ${C.indigoBorder}`,
               }}
             >
-              {plan.popular && (
-                <div
-                  className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full text-xs font-black"
-                  style={{ background: C.gold, color: C.navy }}
+              <div className="flex-1">
+                <span
+                  className="inline-block text-xs font-black px-3 py-1 rounded-full mb-4"
+                  style={{ background: C.indigoDim, color: C.indigo }}
                 >
-                  ★ Most Popular
-                </div>
-              )}
-
-              <div className="mb-6">
-                <p className="text-sm font-bold mb-1" style={{ color: plan.popular ? C.indigo : C.body }}>
-                  {plan.name}
+                  Fully Managed · End-to-End
+                </span>
+                <h3
+                  className="text-3xl md:text-4xl font-black mb-2"
+                  style={{
+                    color: C.heading,
+                    fontFamily: "var(--font-space)",
+                  }}
+                >
+                  Brand Building
+                </h3>
+                <p
+                  className="text-base mb-4"
+                  style={{ color: C.body }}
+                >
+                  Launch your own brand from scratch — managed end-to-end by our expert team.
                 </p>
-                <div className="flex items-baseline gap-2">
-                  <span
-                    className="text-4xl font-black"
-                    style={{ color: C.gold, fontFamily: "var(--font-space)" }}
-                  >
-                    {plan.price}
-                  </span>
-                  <span className="text-xs" style={{ color: C.muted }}>{plan.tag}</span>
+                <div
+                  className="flex flex-wrap gap-5 text-sm"
+                  style={{ color: C.muted }}
+                >
+                  <span>⏱ Timeline: 30 – 120 Days</span>
+                  <span>📦 Typical Projects: ₹1L – ₹10L+</span>
                 </div>
-                <p className="text-sm mt-3 leading-relaxed" style={{ color: C.body }}>
-                  {plan.desc}
-                </p>
               </div>
 
-              <ul className="space-y-3 mb-8 flex-1">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm" style={{ color: C.heading }}>
-                    <span style={{ color: C.green, flexShrink: 0, marginTop: 1 }}>✓</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="space-y-2">
-                <a
-                  href="#apply"
-                  className="block text-center py-3.5 rounded-lg text-sm font-black transition-all hover:opacity-90 active:scale-95"
-                  style={
-                    plan.popular
-                      ? { background: C.gold, color: C.navy, borderRadius: 8 }
-                      : { background: "transparent", border: `1px solid ${C.borderStrong}`, color: C.heading, borderRadius: 8 }
-                  }
+              <div className="flex-shrink-0 text-center md:text-right">
+                <p
+                  className="text-xs font-semibold uppercase tracking-wider mb-1"
+                  style={{ color: C.muted }}
                 >
-                  Apply for this plan
+                  Starting From
+                </p>
+                <p
+                  className="text-5xl font-black mb-1"
+                  style={{
+                    color: C.gold,
+                    fontFamily: "var(--font-space)",
+                  }}
+                >
+                  ₹1,00,000
+                </p>
+                <p
+                  className="text-xs mb-5"
+                  style={{ color: C.muted }}
+                >
+                  + GST · Custom Pricing
+                </p>
+                <a
+                  href={WA_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block px-6 py-3 rounded-lg text-sm font-black transition-all hover:opacity-90 active:scale-95"
+                  style={{ background: C.indigo, color: "#fff" }}
+                >
+                  Book a Brand Discovery Call →
                 </a>
-                <p className="text-center text-xs" style={{ color: C.muted }}>
-                  No monthly charges. Platform fee per fulfilled order.
+                <p
+                  className="text-xs mt-3 max-w-xs"
+                  style={{ color: C.muted }}
+                >
+                  Pricing customized to your category, scope, and launch requirements.
                 </p>
               </div>
             </div>
-          ))}
-        </div>
+
+            {/* What's included */}
+            <div>
+              <p
+                className="text-xs font-black uppercase tracking-widest mb-6"
+                style={{ color: C.muted }}
+              >
+                What&apos;s Included
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {BB_CATEGORIES.map((cat) => (
+                  <div
+                    key={cat.label}
+                    className="rounded-xl p-5"
+                    style={{
+                      background: C.card,
+                      border: `1px solid ${C.border}`,
+                    }}
+                  >
+                    <p
+                      className="text-sm font-black mb-3"
+                      style={{ color: C.indigo }}
+                    >
+                      {cat.label}
+                    </p>
+                    <ul className="space-y-1.5">
+                      {cat.items.map((item) => (
+                        <li
+                          key={item}
+                          className="flex items-start gap-2 text-sm"
+                          style={{ color: C.body }}
+                        >
+                          <span
+                            style={{ color: C.green, flexShrink: 0 }}
+                          >
+                            ✓
+                          </span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Ideal for */}
+            <div
+              className="rounded-xl p-6 flex flex-col sm:flex-row gap-6 items-start sm:items-center"
+              style={{
+                background: C.card,
+                border: `1px solid ${C.border}`,
+              }}
+            >
+              <div className="flex-1">
+                <p
+                  className="text-sm font-black mb-3"
+                  style={{ color: C.heading }}
+                >
+                  Ideal For
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {BB_IDEAL.map((item) => (
+                    <span
+                      key={item}
+                      className="text-xs px-3 py-1.5 rounded-full font-semibold"
+                      style={{
+                        background: C.indigoDim,
+                        color: C.indigo,
+                        border: `1px solid ${C.indigoBorder}`,
+                      }}
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <a
+                href={WA_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-shrink-0 inline-block px-5 py-3 rounded-lg text-sm font-black transition-all hover:opacity-90"
+                style={{ background: C.gold, color: C.navy }}
+              >
+                Get a Custom Quote →
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* Footer note */}
+        <p
+          className="text-center text-xs mt-10"
+          style={{ color: C.muted }}
+        >
+          All prices exclude GST · No monthly charges on one-time plans · Platform fee per fulfilled order applies to Dropshipping plans
+        </p>
       </div>
     </section>
   );
