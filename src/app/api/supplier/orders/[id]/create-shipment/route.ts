@@ -5,6 +5,7 @@ import {
   shiprocketCreateShipment,
   delhiveryCreateShipment,
   customCreateShipment,
+  getCarrierTrackingUrl,
   ShipmentInput,
 } from "@/lib/shipping-adapters";
 import { decrypt } from "@/lib/encrypt";
@@ -95,6 +96,10 @@ export async function POST(
         dispatchedAt:      new Date(),
         supplierTrackingNo: result.awb,
         supplierCourier:   result.courier,
+        // Mirror to seller-visible fields
+        awbNumber:   result.awb,
+        courier:     result.courier,
+        trackingUrl: result.trackingUrl ?? (getCarrierTrackingUrl(result.courier, result.awb) || null),
       },
     }),
     prisma.orderTimeline.create({

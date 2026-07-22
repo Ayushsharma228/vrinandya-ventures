@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { dispatchEvent } from "@/lib/automation/engine";
+import { getCarrierTrackingUrl } from "@/lib/shipping-adapters";
 
 type Action =
   | "ACCEPT"
@@ -83,8 +84,18 @@ export async function POST(
   if (action === "DISPATCH") {
     orderUpdate.dispatchedAt = new Date();
     orderUpdate.status = "SHIPPED";
-    if (trackingNo) orderUpdate.supplierTrackingNo = trackingNo;
-    if (courier) orderUpdate.supplierCourier = courier;
+    if (trackingNo) {
+      orderUpdate.supplierTrackingNo = trackingNo;
+      // Mirror to seller-visible fields
+      orderUpdate.awbNumber = trackingNo;
+    }
+    if (courier) {
+      orderUpdate.supplierCourier = courier;
+      orderUpdate.courier = courier;
+    }
+    if (trackingNo && courier) {
+      orderUpdate.trackingUrl = getCarrierTrackingUrl(courier, trackingNo) || null;
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
