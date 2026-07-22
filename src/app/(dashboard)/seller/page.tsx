@@ -28,10 +28,8 @@ interface Analytics {
 
 interface Wallet {
   balance: number;
-  upcomingAmount: number;
   totalCredit: number;
   totalDebit: number;
-  upcoming: { id: string; remittanceDate: string; amount: number }[];
 }
 
 function getGreeting() {
@@ -108,11 +106,6 @@ export default function SellerDashboard() {
       setOrdersLoading(false);
     });
   }, [orderFilter]);
-
-  const nextPayout = wallet?.upcoming?.[0];
-  const nextPayoutDate = nextPayout?.remittanceDate
-    ? new Date(nextPayout.remittanceDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
-    : null;
 
   const chartData = analytics?.trend?.slice(chartDays > 0 ? -chartDays : undefined).map(d => ({
     date: new Date(d.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
@@ -267,21 +260,21 @@ export default function SellerDashboard() {
       {/* ── Content ─────────────────────────────────────────── */}
       <div className="px-4 md:px-8 py-6 space-y-6">
 
-        {/* Upcoming Remittance Banner */}
-        {!loading && wallet && wallet.upcomingAmount > 0 && (
+        {/* Wallet Balance Banner */}
+        {!loading && wallet && wallet.balance > 0 && (
           <div className="flex items-center justify-between gap-4 rounded-2xl px-5 py-4"
             style={{ background: "linear-gradient(135deg, #052e16 0%, #064e3b 100%)", border: "1px solid rgba(0,198,122,0.3)" }}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ background: "rgba(0,198,122,0.2)" }}>
-                <Clock className="w-5 h-5" style={{ color: "#16A34A" }} />
+                <Wallet className="w-5 h-5" style={{ color: "#16A34A" }} />
               </div>
               <div>
                 <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
-                  ₹{fmt(wallet.upcomingAmount)} upcoming remittance
+                  ₹{fmt(wallet.balance)} wallet balance
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                  {nextPayoutDate ? `Expected on ${nextPayoutDate}` : "Payment scheduled"}
+                  Your current payout balance
                 </p>
               </div>
             </div>
@@ -445,12 +438,7 @@ export default function SellerDashboard() {
             <div className="mt-5 pt-4 rounded-xl p-3" style={{ background: "var(--bg-sidebar)" }}>
               <p className="text-xs mb-2" style={{ color: "var(--text-secondary)" }}>Wallet Balance</p>
               <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>₹{fmt(wallet?.balance ?? 0)}</p>
-              {wallet?.upcomingAmount ? (
-                <p className="text-xs mt-1 flex items-center gap-1" style={{ color: "#16A34A" }}>
-                  <Clock className="w-3 h-3" />
-                  ₹{fmt(wallet.upcomingAmount)} upcoming
-                </p>
-              ) : null}
+              <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>Your current payout balance</p>
               <Link href="/seller/wallet"
                 className="mt-2 flex items-center gap-1 text-xs font-medium"
                 style={{ color: "var(--text-secondary)" }}>
