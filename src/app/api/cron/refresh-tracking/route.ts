@@ -29,11 +29,15 @@ export async function GET(req: NextRequest) {
   const token = process.env.DELHIVERY_API_TOKEN;
   if (!token) return NextResponse.json({ error: "Delhivery not configured" }, { status: 500 });
 
-  // Fetch all active orders with AWB across all sellers
+  // Only refresh Delhivery orders — other carriers have their own tracking
   const orders = await prisma.order.findMany({
     where: {
       awbNumber: { not: null },
       status: { notIn: ["DELIVERED", "CANCELLED", "RTO"] },
+      OR: [
+        { courier: null },
+        { courier: { contains: "delhivery", mode: "insensitive" } },
+      ],
     },
     select: { id: true, awbNumber: true, status: true },
   });

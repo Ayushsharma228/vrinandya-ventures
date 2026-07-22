@@ -40,8 +40,9 @@ export default function AdminDeliveryPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [sellerFilter, setSellerFilter] = useState("");
-  const [awbInputs, setAwbInputs] = useState<Record<string, string>>({});
-  const [statusInputs, setStatusInputs] = useState<Record<string, string>>({});
+  const [awbInputs,     setAwbInputs]     = useState<Record<string, string>>({});
+  const [courierInputs, setCourierInputs] = useState<Record<string, string>>({});
+  const [statusInputs,  setStatusInputs]  = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [bulkSaving, setBulkSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -173,14 +174,15 @@ export default function AdminDeliveryPage() {
   }
 
   async function handleSaveAwb(order: Order) {
-    const status = statusInputs[order.id] || order.status;
-    const awb = (awbInputs[order.id] ?? "").trim() || order.awbNumber || "";
+    const status  = statusInputs[order.id] || order.status;
+    const awb     = (awbInputs[order.id] ?? "").trim() || order.awbNumber || "";
+    const courier = (courierInputs[order.id] ?? "").trim() || order.courier || "Delhivery";
     if (status !== "CANCELLED" && !awb) return alert("Enter AWB number");
     setSaving(order.id);
     const res = await fetch("/api/admin/orders/set-awb", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId: order.id, awb, status }),
+      body: JSON.stringify({ orderId: order.id, awb, status, courier }),
     });
     if (res.ok) {
       await fetchOrders();
@@ -306,6 +308,7 @@ export default function AdminDeliveryPage() {
                         ) : order.awbNumber ? (
                           <div className="flex flex-col gap-0.5">
                             <span className="font-mono text-xs font-medium text-gray-800">{order.awbNumber}</span>
+                            {order.courier && <span className="text-xs text-gray-400">{order.courier}</span>}
                             {order.trackingUrl && (
                               <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="text-blue-500 text-xs hover:underline">Track →</a>
                             )}
@@ -323,11 +326,19 @@ export default function AdminDeliveryPage() {
                             </button>
                             <input
                               type="text"
-                              placeholder="Or enter manually"
+                              placeholder="AWB number"
                               value={awbInputs[order.id] ?? ""}
                               onChange={(e) => setAwbInputs((p) => ({ ...p, [order.id]: e.target.value }))}
                               className="w-32 px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
                             />
+                            <select
+                              value={courierInputs[order.id] ?? order.courier ?? "Delhivery"}
+                              onChange={(e) => setCourierInputs((p) => ({ ...p, [order.id]: e.target.value }))}
+                              className="w-32 px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                              {["Delhivery","Delhivery Lite","Ekart","Ekart Surface","Amazon","Blue Dart","DTDC","Xpressbees","Shadowfax","Ecom Express","Smartr","FedEx","DHL","Shiprocket","Other"].map((c) => (
+                                <option key={c} value={c}>{c}</option>
+                              ))}
+                            </select>
                           </div>
                         )}
                       </td>

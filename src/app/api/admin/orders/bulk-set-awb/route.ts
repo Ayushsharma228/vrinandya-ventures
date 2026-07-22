@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { getCarrierTrackingUrl } from "@/lib/shipping-adapters";
 
 interface AwbRow {
   externalOrderId: string;
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
       data: {
         awbNumber:   awb,
         courier,
-        trackingUrl: `https://www.delhivery.com/track/package/${awb}`,
+        trackingUrl: getCarrierTrackingUrl(courier, awb) || null,
         status:      newStatus as never,
       },
     });

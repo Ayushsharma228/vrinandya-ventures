@@ -1,3 +1,27 @@
+const CARRIER_TRACKING: [RegExp, (awb: string) => string][] = [
+  [/delhivery/i,              (awb) => `https://www.delhivery.com/track/package/${awb}`],
+  [/ekart/i,                  (awb) => `https://ekartlogistics.com/shipmenttrack/${awb}`],
+  [/blue\s*dart/i,            (awb) => `https://www.bluedart.com/tracking?trackFor=0&TrackingNumber=${awb}`],
+  [/dtdc/i,                   (awb) => `https://www.dtdc.in/tracking/tracking_results.asp?Ttype=consignee&strCnno=${awb}`],
+  [/xpressbees/i,             (awb) => `https://www.xpressbees.com/shipment/tracking?awbNo=${awb}`],
+  [/shadowfax/i,              (awb) => `https://tracker.shadowfax.in/?wbn=${awb}`],
+  [/shiprocket/i,             (awb) => `https://shiprocket.co/tracking/${awb}`],
+  [/ecom\s*express/i,         (awb) => `https://ecomexpress.in/tracking/?awb_field=${awb}`],
+  [/smartr/i,                 (awb) => `https://smartr.in/tracking/${awb}`],
+  [/amazon/i,                 (awb) => `https://track.amazon.in/tracking/${awb}`],
+  [/fedex/i,                  (awb) => `https://www.fedex.com/fedextrack/?trknbr=${awb}`],
+  [/dhl/i,                    (awb) => `https://www.dhl.com/in-en/home/tracking.html?tracking-id=${awb}`],
+  [/pickrr/i,                 (awb) => `https://pickrr.com/track/#${awb}`],
+  [/ekart|e-?kart/i,         (awb) => `https://ekartlogistics.com/shipmenttrack/${awb}`],
+];
+
+export function getCarrierTrackingUrl(courier: string, awb: string): string {
+  for (const [pattern, buildUrl] of CARRIER_TRACKING) {
+    if (pattern.test(courier)) return buildUrl(awb);
+  }
+  return "";
+}
+
 export interface ShipmentInput {
   externalOrderId: string;
   customerName: string;
