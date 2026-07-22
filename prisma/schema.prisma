@@ -156,6 +156,8 @@ model User {
   // Business / invoice details
   businessName         String?
   businessAddress      String?
+  city                 String?
+  state                String?
   pincode              String?
 
   // KYC

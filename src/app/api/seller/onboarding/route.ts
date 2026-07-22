@@ -14,11 +14,11 @@ export async function GET(req: NextRequest) {
     where: { id: session.user.id },
     select: {
       name: true, email: true, phone: true, brandName: true,
-      businessName: true, businessAddress: true, pincode: true,
+      businessName: true, businessAddress: true, city: true, state: true, pincode: true,
       gstNumber: true, bankName: true, bankHolder: true,
       bankAccount: true, bankIfsc: true, aadhaarNumber: true,
       agreementAccepted: true, kycStatus: true, onboardingDone: true,
-      plan: true, planTier: true,
+      plan: true, planTier: true, paymentConfirmed: true,
     },
   });
 
@@ -42,15 +42,22 @@ export async function PATCH(req: NextRequest) {
     });
   };
 
-  if (step === "agreement") {
+  // ── Personal Info ──────────────────────────────────────────────────────────
+  if (step === "personal") {
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { agreementAccepted: true, agreementAcceptedAt: new Date() },
+      data: {
+        businessAddress: body.address     || null,
+        city:            body.city        || null,
+        state:           body.state       || null,
+        pincode:         body.pincode     || null,
+        phone:           body.phone       || null,
+      },
     });
-    triggerActivationUpdate();
     return NextResponse.json({ ok: true });
   }
 
+  // ── Business Details ───────────────────────────────────────────────────────
   if (step === "business") {
     await prisma.user.update({
       where: { id: session.user.id },
@@ -58,10 +65,71 @@ export async function PATCH(req: NextRequest) {
         businessName: body.businessName || null,
         brandName:    body.brandName    || null,
         gstNumber:    body.gstNumber    || null,
-        phone:        body.phone        || null,
-        businessAddress: body.businessAddress || null,
-        pincode:      body.pincode      || null,
       },
+    });
+    triggerActivationUpdate();
+    return NextResponse.json({ ok: true });
+  }
+
+  // ── Verification (Agreement + Aadhaar) ────────────────────────────────────
+  if (step === "verification") {
+    if (!body.aadhaarNumber)
+      return NextResponse.json({ error: "Aadhaar number is required" }, { status: 400 });
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        agreementAccepted:   true,
+        agreementAcceptedAt: new Date(),
+        aadhaarNumber:       body.aadhaarNumber,
+        aadhaarDocUrl:       body.aadhaarDocUrl || null,
+        kycStatus:           "SUBMITTED",
+      },
+    });
+    triggerActivationUpdate();
+    return NextResponse.json({ ok: true });
+  }
+
+  // ── Complete (called after payment is verified) ────────────────────────────
+  if (step === "complete") {
+    const updated = await prisma.user.update({
+      where: { id: session.user.id },
+      data:  { onboardingDone: true },
+      select: { name: true, email: true, plan: true, planTier: true },
+    });
+
+    emailOnboardingComplete({
+      to:   updated.email,
+      name: updated.name ?? "Seller",
+    }).catch(() => {});
+
+    const admins = await prisma.user.findMany({
+      where:  { role: "ADMIN" },
+      select: { id: true },
+    });
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map((a) => ({
+          userId:  a.id,
+          type:    "GENERAL",
+          title:   "New Seller Onboarded",
+          message: `${updated.name ?? "A new seller"} completed onboarding & payment. Plan: ${updated.planTier ?? updated.plan ?? "—"}`,
+          data:    { sellerId: session.user.id, sellerEmail: updated.email },
+        })),
+      });
+    }
+
+    dispatchEvent({ type: "SELLER_ONBOARDED", entityId: session.user.id, entityType: "SELLER",
+                    payload: { sellerId: session.user.id } });
+    triggerActivationUpdate();
+    return NextResponse.json({ ok: true });
+  }
+
+  // ── Legacy steps (kept for backward compat) ───────────────────────────────
+
+  if (step === "agreement") {
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { agreementAccepted: true, agreementAcceptedAt: new Date() },
     });
     triggerActivationUpdate();
     return NextResponse.json({ ok: true });
@@ -97,25 +165,15 @@ export async function PATCH(req: NextRequest) {
       select: { name: true, email: true, plan: true, planTier: true },
     });
 
-    // Welcome email to seller
-    emailOnboardingComplete({
-      to:   updated.email,
-      name: updated.name ?? "Seller",
-    }).catch(() => {});
+    emailOnboardingComplete({ to: updated.email, name: updated.name ?? "Seller" }).catch(() => {});
 
-    // Notify all admins
-    const admins = await prisma.user.findMany({
-      where:  { role: "ADMIN" },
-      select: { id: true },
-    });
+    const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
     if (admins.length > 0) {
       await prisma.notification.createMany({
         data: admins.map((a) => ({
-          userId:  a.id,
-          type:    "GENERAL",
-          title:   "New Seller Onboarded",
-          message: `${updated.name ?? "A new seller"} has completed onboarding and submitted KYC. Plan: ${updated.planTier ?? updated.plan ?? "—"}`,
-          data:    { sellerId: session.user.id, sellerEmail: updated.email },
+          userId: a.id, type: "GENERAL", title: "New Seller Onboarded",
+          message: `${updated.name ?? "A new seller"} completed onboarding. Plan: ${updated.planTier ?? updated.plan ?? "—"}`,
+          data: { sellerId: session.user.id, sellerEmail: updated.email },
         })),
       });
     }

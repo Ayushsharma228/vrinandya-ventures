@@ -6,15 +6,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Eye, EyeOff, Check, ChevronRight, Store, Package,
-  Zap, TrendingUp, Crown, Loader2,
+  Zap, TrendingUp, Crown,
 } from "lucide-react";
-
-declare global {
-  interface Window {
-    Razorpay: new (opts: Record<string, unknown>) => { open(): void };
-  }
-}
-
 
 const BLUE   = "#0048DF";
 const BLUEDIM = "rgba(0,72,223,0.08)";
@@ -58,7 +51,7 @@ const PLANS = {
 };
 
 
-const STEPS = ["Account", "Service", "Plan", "Payment"];
+const STEPS = ["Account", "Service", "Plan"];
 
 const inputCls = "w-full px-4 py-2.5 rounded-xl text-sm outline-none border focus:ring-2 focus:border-blue-500 transition-all";
 const inputStyle = { background: "#fff", borderColor: "#e5e7eb", color: "#0A0E1A" };
@@ -113,7 +106,6 @@ export default function SignupPage() {
 
   const [service, setService]     = useState<"DROPSHIPPING" | "MARKETPLACE" | "">("");
   const [planTier, setPlanTier]   = useState("");
-  const [rzpLoading, setRzpLoading] = useState(false);
 
   async function handleCreateAccount(e: React.FormEvent) {
     e.preventDefault();
@@ -156,64 +148,8 @@ export default function SignupPage() {
     if (!planTier) return;
     setError(""); setLoading(true);
     const ok = await saveStep({ step: "plan", planTier });
-    if (ok) { setStep(3); setLoading(false); }
+    if (ok) { router.push("/onboarding"); }
   }
-
-  async function handleRazorpay() {
-    setError(""); setRzpLoading(true);
-
-    // Load Razorpay script if not already loaded
-    if (!window.Razorpay) {
-      await new Promise<void>((resolve, reject) => {
-        const s = document.createElement("script");
-        s.src = "https://checkout.razorpay.com/v1/checkout.js";
-        s.onload = () => resolve();
-        s.onerror = () => reject(new Error("Failed to load Razorpay"));
-        document.body.appendChild(s);
-      });
-    }
-
-    const res = await fetch("/api/payments/create-order", { method: "POST" });
-    const data = await res.json();
-
-    if (!res.ok) { setError(data.error ?? "Could not create order"); setRzpLoading(false); return; }
-
-    const rzp = new window.Razorpay({
-      key:         data.key,
-      amount:      data.amount,
-      currency:    data.currency,
-      order_id:    data.orderId,
-      name:        "Axiqen",
-      description: `${data.tierLabel} Plan`,
-      image:       "/favicon.ico",
-      prefill: { name: data.name, email: data.email, contact: data.phone },
-      theme: { color: BLUE },
-      handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
-        const verify = await fetch("/api/payments/verify", {
-          method:  "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            razorpay_order_id:   response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature:  response.razorpay_signature,
-          }),
-        });
-        if (verify.ok) {
-          router.push("/onboarding");
-        } else {
-          const d = await verify.json().catch(() => ({}));
-          setError(d.error ?? "Payment verification failed. Contact support.");
-          setRzpLoading(false);
-        }
-      },
-      modal: { ondismiss: () => setRzpLoading(false) },
-    });
-
-    rzp.open();
-  }
-
-  const selectedPlan = service ? PLANS[service].find((p) => p.tier === planTier) : null;
-  const planAmount   = selectedPlan?.price ?? 0;
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12"
@@ -429,50 +365,6 @@ export default function SignupPage() {
             </div>
           )}
 
-          {/* ── Step 3: Payment ── */}
-          {step === 3 && (
-            <div>
-              <h2 className="text-xl font-bold mb-1" style={{ color: "#0A0E1A" }}>Complete payment</h2>
-              <p className="text-sm mb-6" style={{ color: "#6B7280" }}>
-                Pay securely via Razorpay — UPI, cards, net banking all accepted.
-              </p>
-
-              {/* Amount summary */}
-              <div className="rounded-xl p-5 mb-6 text-center" style={{ background: BLUEDIM, border: `1px solid ${BLUEBORDER}` }}>
-                <p className="text-xs font-medium mb-1" style={{ color: "#6B7280" }}>Amount to pay</p>
-                <p className="text-4xl font-black mb-1" style={{ color: "#0A0E1A", fontFamily: "var(--font-space)" }}>
-                  ₹{planAmount.toLocaleString("en-IN")}
-                </p>
-                <p className="text-xs font-semibold" style={{ color: BLUE }}>
-                  {selectedPlan?.label} Plan · {service === "MARKETPLACE" ? "Marketplace" : "Dropshipping"}
-                </p>
-                <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>+ 18% GST · One-time payment</p>
-              </div>
-
-              {/* Payment methods note */}
-              <div className="flex flex-wrap justify-center gap-2 mb-6">
-                {["UPI", "Credit Card", "Debit Card", "Net Banking", "Wallets"].map((m) => (
-                  <span key={m} className="text-xs px-3 py-1 rounded-full"
-                    style={{ background: "#f3f4f6", color: "#6B7280" }}>{m}</span>
-                ))}
-              </div>
-
-              <button
-                onClick={handleRazorpay}
-                disabled={rzpLoading}
-                className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 text-white transition-all hover:opacity-90"
-                style={{ background: BLUE }}
-              >
-                {rzpLoading
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening payment…</>
-                  : <>Pay ₹{planAmount.toLocaleString("en-IN")} Securely →</>}
-              </button>
-
-              <p className="text-center text-xs mt-3" style={{ color: "#9CA3AF" }}>
-                Secured by Razorpay · 256-bit SSL encryption
-              </p>
-            </div>
-          )}
 
         </div>
       </div>
