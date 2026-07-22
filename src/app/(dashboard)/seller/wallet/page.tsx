@@ -116,17 +116,8 @@ export default function SellerWalletPage() {
                 {loading ? "—" : `₹${fmt(data?.balance ?? 0)}`}
               </p>
               <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-                Settled earnings available
+                Your current payout balance
               </p>
-              {!loading && (data?.upcomingAmount ?? 0) > 0 && (
-                <div className="mt-3 pt-3 flex items-center gap-2" style={{ borderTop: "1px solid rgba(245,158,11,0.2)" }}>
-                  <Clock style={{ color: "#F59E0B", width: 13, height: 13 }} />
-                  <span className="text-xs" style={{ color: "#F59E0B" }}>
-                    ₹{fmt(data?.upcomingAmount ?? 0)} upcoming
-                    {upcoming[0]?.remittanceDate ? ` · ${new Date(upcoming[0].remittanceDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}` : ""}
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* Deductions */}
