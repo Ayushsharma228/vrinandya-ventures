@@ -6,7 +6,7 @@ import Razorpay from "razorpay";
 
 // Paise = ₹ × 100
 const AMOUNTS: Record<string, Record<string, number>> = {
-  dropshipping: { starter: 1000000, growth: 2500000, scale: 5000000 },
+  dropshipping: { starter: 100, growth: 2500000, scale: 5000000 },
   marketplace:  { starter:  500000, growth: 1000000, scale: 2000000 },
 };
 
