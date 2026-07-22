@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { OrderStatus } from "@prisma/client";
+import { getCarrierTrackingUrl } from "@/lib/shipping-adapters";
 
 export async function GET(req: NextRequest) {
   const session = await getRouteSession(req);
@@ -78,5 +79,14 @@ export async function GET(req: NextRequest) {
     cancelled: allOrders.filter((o) => o.status === "CANCELLED").length,
   };
 
-  return NextResponse.json({ orders, stats });
+  // For orders using supplier tracking, compute trackingUrl if not already set
+  const enriched = orders.map((o) => {
+    if (o.trackingUrl) return o;
+    const awb     = o.awbNumber || o.supplierTrackingNo;
+    const carrier = o.courier   || o.supplierCourier;
+    const url     = awb && carrier ? getCarrierTrackingUrl(carrier, awb) : "";
+    return { ...o, trackingUrl: url || null };
+  });
+
+  return NextResponse.json({ orders: enriched, stats });
 }
