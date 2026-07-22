@@ -462,31 +462,31 @@ export default function SellerDashboard() {
 
         {/* Recent Orders */}
         <div className="card">
-          {/* Header row */}
-          <div className="px-5 py-4 flex items-center justify-between gap-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)" }}>
+          {/* Row 1: title + View All */}
+          <div className="px-5 pt-4 pb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Recent Orders</h2>
-            {/* Inline status filter */}
-            <div className="flex items-center gap-1 flex-wrap flex-1 justify-center">
-              {(["ALL", "NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "RTO", "CANCELLED"] as const).map((s) => {
-                const cfg = STATUS_CONFIG[s];
-                const isActive = orderFilter === s;
-                return (
-                  <button key={s} onClick={() => setOrderFilter(s)}
-                    className="px-3 py-1 rounded-full text-xs font-semibold transition-all"
-                    style={isActive
-                      ? { background: cfg ? cfg.color : "#0A0E1A", color: "#fff" }
-                      : { background: cfg ? cfg.bg : "#F3F4F6", color: cfg ? cfg.color : "var(--text-400)" }
-                    }>
-                    {s === "ALL" ? "All" : cfg?.label ?? s}
-                  </button>
-                );
-              })}
-            </div>
             <Link href="/seller/orders"
-              className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg flex-shrink-0 transition-colors"
+              className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
               style={{ color: "var(--green-500)", background: "#F0FDF4", border: "1px solid #D1FAE5" }}>
               View All <ArrowRight className="w-3 h-3" />
             </Link>
+          </div>
+          {/* Row 2: status filter tabs */}
+          <div className="px-5 pb-3 flex items-center gap-1.5 flex-wrap" style={{ borderBottom: "1px solid var(--border)" }}>
+            {(["ALL", "NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "RTO", "CANCELLED"]).map((s) => {
+              const cfg = STATUS_CONFIG[s];
+              const isActive = orderFilter === s;
+              return (
+                <button key={s} onClick={() => setOrderFilter(s)}
+                  className="px-3 py-1 rounded-full text-xs font-semibold transition-all"
+                  style={isActive
+                    ? { background: cfg ? cfg.color : "#0A0E1A", color: "#fff" }
+                    : { background: cfg ? cfg.bg : "#F3F4F6", color: cfg ? cfg.color : "var(--text-500)" }
+                  }>
+                  {s === "ALL" ? "All" : cfg?.label ?? s}
+                </button>
+              );
+            })}
           </div>
 
           {loading || ordersLoading ? (
