@@ -9,7 +9,7 @@ interface Transaction {
   remittanceDate: string | null; bankTxId: string | null; createdAt: string;
 }
 interface WalletData {
-  balance: number; totalCredit: number; totalDebit: number;
+  balance: number; totalCredit: number; totalDebit: number; totalDeductions: number;
   upcomingAmount: number; upcoming: Transaction[]; paid: Transaction[];
   transactions: Transaction[];
 }
@@ -102,24 +102,31 @@ export default function SellerWalletPage() {
               </div>
             </div>
 
-            {/* Upcoming Payout */}
+            {/* Wallet Balance */}
             <div className="rounded-2xl px-6 py-5" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)" }}>
               <div className="flex items-center justify-between mb-4">
                 <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
-                  Upcoming Payout
+                  Wallet Balance
                 </p>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(245,158,11,0.15)" }}>
-                  <Clock style={{ color: "#F59E0B", width: 18, height: 18 }} />
+                  <Wallet style={{ color: "#F59E0B", width: 18, height: 18 }} />
                 </div>
               </div>
               <p className="text-3xl font-bold mb-1" style={{ color: "var(--text-primary)" }}>
-                {loading ? "—" : `₹${fmt(data?.upcomingAmount ?? 0)}`}
+                {loading ? "—" : `₹${fmt(data?.balance ?? 0)}`}
               </p>
               <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-                {upcoming[0]?.remittanceDate
-                  ? `Expected ${new Date(upcoming[0].remittanceDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`
-                  : "No upcoming payout"}
+                Settled earnings available
               </p>
+              {!loading && (data?.upcomingAmount ?? 0) > 0 && (
+                <div className="mt-3 pt-3 flex items-center gap-2" style={{ borderTop: "1px solid rgba(245,158,11,0.2)" }}>
+                  <Clock style={{ color: "#F59E0B", width: 13, height: 13 }} />
+                  <span className="text-xs" style={{ color: "#F59E0B" }}>
+                    ₹{fmt(data?.upcomingAmount ?? 0)} upcoming
+                    {upcoming[0]?.remittanceDate ? ` · ${new Date(upcoming[0].remittanceDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}` : ""}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Deductions */}
@@ -133,7 +140,7 @@ export default function SellerWalletPage() {
                 </div>
               </div>
               <p className="text-3xl font-bold mb-1" style={{ color: "var(--text-primary)" }}>
-                {loading ? "—" : `₹${fmt(data?.totalDebit ?? 0)}`}
+                {loading ? "—" : `₹${fmt(data?.totalDeductions ?? data?.totalDebit ?? 0)}`}
               </p>
               <p className="text-xs" style={{ color: "var(--text-secondary)" }}>RTO charges & adjustments</p>
             </div>

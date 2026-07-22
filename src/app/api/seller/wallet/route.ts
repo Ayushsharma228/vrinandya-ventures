@@ -21,12 +21,12 @@ export async function GET(req: NextRequest) {
   // Paid = has bankTxId, OR old manual entry (no remittanceDate either — pre-existing)
   const paid = transactions.filter((t) => t.bankTxId !== null || t.remittanceDate === null);
 
-  const balance = paid.reduce(
-    (acc, t) => (t.type === "CREDIT" ? acc + t.amount : acc - t.amount), 0
-  );
-  const totalCredit = paid.filter((t) => t.type === "CREDIT").reduce((s, t) => s + t.amount, 0);
-  const totalDebit = paid.filter((t) => t.type === "DEBIT").reduce((s, t) => s + t.amount, 0);
-  const upcomingAmount = upcoming.filter((t) => t.type === "CREDIT").reduce((s, t) => s + t.amount, 0);
+  // Settled: credits received minus deductions on settled transactions
+  const totalCredit     = paid.filter((t) => t.type === "CREDIT").reduce((s, t) => s + t.amount, 0);
+  // Deductions = ALL DEBIT transactions across all states (not just settled bucket)
+  const totalDeductions = transactions.filter((t) => t.type === "DEBIT").reduce((s, t) => s + t.amount, 0);
+  const balance         = totalCredit - totalDeductions;
+  const upcomingAmount  = upcoming.filter((t) => t.type === "CREDIT").reduce((s, t) => s + t.amount, 0);
 
   // Remitted orders for breakdown tab
   const remittedOrders = await prisma.order.findMany({
@@ -51,7 +51,8 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     balance,
     totalCredit,
-    totalDebit,
+    totalDebit: totalDeductions,
+    totalDeductions,
     upcomingAmount,
     upcoming,
     paid,
