@@ -6,9 +6,10 @@ import { PageHero } from "@/components/layout/page-hero";
 
 interface Delivery {
   id: string; externalOrderId: string; status: string;
-  awbNumber: string | null; trackingUrl: string | null;
+  awbNumber: string | null; trackingUrl: string | null; courier: string | null;
+  supplierTrackingNo: string | null; supplierCourier: string | null;
   createdAt: string; customerName: string | null;
-  customerAddress: { phone?: string } | null; courier: string | null;
+  customerAddress: { phone?: string } | null;
 }
 interface Stats { pending: number; delivered: number; inTransit: number; rto: number; cancelled: number; }
 
@@ -166,22 +167,27 @@ export default function ManageDeliveryPage() {
                         </span>
                       </td>
                       <td className="px-5 py-3">
-                        {d.awbNumber ? (
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-mono text-xs font-medium" style={{ color: "var(--text-900)" }}>{d.awbNumber}</span>
-                            {d.trackingUrl && (
-                              <a href={d.trackingUrl} target="_blank" rel="noopener noreferrer"
-                                className="text-xs underline" style={{ color: "var(--green-500)" }}>
-                                Track →
-                              </a>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-xs font-medium px-2.5 py-1 rounded-full"
-                            style={{ background: "#FFF7ED", color: "#D97706" }}>
-                            Pending AWB
-                          </span>
-                        )}
+                        {(() => {
+                          const awb     = d.awbNumber || d.supplierTrackingNo;
+                          const carrier = d.courier   || d.supplierCourier;
+                          return awb ? (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-mono text-xs font-medium" style={{ color: "var(--text-900)" }}>{awb}</span>
+                              {carrier && <span className="text-xs" style={{ color: "var(--text-400)" }}>{carrier}</span>}
+                              {d.trackingUrl && (
+                                <a href={d.trackingUrl} target="_blank" rel="noopener noreferrer"
+                                  className="text-xs underline" style={{ color: "var(--green-500)" }}>
+                                  Track →
+                                </a>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs font-medium px-2.5 py-1 rounded-full"
+                              style={{ background: "#FFF7ED", color: "#D97706" }}>
+                              Pending AWB
+                            </span>
+                          );
+                        })()}
                       </td>
                     </tr>
                   );

@@ -51,11 +51,13 @@ export async function GET(req: NextRequest) {
       status: true,
       awbNumber: true,
       trackingUrl: true,
+      courier: true,
+      supplierTrackingNo: true,
+      supplierCourier: true,
       createdAt: true,
       customerName: true,
       customerEmail: true,
       customerAddress: true,
-      courier: true,
     },
   });
 
