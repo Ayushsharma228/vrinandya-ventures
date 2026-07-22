@@ -78,6 +78,7 @@ export default function SellerDashboard() {
   const [loading, setLoading] = useState(true);
   const [chartDays, setChartDays] = useState(14);
   const [adSpend, setAdSpend] = useState(0);
+  const [openNdrs, setOpenNdrs] = useState(0);
 
   const name = session?.user?.name?.split(" ")[0] || "Seller";
 
@@ -87,11 +88,13 @@ export default function SellerDashboard() {
       fetch("/api/seller/wallet").then(r => r.json()),
       fetch("/api/seller/orders?limit=6").then(r => r.json()),
       fetch("/api/seller/ad-spend").then(r => r.json()),
-    ]).then(([a, w, o, ads]) => {
+      fetch("/api/seller/ndr").then(r => r.json()),
+    ]).then(([a, w, o, ads, ndr]) => {
       setAnalytics(a);
       setWallet(w);
       setRecentOrders(o.orders?.slice(0, 6) || []);
       setAdSpend(ads.total ?? 0);
+      setOpenNdrs(ndr.pending?.length ?? 0);
       setLoading(false);
     });
   }, []);
@@ -276,6 +279,32 @@ export default function SellerDashboard() {
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex-shrink-0"
               style={{ background: "rgba(0,198,122,0.2)", color: "#16A34A", border: "1px solid rgba(0,198,122,0.3)" }}>
               View Wallet <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        )}
+
+        {/* NDR Alert Banner */}
+        {!loading && openNdrs > 0 && (
+          <div className="flex items-center justify-between gap-4 rounded-2xl px-5 py-4"
+            style={{ background: "linear-gradient(135deg, #431407 0%, #7c2d12 100%)", border: "1px solid rgba(239,68,68,0.4)" }}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse"
+                style={{ background: "rgba(239,68,68,0.25)" }}>
+                <AlertTriangle className="w-5 h-5" style={{ color: "#F87171" }} />
+              </div>
+              <div>
+                <p className="text-sm font-bold" style={{ color: "#FECACA" }}>
+                  {openNdrs} Open NDR{openNdrs > 1 ? "s" : ""} Need Your Action
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: "#FCA5A5" }}>
+                  Unresolved non-delivery reports can lead to RTO — act now
+                </p>
+              </div>
+            </div>
+            <Link href="/seller/ndr"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex-shrink-0"
+              style={{ background: "rgba(239,68,68,0.25)", color: "#FCA5A5", border: "1px solid rgba(239,68,68,0.4)" }}>
+              Resolve Now <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         )}
