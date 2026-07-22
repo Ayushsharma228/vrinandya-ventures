@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Eye, EyeOff, Check, ChevronRight, Store, Package,
-  Zap, TrendingUp, Crown,
+  Zap, TrendingUp, Crown, Mail, Loader2, RefreshCw,
 } from "lucide-react";
 
 const BLUE   = "#0048DF";
@@ -51,7 +51,7 @@ const PLANS = {
 };
 
 
-const STEPS = ["Account", "Service", "Plan"];
+const STEPS = ["Account", "Verify Email", "Service", "Plan"];
 
 const inputCls = "w-full px-4 py-2.5 rounded-xl text-sm outline-none border focus:ring-2 focus:border-blue-500 transition-all";
 const inputStyle = { background: "#fff", borderColor: "#e5e7eb", color: "#0A0E1A" };
@@ -104,6 +104,11 @@ export default function SignupPage() {
   const [confirm, setConfirm]     = useState("");
   const [showPw, setShowPw]       = useState(false);
 
+  // Email OTP (step 1)
+  const [otpInput,    setOtpInput]    = useState("");
+  const [otpLoading,  setOtpLoading]  = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+
   const [service, setService]     = useState<"DROPSHIPPING" | "MARKETPLACE" | "">("");
   const [planTier, setPlanTier]   = useState("");
 
@@ -119,7 +124,44 @@ export default function SignupPage() {
     if (!res.ok) { setError(data.error); setLoading(false); return; }
     const result = await signIn("credentials", { email, password, redirect: false });
     if (result?.error) { setError("Account created but sign-in failed. Please log in."); setLoading(false); return; }
+    // Send email OTP and move to verification step
+    await fetch("/api/auth/otp/send-email", { method: "POST" }).catch(() => {});
+    startResendTimer();
     setStep(1); setLoading(false);
+  }
+
+  function startResendTimer() {
+    setResendTimer(60);
+    const id = setInterval(() => {
+      setResendTimer((t) => {
+        if (t <= 1) { clearInterval(id); return 0; }
+        return t - 1;
+      });
+    }, 1000);
+  }
+
+  async function handleResendOtp() {
+    setError("");
+    const res = await fetch("/api/auth/otp/send-email", { method: "POST" });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({})) as { error?: string };
+      setError(d.error ?? "Failed to resend OTP.");
+    } else {
+      startResendTimer();
+    }
+  }
+
+  async function handleVerifyEmail() {
+    if (otpInput.trim().length !== 6) { setError("Enter the 6-digit code."); return; }
+    setError(""); setOtpLoading(true);
+    const res = await fetch("/api/auth/otp/verify-email", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ otp: otpInput.trim() }),
+    });
+    const d = await res.json().catch(() => ({})) as { error?: string };
+    if (!res.ok) { setError(d.error ?? "Verification failed."); setOtpLoading(false); return; }
+    setStep(2); setOtpLoading(false);
   }
 
   async function saveStep(payload: Record<string, unknown>): Promise<boolean> {
@@ -141,7 +183,7 @@ export default function SignupPage() {
     if (!service) return;
     setError(""); setLoading(true);
     const ok = await saveStep({ step: "service", service });
-    if (ok) { setStep(2); setLoading(false); }
+    if (ok) { setStep(3); setLoading(false); }
   }
 
   async function handlePlan() {
@@ -245,8 +287,60 @@ export default function SignupPage() {
             </p>
           )}
 
-          {/* ── Step 1: Service ── */}
+          {/* ── Step 1: Verify Email ── */}
           {step === 1 && (
+            <div className="space-y-5">
+              <div className="flex flex-col items-center text-center gap-3 py-2">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                  style={{ background: BLUEDIM }}>
+                  <Mail className="w-7 h-7" style={{ color: BLUE }} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold" style={{ color: "#0A0E1A" }}>Check your email</h2>
+                  <p className="text-sm mt-1" style={{ color: "#6B7280" }}>
+                    We sent a 6-digit code to <strong style={{ color: "#0A0E1A" }}>{email}</strong>
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: "#374151" }}>Verification Code</label>
+                <input
+                  value={otpInput}
+                  onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="000000"
+                  maxLength={6}
+                  className="w-full px-4 py-3 rounded-xl text-2xl font-bold text-center tracking-widest outline-none border focus:ring-2 focus:border-blue-500 transition-all"
+                  style={{ background: "#fff", borderColor: "#e5e7eb", color: "#0A0E1A", fontFamily: "monospace" }}
+                  onKeyDown={(e) => e.key === "Enter" && handleVerifyEmail()}
+                />
+              </div>
+
+              <button onClick={handleVerifyEmail} disabled={otpLoading || otpInput.length !== 6}
+                className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 text-white"
+                style={{ background: BLUE }}>
+                {otpLoading
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifying…</>
+                  : <><Check className="w-4 h-4" /> Verify Email</>
+                }
+              </button>
+
+              <div className="text-center">
+                {resendTimer > 0 ? (
+                  <p className="text-xs" style={{ color: "#9CA3AF" }}>Resend in {resendTimer}s</p>
+                ) : (
+                  <button onClick={handleResendOtp}
+                    className="text-xs flex items-center gap-1 mx-auto hover:opacity-70 transition-opacity"
+                    style={{ color: BLUE }}>
+                    <RefreshCw className="w-3 h-3" /> Resend code
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 2: Service ── */}
+          {step === 2 && (
             <div>
               <h2 className="text-xl font-bold mb-1" style={{ color: "#0A0E1A" }}>Choose your service</h2>
               <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Select how you want to sell your products</p>
@@ -309,8 +403,8 @@ export default function SignupPage() {
             </div>
           )}
 
-          {/* ── Step 2: Plan ── */}
-          {step === 2 && service && (
+          {/* ── Step 3: Plan ── */}
+          {step === 3 && service && (
             <div>
               <h2 className="text-xl font-bold mb-1" style={{ color: "#0A0E1A" }}>Select your plan</h2>
               <p className="text-sm mb-6" style={{ color: "#6B7280" }}>

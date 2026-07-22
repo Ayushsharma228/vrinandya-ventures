@@ -169,6 +169,13 @@ model User {
   agreementAccepted    Boolean       @default(false)
   agreementAcceptedAt  DateTime?
 
+  // OTP verification
+  emailOtp             String?
+  emailOtpExpiry       DateTime?
+  phoneVerified        Boolean       @default(false)
+  phoneOtp             String?
+  phoneOtpExpiry       DateTime?
+
   // Payment
   paymentReference     String?
   paymentConfirmed     Boolean       @default(false)

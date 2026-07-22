@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       gstNumber: true, bankName: true, bankHolder: true,
       bankAccount: true, bankIfsc: true, aadhaarNumber: true,
       agreementAccepted: true, kycStatus: true, onboardingDone: true,
-      plan: true, planTier: true, paymentConfirmed: true,
+      plan: true, planTier: true, paymentConfirmed: true, phoneVerified: true,
     },
   });
 

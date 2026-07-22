@@ -8,7 +8,7 @@ import {
   Building2, ShieldCheck, CheckCircle2, ChevronRight, ChevronLeft,
   Upload, Loader2, Check, ArrowRight, Sparkles, CreditCard,
   Package, Zap, ShoppingCart, BarChart3, Wallet, Store,
-  MapPin, Briefcase,
+  MapPin, Briefcase, MessageCircle, RefreshCw,
 } from "lucide-react";
 
 declare global {
@@ -75,7 +75,12 @@ export default function OnboardingPage() {
   const [planTier,   setPlanTier]   = useState("");
 
   // Step 1 – Personal Info
-  const [personal, setPersonal] = useState({ address: "", city: "", state: "", pincode: "", phone: "" });
+  const [personal,       setPersonal]       = useState({ address: "", city: "", state: "", pincode: "", phone: "" });
+  const [phoneVerified,  setPhoneVerified]  = useState(false);
+  const [phoneOtpSent,   setPhoneOtpSent]   = useState(false);
+  const [phoneOtpInput,  setPhoneOtpInput]  = useState("");
+  const [phoneOtpLoading, setPhoneOtpLoading] = useState(false);
+  const [phoneResendTimer, setPhoneResendTimer] = useState(0);
 
   // Step 2 – Business Details
   const [business, setBusiness] = useState({ brandName: "", businessName: "", gstNumber: "" });
@@ -110,6 +115,7 @@ export default function OnboardingPage() {
         if (d.gstNumber)       setBusiness((b) => ({ ...b, gstNumber: d.gstNumber }));
         if (d.aadhaarNumber)   setAadhaarNumber(d.aadhaarNumber);
         if (d.agreementAccepted) setAgreed(true);
+        if (d.phoneVerified)    setPhoneVerified(true);
 
         // Resume to furthest incomplete step
         if (d.paymentConfirmed) { setDone(true); return; }
@@ -145,6 +151,44 @@ export default function OnboardingPage() {
       if (data.url) setAadhaarDocUrl(data.url);
     } catch {}
     setUploading(false);
+  }
+
+  function startPhoneTimer() {
+    setPhoneResendTimer(60);
+    const id = setInterval(() => {
+      setPhoneResendTimer((t) => { if (t <= 1) { clearInterval(id); return 0; } return t - 1; });
+    }, 1000);
+  }
+
+  async function handleSendPhoneOtp() {
+    if (!personal.phone || personal.phone.replace(/\D/g, "").length < 10) {
+      setError("Enter a valid 10-digit mobile number first."); return;
+    }
+    setError(""); setPhoneOtpLoading(true);
+    const res = await fetch("/api/auth/otp/send-phone", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ phone: personal.phone }),
+    });
+    const d = await res.json().catch(() => ({})) as { error?: string };
+    if (!res.ok) { setError(d.error ?? "Failed to send OTP."); setPhoneOtpLoading(false); return; }
+    setPhoneOtpSent(true);
+    startPhoneTimer();
+    setPhoneOtpLoading(false);
+  }
+
+  async function handleVerifyPhone() {
+    if (phoneOtpInput.trim().length !== 6) { setError("Enter the 6-digit code."); return; }
+    setError(""); setPhoneOtpLoading(true);
+    const res = await fetch("/api/auth/otp/verify-phone", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ otp: phoneOtpInput.trim() }),
+    });
+    const d = await res.json().catch(() => ({})) as { error?: string };
+    if (!res.ok) { setError(d.error ?? "Verification failed."); setPhoneOtpLoading(false); return; }
+    setPhoneVerified(true);
+    setPhoneOtpLoading(false);
   }
 
   async function handlePayment() {
@@ -211,6 +255,7 @@ export default function OnboardingPage() {
     if (step === 0) {
       setStep(1);
     } else if (step === 1) {
+      if (!phoneVerified) { setError("Please verify your phone number to continue."); return; }
       const ok = await save({ ...personal }, "personal");
       if (ok) setStep(2);
     } else if (step === 2) {
@@ -436,9 +481,58 @@ export default function OnboardingPage() {
                 {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </Field>
-            <Field label="Phone Number" optional>
-              <input value={personal.phone} onChange={(e) => setPersonal((p) => ({ ...p, phone: e.target.value }))}
-                placeholder="+91 98765 43210" type="tel" className={inputCls} style={inputStyle} />
+            <Field label="Phone Number">
+              {phoneVerified ? (
+                <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
+                  style={{ background: "rgba(29,158,117,0.08)", border: "1px solid rgba(29,158,117,0.3)" }}>
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: "#1D9E75" }} />
+                  <span className="text-sm font-medium" style={{ color: "#1D9E75" }}>
+                    {personal.phone} — Verified ✓
+                  </span>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input value={personal.phone}
+                      onChange={(e) => { setPersonal((p) => ({ ...p, phone: e.target.value })); setPhoneOtpSent(false); setPhoneVerified(false); }}
+                      placeholder="+91 98765 43210" type="tel"
+                      className={`${inputCls} flex-1`} style={inputStyle}
+                      disabled={phoneOtpSent} />
+                    <button onClick={handleSendPhoneOtp}
+                      disabled={phoneOtpLoading || (phoneOtpSent && phoneResendTimer > 0)}
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap disabled:opacity-50 transition-all flex items-center gap-1.5 text-white"
+                      style={{ background: "#0048DF" }}>
+                      {phoneOtpLoading
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : phoneOtpSent
+                        ? <><RefreshCw className="w-3 h-3" />{phoneResendTimer > 0 ? `${phoneResendTimer}s` : "Resend"}</>
+                        : <><MessageCircle className="w-3.5 h-3.5" /> Send OTP</>
+                      }
+                    </button>
+                  </div>
+                  {phoneOtpSent && (
+                    <div className="flex gap-2">
+                      <input value={phoneOtpInput}
+                        onChange={(e) => setPhoneOtpInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        placeholder="6-digit WhatsApp OTP"
+                        className={`${inputCls} flex-1 text-center tracking-widest font-bold`}
+                        style={{ ...inputStyle, fontFamily: "monospace" }}
+                        maxLength={6} />
+                      <button onClick={handleVerifyPhone}
+                        disabled={phoneOtpLoading || phoneOtpInput.length !== 6}
+                        className="px-4 py-2.5 rounded-xl text-xs font-bold disabled:opacity-50 text-white flex items-center gap-1.5"
+                        style={{ background: "#1D9E75" }}>
+                        {phoneOtpLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Check className="w-3.5 h-3.5" /> Verify</>}
+                      </button>
+                    </div>
+                  )}
+                  {phoneOtpSent && (
+                    <p className="text-xs" style={{ color: "#9CA3AF" }}>
+                      OTP sent via WhatsApp to {personal.phone}
+                    </p>
+                  )}
+                </div>
+              )}
             </Field>
           </div>
         )}
