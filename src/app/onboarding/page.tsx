@@ -8,7 +8,7 @@ import {
   Building2, ShieldCheck, CheckCircle2, ChevronRight, ChevronLeft,
   Upload, Loader2, Check, ArrowRight, Sparkles, CreditCard,
   Package, Zap, ShoppingCart, BarChart3, Wallet, Store,
-  MapPin, Briefcase, MessageCircle, RefreshCw,
+  MapPin, Briefcase, Smartphone, RefreshCw,
 } from "lucide-react";
 
 declare global {
@@ -506,7 +506,7 @@ export default function OnboardingPage() {
                         ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         : phoneOtpSent
                         ? <><RefreshCw className="w-3 h-3" />{phoneResendTimer > 0 ? `${phoneResendTimer}s` : "Resend"}</>
-                        : <><MessageCircle className="w-3.5 h-3.5" /> Send OTP</>
+                        : <><Smartphone className="w-3.5 h-3.5" /> Send OTP</>
                       }
                     </button>
                   </div>
@@ -528,7 +528,7 @@ export default function OnboardingPage() {
                   )}
                   {phoneOtpSent && (
                     <p className="text-xs" style={{ color: "#9CA3AF" }}>
-                      OTP sent via WhatsApp to {personal.phone}
+                      OTP sent via SMS to {personal.phone}
                     </p>
                   )}
                 </div>

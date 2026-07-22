@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateOtp, hashOtp, otpExpiry, normalisePhone } from "@/lib/otp";
-import { sendTextMessage } from "@/lib/whatsapp/client";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -14,8 +13,8 @@ export async function POST(req: NextRequest) {
   const { phone } = await req.json() as { phone?: string };
   if (!phone) return NextResponse.json({ error: "Phone number is required." }, { status: 400 });
 
-  const normalised = normalisePhone(phone);
-  if (normalised.length < 10) {
+  const digits10 = phone.replace(/\D/g, "").slice(-10); // Indian 10-digit
+  if (digits10.length !== 10) {
     return NextResponse.json({ error: "Enter a valid 10-digit mobile number." }, { status: 400 });
   }
 
@@ -43,15 +42,30 @@ export async function POST(req: NextRequest) {
     data:  { phone: phone.trim(), phoneOtp: hashed, phoneOtpExpiry: expiry },
   });
 
-  if (!process.env.WHATSAPP_ACCESS_TOKEN) {
-    console.log(`[DEV] Phone OTP for ${normalised}: ${otp}`);
+  // Dev fallback — log OTP if Fast2SMS not configured
+  if (!process.env.FAST2SMS_API_KEY) {
+    console.log(`[DEV] Phone OTP for ${digits10}: ${otp}`);
     return NextResponse.json({ ok: true });
   }
 
-  const message = `Your *Axiqen* verification code is:\n\n*${otp}*\n\nValid for 10 minutes. Do not share this code with anyone.`;
-  const sent = await sendTextMessage(normalised, message);
-  if (!sent) {
-    return NextResponse.json({ error: "Failed to send WhatsApp message. Check your number." }, { status: 500 });
+  // Fast2SMS OTP route — no DLT/template needed
+  const res = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+    method: "POST",
+    headers: {
+      authorization:  process.env.FAST2SMS_API_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      variables_values: otp,
+      route:            "otp",
+      numbers:          digits10,
+    }),
+  });
+
+  const data = await res.json() as { return?: boolean; message?: string[] };
+  if (!data.return) {
+    console.error("[Fast2SMS] send failed", data);
+    return NextResponse.json({ error: "Failed to send OTP. Please try again." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
