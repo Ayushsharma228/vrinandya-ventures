@@ -108,7 +108,7 @@ export default function SellerDashboard() {
     RTO: d.rto,
   })) ?? [];
 
-  const netProfit = (wallet?.totalCredit ?? 0) - (wallet?.totalDebit ?? 0);
+  const netPayout = wallet?.balance ?? 0;
 
   const stats = [
     {
@@ -136,12 +136,12 @@ export default function SellerDashboard() {
       sub: adSpend > 0 ? "Total ad spend" : "No spend logged yet",
     },
     {
-      label: "Gross Profit",
-      value: `₹${fmt(Math.max(0, netProfit))}`,
+      label: "Net Payout",
+      value: `₹${fmt(Math.max(0, netPayout))}`,
       icon: TrendingUp,
-      iconBg: netProfit >= 0 ? "#F0FDF4" : "#FEF2F2",
-      iconColor: netProfit >= 0 ? "#16A34A" : "#EF4444",
-      sub: `After deductions`,
+      iconBg: netPayout >= 0 ? "#F0FDF4" : "#FEF2F2",
+      iconColor: netPayout >= 0 ? "#16A34A" : "#EF4444",
+      sub: "Remitted minus deductions",
     },
   ];
 
