@@ -156,11 +156,11 @@ export default function SellerDashboard() {
     },
     {
       label: "Net Payout",
-      value: `₹${fmt(Math.max(0, netPayout))}`,
+      value: `₹${fmt(wallet?.totalCredit ?? 0)}`,
       icon: TrendingUp,
-      iconBg: netPayout >= 0 ? "#F0FDF4" : "#FEF2F2",
-      iconColor: netPayout >= 0 ? "#16A34A" : "#EF4444",
-      sub: "Remitted minus deductions",
+      iconBg: "#F0FDF4",
+      iconColor: "#16A34A",
+      sub: "Total paid to your account",
     },
   ];
 
