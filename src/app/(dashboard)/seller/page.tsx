@@ -110,6 +110,9 @@ export default function SellerDashboard() {
 
   const netPayout = wallet?.balance ?? 0;
 
+  const deliveryRate = analytics?.deliveryRate ?? 0;
+  const rtoRate      = analytics?.rtoRate ?? 0;
+
   const stats = [
     {
       label: "Total Orders",
@@ -126,6 +129,22 @@ export default function SellerDashboard() {
       iconBg: "#F0FDF4",
       iconColor: "#16A34A",
       sub: wallet ? `₹${fmt(wallet.totalCredit)} remitted` : "—",
+    },
+    {
+      label: "Delivery Rate",
+      value: `${deliveryRate.toFixed(1)}%`,
+      icon: CheckCircle2,
+      iconBg: deliveryRate >= 80 ? "#F0FDF4" : deliveryRate >= 60 ? "#FFF7ED" : "#FEF2F2",
+      iconColor: deliveryRate >= 80 ? "#16A34A" : deliveryRate >= 60 ? "#F59E0B" : "#EF4444",
+      sub: `${analytics?.deliveredCount ?? 0} delivered`,
+    },
+    {
+      label: "RTO Rate",
+      value: `${rtoRate.toFixed(1)}%`,
+      icon: TrendingDown,
+      iconBg: rtoRate <= 10 ? "#F0FDF4" : rtoRate <= 20 ? "#FFF7ED" : "#FEF2F2",
+      iconColor: rtoRate <= 10 ? "#16A34A" : rtoRate <= 20 ? "#F59E0B" : "#EF4444",
+      sub: `${analytics?.rtoCount ?? 0} returned`,
     },
     {
       label: "Meta Ads Spent",
@@ -193,9 +212,9 @@ export default function SellerDashboard() {
         </div>
 
         {/* Mini stat row inside hero */}
-        <div className="relative mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div className="relative mt-6 grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           {loading ? (
-            [...Array(4)].map((_, i) => (
+            [...Array(6)].map((_, i) => (
               <div key={i} className="h-20 rounded-xl animate-pulse"
                 style={{ background: "var(--bg-card)" }} />
             ))
