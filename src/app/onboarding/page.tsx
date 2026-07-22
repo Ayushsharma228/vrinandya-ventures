@@ -403,21 +403,62 @@ export default function OnboardingPage() {
         {step === 3 && (
           <div className="space-y-5">
             {/* Agreement */}
-            <div className="rounded-xl p-4" style={{ background: "rgba(0,72,223,0.04)", border: "1px solid rgba(0,72,223,0.15)" }}>
-              <div className="flex items-start gap-2 mb-2">
-                <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#0048DF" }} />
-                <p className="text-xs font-semibold" style={{ color: "#0A0E1A" }}>Axiqen Seller Agreement</p>
+            <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(0,72,223,0.2)" }}>
+              <div className="flex items-center gap-2 px-4 py-3" style={{ background: "rgba(0,72,223,0.07)", borderBottom: "1px solid rgba(0,72,223,0.15)" }}>
+                <ShieldCheck className="w-4 h-4 flex-shrink-0" style={{ color: "#0048DF" }} />
+                <p className="text-xs font-bold" style={{ color: "#0A0E1A" }}>Vrinandya Ventures Seller Agreement</p>
               </div>
-              <p className="text-xs mb-3" style={{ color: "#6B7280" }}>
-                Platform usage terms, supplier policies, RTO fee structure, payout timelines, and governing law (Indian law, Agra jurisdiction).
-              </p>
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 flex-shrink-0 rounded accent-[#0048DF]" />
-                <span className="text-xs" style={{ color: "#374151" }}>
-                  I have read and agree to the <strong>Vrinandya Ventures Seller Agreement</strong> and Terms of Service.
-                </span>
-              </label>
+              <div className="overflow-y-auto p-4 text-xs leading-relaxed space-y-3" style={{ maxHeight: "220px", color: "#374151", background: "#fff" }}>
+                <p><strong>1. Introduction</strong><br />
+                This Seller Agreement ("Agreement") is entered into between Vrinandya Ventures ("Company", "we", "us") and you ("Seller"). By ticking the checkbox below, you agree to be bound by these terms in full.</p>
+
+                <p><strong>2. Platform Usage</strong><br />
+                The Company provides a dropshipping and marketplace management platform ("Platform"). The Seller is granted a non-exclusive, non-transferable licence to use the Platform solely for managing their ecommerce operations. The Seller shall not reverse-engineer, resell, or sublicense the Platform.</p>
+
+                <p><strong>3. Seller Obligations</strong><br />
+                The Seller agrees to: (a) provide accurate business and identity information; (b) maintain sufficient inventory or supplier coordination; (c) respond to customer queries and NDR (Non-Delivery Reports) within 48 hours; (d) comply with all applicable Indian laws including the Consumer Protection Act, 2019 and IT Act, 2000.</p>
+
+                <p><strong>4. Supplier & Product Policy</strong><br />
+                Products listed on the Platform are sourced from verified suppliers. The Company does not guarantee availability or pricing of products. Sellers must not list counterfeit, prohibited, or unlicensed goods. The Company reserves the right to remove any listing without notice.</p>
+
+                <p><strong>5. Order Fulfilment & Shipping</strong><br />
+                The Company facilitates fulfilment through its logistics partners. AWB (Airway Bills) are generated automatically on order confirmation. Estimated delivery timelines are indicative. The Company is not liable for delays caused by courier partners, natural calamities, or government restrictions.</p>
+
+                <p><strong>6. RTO (Return to Origin) Policy</strong><br />
+                In the event of an RTO, the Seller bears the reverse shipping cost as per the rate card shared at onboarding. Repeated high RTO rates (above 30%) may result in account suspension. The Company will deduct applicable RTO charges from the Seller's settlement amount.</p>
+
+                <p><strong>7. Payments & Payouts</strong><br />
+                Payouts are processed on a 7–14 day settlement cycle after successful delivery confirmation. The Company deducts platform fees, shipping charges, and any applicable penalties before releasing the payout. TDS (Tax Deducted at Source) will be deducted as per Indian Income Tax rules.</p>
+
+                <p><strong>8. GST & Invoicing</strong><br />
+                The Seller is solely responsible for their own GST compliance. The Company will issue GST-compliant invoices for platform fees. Sellers with GSTIN must provide accurate details for ITC claims.</p>
+
+                <p><strong>9. Confidentiality</strong><br />
+                The Seller agrees to keep all supplier pricing, platform pricing, and business data confidential. Sharing proprietary information with third parties without written consent constitutes a material breach of this Agreement.</p>
+
+                <p><strong>10. Termination</strong><br />
+                Either party may terminate this Agreement with 30 days' written notice. The Company may terminate immediately in cases of fraud, repeated policy violations, or non-payment. On termination, all pending settlements will be processed within 30 days subject to deductions.</p>
+
+                <p><strong>11. Limitation of Liability</strong><br />
+                The Company's aggregate liability under this Agreement shall not exceed the total platform fees paid by the Seller in the preceding 3 months. The Company is not liable for indirect, incidental, or consequential losses.</p>
+
+                <p><strong>12. Governing Law & Dispute Resolution</strong><br />
+                This Agreement shall be governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of courts in Agra, Uttar Pradesh. The parties agree to attempt mediation before initiating legal proceedings.</p>
+
+                <p><strong>13. Amendments</strong><br />
+                Vrinandya Ventures reserves the right to amend these terms at any time. Sellers will be notified via email at least 7 days before material changes take effect. Continued use of the Platform constitutes acceptance of the revised terms.</p>
+
+                <p style={{ color: "#9CA3AF" }}>Last updated: January 2025 · Vrinandya Ventures, Agra, Uttar Pradesh, India</p>
+              </div>
+              <div className="px-4 py-3" style={{ background: "rgba(0,72,223,0.03)", borderTop: "1px solid rgba(0,72,223,0.1)" }}>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 flex-shrink-0 rounded accent-[#0048DF]" />
+                  <span className="text-xs" style={{ color: "#374151" }}>
+                    I have read and agree to the <strong>Vrinandya Ventures Seller Agreement</strong> and Terms of Service.
+                  </span>
+                </label>
+              </div>
             </div>
 
             {/* Aadhaar */}
