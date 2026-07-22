@@ -158,7 +158,7 @@ export default function SellerDashboard() {
       icon: Megaphone,
       iconBg: "#F5F3FF",
       iconColor: "#7C3AED",
-      sub: adSpend > 0 ? "Total ad spend" : "No spend logged yet",
+      sub: adSpend > 0 ? "Last 30 days" : "No spend in last 30 days",
     },
     {
       label: "Net Payout",

@@ -183,6 +183,11 @@ model User {
   // Data visibility — orders before this date are hidden from seller dashboard
   dataStartDate        DateTime?
 
+  // Meta Ads integration
+  metaAccessToken      String?
+  metaAdAccountId      String?
+  metaTokenExpiresAt   DateTime?
+
   // Sales team
   salesTarget          Int?
   salesTitle           String?
@@ -488,6 +493,7 @@ model AdSpend {
   note      String?
   createdAt DateTime @default(now())
 
+  @@unique([sellerId, date])
   @@map("ad_spends")
 }
 

@@ -10,19 +10,29 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const from = searchParams.get("from");
-  const to = searchParams.get("to");
+  const to   = searchParams.get("to");
+
+  // Default: last 30 days if no range specified
+  const defaultFrom = new Date();
+  defaultFrom.setDate(defaultFrom.getDate() - 30);
 
   const where: { sellerId: string; date?: { gte?: Date; lte?: Date } } = {
     sellerId: session.user.id,
+    date: {
+      gte: from ? new Date(from) : defaultFrom,
+      ...(to ? { lte: new Date(to + "T23:59:59") } : {}),
+    },
   };
-  if (from || to) {
-    where.date = {};
-    if (from) where.date.gte = new Date(from);
-    if (to) where.date.lte = new Date(to + "T23:59:59");
-  }
 
   const entries = await prisma.adSpend.findMany({ where, orderBy: { date: "desc" } });
-  const total = entries.reduce((sum, e) => sum + e.amount, 0);
+  const total   = entries.reduce((sum, e) => sum + e.amount, 0);
 
-  return NextResponse.json({ total, entries });
+  // Also return connection status
+  const seller = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { metaAdAccountId: true, metaTokenExpiresAt: true },
+  });
+  const metaConnected = !!(seller?.metaAdAccountId && seller?.metaTokenExpiresAt && seller.metaTokenExpiresAt > new Date());
+
+  return NextResponse.json({ total, entries, metaConnected });
 }
