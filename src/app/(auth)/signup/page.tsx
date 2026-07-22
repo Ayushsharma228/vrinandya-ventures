@@ -22,7 +22,7 @@ const BLUEBORDER = "rgba(0,72,223,0.25)";
 const PLANS = {
   DROPSHIPPING: [
     {
-      tier: "STARTER", label: "Starter", price: 1,
+      tier: "STARTER", label: "Starter", price: 10000,
       features: ["Premium Shopify Store", "1-Year Domain", "Payment Gateway Setup", "Product Import (Up to 100)", "Winning Product Research", "Basic Training", "30 Days Support"],
       icon: Zap,
     },

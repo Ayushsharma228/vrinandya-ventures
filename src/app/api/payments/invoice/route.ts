@@ -23,7 +23,7 @@ export async function POST() {
   if (!user.paymentReference) return NextResponse.json({ error: "No payment on record" }, { status: 400 });
 
   const PLAN_AMOUNTS: Record<string, Record<string, number>> = {
-    dropshipping: { starter: 100, growth: 2500000, scale: 5000000 },
+    dropshipping: { starter: 1000000, growth: 2500000, scale: 5000000 },
     marketplace:  { starter:  500000, growth: 1000000, scale: 2000000 },
   };
 
