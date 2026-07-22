@@ -261,6 +261,8 @@ export default function SellerWalletPage() {
                       <div className="flex items-center justify-end gap-1 mt-0.5">
                         {isPaid
                           ? <><CheckCircle2 style={{ color: "#16A34A", width: 12, height: 12 }} /><span className="text-xs" style={{ color: "#16A34A" }}>Paid</span></>
+                          : !isCredit
+                          ? <><TrendingDown style={{ color: "#EF4444", width: 12, height: 12 }} /><span className="text-xs" style={{ color: "#EF4444" }}>Deduction</span></>
                           : <><Clock style={{ color: "#F59E0B", width: 12, height: 12 }} /><span className="text-xs" style={{ color: "#F59E0B" }}>Upcoming</span></>
                         }
                       </div>
