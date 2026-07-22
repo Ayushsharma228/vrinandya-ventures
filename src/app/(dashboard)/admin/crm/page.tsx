@@ -728,18 +728,32 @@ export default function AdminCRMPage() {
                         <p className="text-xs" style={{ color: "var(--text-400)" }}>{rep.salesTitle || "Sales"}</p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 mb-3 text-center">
-                      {[
-                        { label: "Assigned", value: rep.total },
-                        { label: "Paid",     value: rep.paid },
-                        { label: "Onboarded",value: rep.onboarded },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="rounded-xl py-2" style={{ background: "#F9FAFB" }}>
-                          <p className="text-lg font-bold" style={{ color: "var(--text-900)" }}>{value}</p>
-                          <p className="text-xs" style={{ color: "var(--text-400)" }}>{label}</p>
-                        </div>
-                      ))}
-                    </div>
+                    {(() => {
+                      const convRate = rep.total > 0 ? ((rep.paid / rep.total) * 100).toFixed(1) : "0.0";
+                      const convNum  = parseFloat(convRate);
+                      const convColor = convNum >= 20 ? "#16A34A" : convNum >= 10 ? "#D97706" : "#DC2626";
+                      return (
+                        <>
+                          <div className="grid grid-cols-3 gap-2 mb-2 text-center">
+                            {[
+                              { label: "Assigned", value: rep.total },
+                              { label: "Paid",     value: rep.paid },
+                              { label: "Onboarded",value: rep.onboarded },
+                            ].map(({ label, value }) => (
+                              <div key={label} className="rounded-xl py-2" style={{ background: "#F9FAFB" }}>
+                                <p className="text-lg font-bold" style={{ color: "var(--text-900)" }}>{value}</p>
+                                <p className="text-xs" style={{ color: "var(--text-400)" }}>{label}</p>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="rounded-xl py-2 px-3 mb-3 flex items-center justify-between"
+                            style={{ background: "#F9FAFB" }}>
+                            <p className="text-xs" style={{ color: "var(--text-400)" }}>Conversion Rate</p>
+                            <p className="text-sm font-bold" style={{ color: convColor }}>{convRate}%</p>
+                          </div>
+                        </>
+                      );
+                    })()}
                     <div>
                       <div className="flex justify-between text-xs mb-1" style={{ color: "var(--text-400)" }}>
                         <span>Monthly target</span>
