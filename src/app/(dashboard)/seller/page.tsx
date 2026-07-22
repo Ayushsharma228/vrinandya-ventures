@@ -195,17 +195,30 @@ export default function SellerDashboard() {
 
           <div className="flex items-center gap-3">
             {analytics?.store ? (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm"
-                style={{ background: "rgba(0,198,122,0.15)", color: "#16A34A", border: "1px solid rgba(0,198,122,0.3)" }}>
-                <CheckCircle2 className="w-4 h-4" />
-                {analytics.store.storeUrl}
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
+                style={{ background: "rgba(0,198,122,0.12)", border: "1px solid rgba(0,198,122,0.3)" }}>
+                <div className="relative flex-shrink-0">
+                  <Store className="w-5 h-5" style={{ color: "#16A34A" }} />
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white leading-none">
+                    {analytics.store.storeName || analytics.store.storeUrl.replace(".myshopify.com", "")}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: "#4ADE80" }}>
+                    Shopify Connected · {analytics.store.storeUrl}
+                  </p>
+                </div>
               </div>
             ) : (
               <Link href="/seller/shopify"
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-                style={{ background: "rgba(245,158,11,0.15)", color: "#F59E0B", border: "1px solid rgba(245,158,11,0.3)" }}>
-                <AlertTriangle className="w-4 h-4" />
-                Connect Shopify
+                className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:opacity-90"
+                style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.4)" }}>
+                <AlertTriangle className="w-5 h-5 flex-shrink-0" style={{ color: "#F87171" }} />
+                <div>
+                  <p className="text-sm font-bold" style={{ color: "#FCA5A5" }}>Shopify Not Connected</p>
+                  <p className="text-xs" style={{ color: "#F87171" }}>Tap to connect your store →</p>
+                </div>
               </Link>
             )}
           </div>
