@@ -6,16 +6,10 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
   Building2, ShieldCheck, CheckCircle2, ChevronRight, ChevronLeft,
-  Upload, Loader2, Check, ArrowRight, Sparkles, CreditCard,
+  Upload, Loader2, Check, ArrowRight, Sparkles,
   Package, Zap, ShoppingCart, BarChart3, Wallet, Store,
   MapPin, Briefcase,
 } from "lucide-react";
-
-declare global {
-  interface Window {
-    Razorpay: new (opts: Record<string, unknown>) => { open(): void };
-  }
-}
 
 // ─── Steps ────────────────────────────────────────────────────────────────────
 
@@ -24,7 +18,6 @@ const STEPS = [
   { id: "personal",     label: "Personal Info", icon: MapPin      },
   { id: "business",     label: "Business",      icon: Briefcase   },
   { id: "verification", label: "Verification",  icon: ShieldCheck },
-  { id: "payment",      label: "Payment",       icon: CreditCard  },
 ];
 
 const INDIAN_STATES = [
@@ -35,11 +28,6 @@ const INDIAN_STATES = [
   "Andaman & Nicobar Islands","Chandigarh","Dadra & Nagar Haveli","Daman & Diu",
   "Delhi","Jammu & Kashmir","Ladakh","Lakshadweep","Puducherry",
 ];
-
-const PLAN_AMOUNTS: Record<string, Record<string, number>> = {
-  dropshipping: { starter: 10000, growth: 25000, scale: 50000 },
-  marketplace:  { starter:  5000, growth: 10000, scale: 20000 },
-};
 
 // ─── Shared field components ──────────────────────────────────────────────────
 
@@ -86,8 +74,6 @@ export default function OnboardingPage() {
   const [aadhaarDocUrl,   setAadhaarDocUrl]  = useState("");
   const [uploading,       setUploading]      = useState(false);
 
-  // Step 4 – Payment
-  const [rzpLoading, setRzpLoading] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/login?zone=seller");
@@ -112,8 +98,8 @@ export default function OnboardingPage() {
         if (d.agreementAccepted) setAgreed(true);
 
         // Resume to furthest incomplete step
-        if (d.paymentConfirmed) { setDone(true); return; }
-        if (d.agreementAccepted && d.aadhaarNumber) setStep(4); // past verification → payment
+        if (d.onboardingDone) { setDone(true); return; }
+        if (d.agreementAccepted && d.aadhaarNumber) setStep(3); // past business → verification done? edge case, show it again
         else if (d.businessName || d.brandName)     setStep(3); // past business → verification
         else if (d.city || d.businessAddress)       setStep(2); // past personal → business
         else if (!d.name)                           setStep(0); // new
@@ -147,65 +133,6 @@ export default function OnboardingPage() {
     setUploading(false);
   }
 
-  async function handlePayment() {
-    setError(""); setRzpLoading(true);
-
-    if (!window.Razorpay) {
-      await new Promise<void>((resolve, reject) => {
-        const s = document.createElement("script");
-        s.src = "https://checkout.razorpay.com/v1/checkout.js";
-        s.onload  = () => resolve();
-        s.onerror = () => reject(new Error("Failed to load payment gateway"));
-        document.body.appendChild(s);
-      });
-    }
-
-    const res  = await fetch("/api/payments/create-order", { method: "POST" });
-    const data = await res.json();
-    if (!res.ok) { setError(data.error ?? "Could not create order"); setRzpLoading(false); return; }
-
-    const rzp = new window.Razorpay({
-      key:         data.key,
-      amount:      data.amount,
-      currency:    data.currency,
-      order_id:    data.orderId,
-      name:        "Axiqen",
-      description: `${data.tierLabel} Plan Setup Fee`,
-      image:       "/favicon.ico",
-      prefill:     { name: data.name, email: data.email, contact: data.phone },
-      theme:       { color: "#0048DF" },
-      handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
-        const verify = await fetch("/api/payments/verify", {
-          method:  "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            razorpay_order_id:   response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature:  response.razorpay_signature,
-          }),
-        });
-        if (verify.ok) {
-          // Mark onboarding done + send welcome email
-          await fetch("/api/seller/onboarding", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ step: "complete" }),
-          }).catch(() => {});
-          // Generate invoice in background
-          fetch("/api/payments/invoice", { method: "POST" }).catch(() => {});
-          setDone(true);
-        } else {
-          const d = await verify.json().catch(() => ({}));
-          setError((d as Record<string, string>).error ?? "Payment verification failed. Contact support.");
-          setRzpLoading(false);
-        }
-      },
-      modal: { ondismiss: () => setRzpLoading(false) },
-    });
-
-    rzp.open();
-  }
-
   async function handleNext() {
     setError("");
     if (step === 0) {
@@ -220,14 +147,19 @@ export default function OnboardingPage() {
       if (!agreed) { setError("Please accept the agreement to continue."); return; }
       if (!aadhaarNumber) { setError("Aadhaar number is required."); return; }
       const ok = await save({ aadhaarNumber, aadhaarDocUrl }, "verification");
-      if (ok) setStep(4);
+      if (ok) {
+        await fetch("/api/seller/onboarding", {
+          method:  "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ step: "complete" }),
+        }).catch(() => {});
+        fetch("/api/payments/invoice", { method: "POST" }).catch(() => {});
+        setDone(true);
+      }
     }
   }
 
-  const firstName    = (session?.user?.name ?? sellerName ?? "there").split(" ")[0];
-  const service      = (plan ?? "dropshipping").toLowerCase();
-  const tier         = (planTier ?? "starter").toLowerCase();
-  const planAmountRs = PLAN_AMOUNTS[service]?.[tier] ?? 10000;
+  const firstName = (session?.user?.name ?? sellerName ?? "there").split(" ")[0];
 
   if (status === "loading") {
     return (
@@ -527,77 +459,24 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* ── Step 4: Payment ────────────────────────────────────────────── */}
-        {step === 4 && (
-          <div className="space-y-5">
-            <p className="text-sm" style={{ color: "#6B7280" }}>
-              Pay securely via Razorpay — UPI, cards, net banking all accepted.
-            </p>
-
-            <div className="rounded-xl p-5 text-center" style={{ background: "rgba(0,72,223,0.05)", border: "1px solid rgba(0,72,223,0.2)" }}>
-              <p className="text-xs font-medium mb-1" style={{ color: "#6B7280" }}>Setup Fee</p>
-              <p className="text-4xl font-black mb-1" style={{ color: "#0A0E1A" }}>
-                ₹{planAmountRs.toLocaleString("en-IN")}
-              </p>
-              <p className="text-sm font-semibold" style={{ color: "#0048DF" }}>
-                {planTier || "Starter"} Plan · {plan === "MARKETPLACE" ? "Marketplace" : "Dropshipping"}
-              </p>
-              <p className="text-xs mt-1" style={{ color: "#9CA3AF" }}>One-time · + 18% GST</p>
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-2">
-              {["UPI", "Credit Card", "Debit Card", "Net Banking", "Wallets"].map((m) => (
-                <span key={m} className="text-xs px-3 py-1 rounded-full"
-                  style={{ background: "#f3f4f6", color: "#6B7280" }}>{m}</span>
-              ))}
-            </div>
-
-            <button onClick={handlePayment} disabled={rzpLoading}
-              className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 text-white transition-all hover:opacity-90"
-              style={{ background: "#0048DF" }}>
-              {rzpLoading
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening payment…</>
-                : <><CreditCard className="w-4 h-4" /> Pay ₹{planAmountRs.toLocaleString("en-IN")} Securely</>
-              }
-            </button>
-
-            <p className="text-center text-xs" style={{ color: "#9CA3AF" }}>
-              Secured by Razorpay · 256-bit SSL encryption
-            </p>
-          </div>
-        )}
-
-        {/* Navigation — no Next button on payment step */}
-        {step !== 4 && (
-          <div className="flex items-center justify-between mt-8 pt-5" style={{ borderTop: "1px solid #f3f4f6" }}>
-            <button
-              onClick={() => { setError(""); setStep((s) => s - 1); }}
-              disabled={step === 0}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-30"
-              style={{ color: "#6B7280", border: "1px solid #e5e7eb" }}>
-              <ChevronLeft className="w-4 h-4" /> Back
-            </button>
-            <button onClick={handleNext} disabled={saving || uploading}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
-              style={{ background: "#0048DF" }}>
-              {saving
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
-                : <>{step === 3 ? "Save & Continue" : "Next"} <ChevronRight className="w-4 h-4" /></>
-              }
-            </button>
-          </div>
-        )}
-
-        {/* Back button only on payment step */}
-        {step === 4 && (
-          <div className="flex items-center justify-start mt-6 pt-5" style={{ borderTop: "1px solid #f3f4f6" }}>
-            <button onClick={() => { setError(""); setStep(3); }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium"
-              style={{ color: "#6B7280", border: "1px solid #e5e7eb" }}>
-              <ChevronLeft className="w-4 h-4" /> Back
-            </button>
-          </div>
-        )}
+        {/* Navigation */}
+        <div className="flex items-center justify-between mt-8 pt-5" style={{ borderTop: "1px solid #f3f4f6" }}>
+          <button
+            onClick={() => { setError(""); setStep((s) => s - 1); }}
+            disabled={step === 0}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-30"
+            style={{ color: "#6B7280", border: "1px solid #e5e7eb" }}>
+            <ChevronLeft className="w-4 h-4" /> Back
+          </button>
+          <button onClick={handleNext} disabled={saving || uploading}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+            style={{ background: "#0048DF" }}>
+            {saving
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+              : <>{step === 3 ? "Submit & Finish" : "Next"} <ChevronRight className="w-4 h-4" /></>
+            }
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-4 mt-6 text-xs" style={{ color: "#9CA3AF" }}>
