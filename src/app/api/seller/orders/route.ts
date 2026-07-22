@@ -14,6 +14,9 @@ export async function GET(req: NextRequest) {
     const to = searchParams.get("to");
     const search = searchParams.get("search");
     const productFilter = searchParams.get("product");
+    const statusFilter = searchParams.get("status");
+    const limitParam = searchParams.get("limit");
+    const limitNum = limitParam ? parseInt(limitParam, 10) : undefined;
 
     const seller = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -38,6 +41,7 @@ export async function GET(req: NextRequest) {
       where: {
         sellerId: session.user.id,
         ...createdAtFilter,
+        ...(statusFilter && statusFilter !== "ALL" ? { status: statusFilter as import("@prisma/client").OrderStatus } : {}),
         ...(search ? {
           OR: [
             { externalOrderId: { contains: search, mode: "insensitive" } },
@@ -48,6 +52,7 @@ export async function GET(req: NextRequest) {
         ...(productFilter ? { items: { some: { name: { contains: productFilter, mode: "insensitive" } } } } : {}),
       },
       orderBy: { createdAt: "desc" },
+      ...(limitNum ? { take: limitNum } : {}),
       include: { items: true },
     });
 

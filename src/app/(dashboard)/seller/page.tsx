@@ -79,6 +79,8 @@ export default function SellerDashboard() {
   const [chartDays, setChartDays] = useState(14);
   const [adSpend, setAdSpend] = useState(0);
   const [openNdrs, setOpenNdrs] = useState(0);
+  const [orderFilter, setOrderFilter] = useState("ALL");
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
   const name = session?.user?.name?.split(" ")[0] || "Seller";
 
@@ -86,18 +88,26 @@ export default function SellerDashboard() {
     Promise.all([
       fetch("/api/seller/analytics").then(r => r.json()),
       fetch("/api/seller/wallet").then(r => r.json()),
-      fetch("/api/seller/orders?limit=6").then(r => r.json()),
       fetch("/api/seller/ad-spend").then(r => r.json()),
       fetch("/api/seller/ndr").then(r => r.json()),
-    ]).then(([a, w, o, ads, ndr]) => {
+    ]).then(([a, w, ads, ndr]) => {
       setAnalytics(a);
       setWallet(w);
-      setRecentOrders(o.orders?.slice(0, 6) || []);
       setAdSpend(ads.total ?? 0);
       setOpenNdrs(ndr.pending?.length ?? 0);
       setLoading(false);
     });
   }, []);
+
+  useEffect(() => {
+    setOrdersLoading(true);
+    const params = new URLSearchParams({ limit: "10" });
+    if (orderFilter !== "ALL") params.set("status", orderFilter);
+    fetch(`/api/seller/orders?${params}`).then(r => r.json()).then(o => {
+      setRecentOrders(o.orders?.slice(0, 10) || []);
+      setOrdersLoading(false);
+    });
+  }, [orderFilter]);
 
   const nextPayout = wallet?.upcoming?.[0];
   const nextPayoutDate = nextPayout?.remittanceDate
@@ -452,36 +462,52 @@ export default function SellerDashboard() {
 
         {/* Recent Orders */}
         <div className="card">
-          <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
-            <div>
-              <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Recent Orders</h2>
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>Your latest 6 orders</p>
+          {/* Header row */}
+          <div className="px-5 py-4 flex items-center justify-between gap-3 flex-wrap" style={{ borderBottom: "1px solid var(--border)" }}>
+            <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Recent Orders</h2>
+            {/* Inline status filter */}
+            <div className="flex items-center gap-1 flex-wrap flex-1 justify-center">
+              {(["ALL", "NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "RTO", "CANCELLED"] as const).map((s) => {
+                const cfg = STATUS_CONFIG[s];
+                const isActive = orderFilter === s;
+                return (
+                  <button key={s} onClick={() => setOrderFilter(s)}
+                    className="px-3 py-1 rounded-full text-xs font-semibold transition-all"
+                    style={isActive
+                      ? { background: cfg ? cfg.color : "#0A0E1A", color: "#fff" }
+                      : { background: cfg ? cfg.bg : "#F3F4F6", color: cfg ? cfg.color : "var(--text-400)" }
+                    }>
+                    {s === "ALL" ? "All" : cfg?.label ?? s}
+                  </button>
+                );
+              })}
             </div>
             <Link href="/seller/orders"
-              className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+              className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg flex-shrink-0 transition-colors"
               style={{ color: "var(--green-500)", background: "#F0FDF4", border: "1px solid #D1FAE5" }}>
               View All <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
 
-          {loading ? (
+          {loading || ordersLoading ? (
             <div className="p-5 space-y-3">
-              {[...Array(4)].map((_, i) => (
+              {[...Array(5)].map((_, i) => (
                 <div key={i} className="h-10 rounded-lg animate-pulse bg-gray-50" />
               ))}
             </div>
           ) : recentOrders.length === 0 ? (
-            <div className="py-16 flex flex-col items-center gap-2">
+            <div className="py-12 flex flex-col items-center gap-2">
               <ShoppingCart className="w-10 h-10" style={{ color: "var(--border)" }} />
-              <p className="text-sm font-medium" style={{ color: "var(--text-400)" }}>No orders yet</p>
-              <p className="text-xs" style={{ color: "var(--text-400)" }}>
-                Orders from your Shopify store will appear here
+              <p className="text-sm font-medium" style={{ color: "var(--text-400)" }}>
+                {orderFilter === "ALL" ? "No orders yet" : `No ${STATUS_CONFIG[orderFilter]?.label ?? orderFilter} orders`}
               </p>
-              <Link href="/seller/shopify"
-                className="mt-2 flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white"
-                style={{ background: "var(--green-500)" }}>
-                <Store className="w-4 h-4" /> Connect Store
-              </Link>
+              {orderFilter === "ALL" && (
+                <Link href="/seller/shopify"
+                  className="mt-2 flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white"
+                  style={{ background: "var(--green-500)" }}>
+                  <Store className="w-4 h-4" /> Connect Store
+                </Link>
+              )}
             </div>
           ) : (
             <div className="divide-y" style={{ borderColor: "var(--border)" }}>
@@ -504,7 +530,7 @@ export default function SellerDashboard() {
                     <span className="text-sm font-bold" style={{ color: "var(--text-900)" }}>
                       ₹{fmt(order.totalAmount)}
                     </span>
-                    <span className="pill text-xs font-semibold px-2.5 py-1 rounded-full"
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
                       style={{ background: cfg.bg, color: cfg.color }}>
                       {cfg.label}
                     </span>
