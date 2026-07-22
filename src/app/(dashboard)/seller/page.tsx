@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
-  BarChart, Bar, XAxis, YAxis,
-  Tooltip, ResponsiveContainer, CartesianGrid, Cell,
+  LineChart, Line, XAxis, YAxis,
+  Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import {
   ShoppingCart, TrendingUp, TrendingDown, AlertTriangle,
@@ -347,15 +347,15 @@ export default function SellerDashboard() {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} barGap={2}>
+                <LineChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
-                  <Bar dataKey="Orders" fill="#3B82F6" radius={[4, 4, 0, 0]} maxBarSize={18} />
-                  <Bar dataKey="Delivered" fill="#16A34A" radius={[4, 4, 0, 0]} maxBarSize={18} />
-                  <Bar dataKey="RTO" fill="#EF4444" radius={[4, 4, 0, 0]} maxBarSize={18} />
-                </BarChart>
+                  <YAxis tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Line type="monotone" dataKey="Orders" stroke="#3B82F6" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="Delivered" stroke="#16A34A" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="RTO" stroke="#EF4444" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                </LineChart>
               </ResponsiveContainer>
             )}
           </div>
