@@ -62,6 +62,7 @@ export function Testimonials() {
   const { ref, inView } = useInView();
   const [active, setActive] = useState(0);
   const [animating, setAnimating] = useState(false);
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
 
   const goTo = useCallback((idx: number) => {
     if (animating) return;
@@ -145,7 +146,7 @@ export function Testimonials() {
               {t.images.map((img) => (
                 <div
                   key={img.src}
-                  className="rounded-xl overflow-hidden"
+                  className="relative group rounded-xl overflow-hidden"
                   style={{ border: `1px solid ${t.color}25` }}
                 >
                   <Image
@@ -153,11 +154,55 @@ export function Testimonials() {
                     alt={img.alt}
                     width={600}
                     height={340}
-                    className="w-full h-auto object-cover"
-                    style={{ display: "block" }}
+                    className="w-full h-auto object-cover block"
+                    draggable={false}
+                    onContextMenu={(e) => e.preventDefault()}
                   />
+                  {/* View overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    style={{ background: "rgba(0,0,0,0.45)" }}
+                  >
+                    <button
+                      onClick={() => setLightbox(img)}
+                      className="px-4 py-2 rounded-full text-sm font-bold transition-transform hover:scale-105"
+                      style={{ background: t.color, color: "#0a0f1e" }}
+                    >
+                      View
+                    </button>
+                  </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Lightbox */}
+          {lightbox && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              style={{ background: "rgba(0,0,0,0.85)" }}
+              onClick={() => setLightbox(null)}
+            >
+              <div
+                className="relative max-w-5xl w-full rounded-2xl overflow-hidden shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Image
+                  src={lightbox.src}
+                  alt={lightbox.alt}
+                  width={1200}
+                  height={680}
+                  className="w-full h-auto block"
+                  draggable={false}
+                  onContextMenu={(e) => e.preventDefault()}
+                />
+                <button
+                  onClick={() => setLightbox(null)}
+                  className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-sm font-black"
+                  style={{ background: "rgba(0,0,0,0.6)", color: "#fff" }}
+                >
+                  ✕
+                </button>
+              </div>
             </div>
           )}
 
