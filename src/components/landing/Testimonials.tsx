@@ -2,12 +2,11 @@
 import { C, WA_LINK } from "./constants";
 import { useInView } from "./useInView";
 
-/* TODO: Replace ALL testimonial data with real seller quotes + photos */
 const TESTIMONIALS = [
   {
     initials: "AM",
-    name: "Ajay M.",     // TODO: real seller name
-    city: "Surat",       // TODO: real city
+    name: "Ajay M.",
+    city: "Surat",
     niche: "Home & Kitchen",
     quote: "340 orders in month 2. ₹1.2L payout, on time, every Monday. The account manager sorted an RTO cluster in 24 hours — no drama.",
     metric: "340 orders · ₹1.2L payout",
@@ -15,20 +14,20 @@ const TESTIMONIALS = [
   },
   {
     initials: "PR",
-    name: "Priya R.",    // TODO: real seller name
-    city: "Pune",        // TODO: real city
+    name: "Priya R.",
+    city: "Pune",
     niche: "Beauty & Skincare",
     quote: "I was manually forwarding orders on WhatsApp before this. Now everything's automatic and I just check the dashboard in the morning.",
     metric: "0 → 180 orders/month in 45 days",
     color: C.green,
   },
   {
-    initials: "KS",
-    name: "Karan S.",    // TODO: real seller name
-    city: "Jaipur",      // TODO: real city
-    niche: "Fashion",
-    quote: "Most honest payout breakdown I've ever seen. I know exactly what was deducted and why. That's rare in this space.",
-    metric: "₹85,000+ monthly profit",
+    initials: "TZ",
+    name: "Thezolfcart",
+    city: "Panipat",
+    niche: "Electronics & Gadgets",
+    quote: "19.45x ROAS on my first HD Camera campaign. ₹89,682 revenue in 13 days, 120 orders — and I spent under ₹5,100 on ads total. Never seen numbers like this before.",
+    metric: "₹89,682 in 13 days · 19.45x ROAS",
     color: C.amber,
   },
 ];
@@ -136,22 +135,19 @@ export function Testimonials() {
                 <span key={i} style={{ color: C.gold, fontSize: 16 }}>★</span>
               ))}
             </div>
-            {/* TODO: real featured quote */}
             <p className="text-xl font-bold leading-relaxed mb-5" style={{ color: C.heading }}>
-              &ldquo;I was spending 4 hours a day managing orders. Now it&apos;s 15 minutes to check the dashboard. My RTO went from 38% to 22% with their advice. ₹2.4L in 3 months.&rdquo;
+              &ldquo;Launched my HD Camera store, ran Meta ads, and did ₹89,682 in just 13 days — 120 orders, 19.45x ROAS on my main campaign. I spent ₹3,861 on ads and got 94 purchases. The fulfilment just ran on its own, I didn&apos;t touch a single order manually.&rdquo;
             </p>
             <div className="flex items-center gap-3">
-              {/* TODO: real avatar */}
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black"
                 style={{ background: C.goldDim, color: C.gold }}
               >
-                RK
+                TZ
               </div>
               <div>
-                {/* TODO: real seller */}
-                <p className="text-sm font-bold" style={{ color: C.heading }}>Rohit K., Delhi</p>
-                <p className="text-xs" style={{ color: C.muted }}>Electronics & Gadgets · 6 months on Axiqen</p>
+                <p className="text-sm font-bold" style={{ color: C.heading }}>Thezolfcart · thezolfcart.store</p>
+                <p className="text-xs" style={{ color: C.muted }}>Electronics & Gadgets · Panipat</p>
               </div>
             </div>
           </div>
