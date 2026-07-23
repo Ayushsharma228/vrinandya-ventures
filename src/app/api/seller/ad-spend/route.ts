@@ -27,6 +27,18 @@ export async function GET(req: NextRequest) {
   const entries = await prisma.adSpend.findMany({ where, orderBy: { date: "desc" } });
   const total   = entries.reduce((sum, e) => sum + e.amount, 0);
 
+  // Last 30 days revenue (to calculate ROAS over same window)
+  const revenueFrom = from ? new Date(from) : defaultFrom;
+  const revenueOrders = await prisma.order.aggregate({
+    where: {
+      sellerId: session.user.id,
+      createdAt: { gte: revenueFrom },
+      status: { notIn: ["CANCELLED", "RTO"] },
+    },
+    _sum: { totalAmount: true },
+  });
+  const last30DaysRevenue = revenueOrders._sum.totalAmount ?? 0;
+
   // Also return connection status
   const seller = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -34,5 +46,5 @@ export async function GET(req: NextRequest) {
   });
   const metaConnected = !!(seller?.metaAdAccountId && seller?.metaTokenExpiresAt && seller.metaTokenExpiresAt > new Date());
 
-  return NextResponse.json({ total, entries, metaConnected });
+  return NextResponse.json({ total, entries, metaConnected, last30DaysRevenue });
 }

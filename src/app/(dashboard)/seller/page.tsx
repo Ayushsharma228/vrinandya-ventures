@@ -76,6 +76,7 @@ export default function SellerDashboard() {
   const [loading, setLoading] = useState(true);
   const [chartDays, setChartDays] = useState(14);
   const [adSpend, setAdSpend] = useState(0);
+  const [adRevenue, setAdRevenue] = useState(0);
   const [openNdrs, setOpenNdrs] = useState(0);
   const [orderFilter, setOrderFilter] = useState("ALL");
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -92,6 +93,7 @@ export default function SellerDashboard() {
       setAnalytics(a);
       setWallet(w);
       setAdSpend(ads.total ?? 0);
+      setAdRevenue(ads.last30DaysRevenue ?? 0);
       setOpenNdrs(ndr.pending?.length ?? 0);
       setLoading(false);
     });
@@ -158,7 +160,9 @@ export default function SellerDashboard() {
       icon: Megaphone,
       iconBg: "#F5F3FF",
       iconColor: "#7C3AED",
-      sub: adSpend > 0 ? "Last 30 days" : "No spend in last 30 days",
+      sub: adSpend > 0
+        ? `${(adRevenue / adSpend).toFixed(2)}x ROAS · Last 30 days`
+        : "No spend in last 30 days",
     },
     {
       label: "Net Payout",
