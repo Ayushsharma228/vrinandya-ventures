@@ -24,6 +24,14 @@ interface Analytics {
   totalRevenue: number;
   trend: { date: string; total: number; delivered: number; rto: number }[];
   store: { storeUrl: string; storeName: string } | null;
+  earnings: {
+    totalGMV: number;
+    totalProductCost: number;
+    totalShipping: number;
+    totalFees: number;
+    totalRtoCharge: number;
+    totalEarned: number;
+  };
 }
 
 interface Wallet {
@@ -440,6 +448,63 @@ export default function SellerDashboard() {
 
           </div>
         </div>
+
+        {/* P&L Summary */}
+        {!loading && analytics?.earnings && (() => {
+          const e = analytics.earnings;
+          const grossProfit = e.totalGMV - e.totalProductCost - e.totalShipping - e.totalFees - e.totalRtoCharge;
+          const netProfit   = grossProfit - adSpend;
+          const margin      = e.totalGMV > 0 ? (netProfit / e.totalGMV) * 100 : 0;
+          const isProfit    = netProfit >= 0;
+
+          const rows = [
+            { label: "Revenue (GMV)",    value: e.totalGMV,           color: "#16A34A", sign: "+" },
+            { label: "Product Cost",     value: e.totalProductCost,   color: "#EF4444", sign: "−" },
+            { label: "Shipping Charges", value: e.totalShipping,      color: "#EF4444", sign: "−" },
+            { label: "Platform Fee",     value: e.totalFees,          color: "#EF4444", sign: "−" },
+            { label: "RTO Losses",       value: e.totalRtoCharge,     color: "#EF4444", sign: "−" },
+            { label: "Ad Spend (30d)",   value: adSpend,              color: "#7C3AED", sign: "−" },
+          ];
+
+          return (
+            <div className="card p-5">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Profit & Margin</h2>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>Revenue minus all costs</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-black" style={{ color: isProfit ? "#16A34A" : "#EF4444" }}>
+                    {isProfit ? "+" : "−"}₹{fmt(Math.abs(netProfit))}
+                  </p>
+                  <p className="text-xs font-semibold mt-0.5" style={{ color: isProfit ? "#16A34A" : "#EF4444" }}>
+                    {margin.toFixed(1)}% net margin
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                {rows.map((r) => (
+                  <div key={r.label} className="flex items-center justify-between py-2"
+                    style={{ borderBottom: "1px solid var(--border)" }}>
+                    <p className="text-xs font-medium" style={{ color: "var(--text-600)" }}>{r.label}</p>
+                    <p className="text-xs font-bold" style={{ color: r.color }}>
+                      {r.sign}₹{fmt(r.value)}
+                    </p>
+                  </div>
+                ))}
+
+                {/* Net line */}
+                <div className="flex items-center justify-between pt-2">
+                  <p className="text-sm font-black" style={{ color: "var(--text-900)" }}>Net Profit</p>
+                  <p className="text-sm font-black" style={{ color: isProfit ? "#16A34A" : "#EF4444" }}>
+                    {isProfit ? "+" : "−"}₹{fmt(Math.abs(netProfit))} ({margin.toFixed(1)}%)
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Recent Orders */}
         <div className="card">
