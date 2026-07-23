@@ -10,7 +10,7 @@ import {
 import {
   ShoppingCart, TrendingUp, TrendingDown, AlertTriangle,
   Wallet, Package, ArrowRight, Store,
-  CheckCircle2, Clock, Truck, XCircle, IndianRupee, Megaphone,
+  CheckCircle2, Clock, Truck, XCircle, IndianRupee, Megaphone, Upload,
 } from "lucide-react";
 
 interface Analytics {
@@ -338,11 +338,12 @@ export default function SellerDashboard() {
         {/* Quick Actions */}
         <div className="flex flex-wrap items-center gap-2 md:gap-3">
           {[
-            { label: "View Orders",    href: "/seller/orders",   icon: ShoppingCart, color: "#3B82F6" },
-            { label: "Product Catalog", href: "/seller/catalog",  icon: Package,      color: "#16A34A" },
-            { label: "Deliveries",     href: "/seller/deliveries", icon: Truck,        color: "#7C3AED" },
-            { label: "Wallet",         href: "/seller/wallet",   icon: Wallet,       color: "#F59E0B" },
-            { label: "Shopify Store",  href: "/seller/shopify",  icon: Store,        color: "#EF4444" },
+            { label: "View Orders",    href: "/seller/orders",         icon: ShoppingCart, color: "#3B82F6" },
+            { label: "Import Orders",  href: "/seller/orders?import=1", icon: Upload,       color: "#16A34A" },
+            { label: "Product Catalog", href: "/seller/catalog",        icon: Package,      color: "#0891B2" },
+            { label: "Deliveries",     href: "/seller/deliveries",      icon: Truck,        color: "#7C3AED" },
+            { label: "Wallet",         href: "/seller/wallet",          icon: Wallet,       color: "#F59E0B" },
+            { label: "Shopify Store",  href: "/seller/shopify",         icon: Store,        color: "#EF4444" },
           ].map((a) => {
             const Icon = a.icon;
             return (

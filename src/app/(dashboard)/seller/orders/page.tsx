@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { RefreshCw, Download, ShoppingCart, IndianRupee, Package, Star, CheckCircle, XCircle, Loader2, ExternalLink, Copy, CopyCheck } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
@@ -47,7 +48,8 @@ export default function SellerOrdersPage() {
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [copiedId, setCopiedId]     = useState<string | null>(null);
   const [syncError, setSyncError]   = useState("");
-  const [showImport, setShowImport] = useState(false);
+  const searchParams = useSearchParams();
+  const [showImport, setShowImport] = useState(searchParams.get("import") === "1");
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting]   = useState(false);
   const [importResult, setImportResult] = useState<{ created: number; skipped: number; errors: { row: number; message: string }[] } | null>(null);
