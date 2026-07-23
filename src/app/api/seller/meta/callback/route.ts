@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const error = searchParams.get("error");
 
   if (error || !code || !state) {
-    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/seller/settings?meta=denied`);
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/seller/profile?meta=denied`);
   }
 
   const sellerId = Buffer.from(state, "base64").toString("utf8");
@@ -50,5 +50,5 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/seller/settings?meta=connected`);
+  return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/seller/profile?meta=connected`);
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { User, Mail, Phone, Building2, FileText, CreditCard, Lock, Save, CheckCircle2, AlertCircle, Plug } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
@@ -15,7 +16,13 @@ const TABS = [
 
 export default function SellerProfilePage() {
   const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState("personal");
+  const searchParams = useSearchParams();
+  const metaStatus = searchParams.get("meta");
+  const [activeTab, setActiveTab] = useState(
+    metaStatus === "connected" || metaStatus === "denied" || metaStatus === "error"
+      ? "integrations"
+      : "personal"
+  );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -156,6 +163,19 @@ export default function SellerProfilePage() {
               <div className="space-y-5">
                 <h2 className="text-base font-semibold" style={{ color: "var(--text-900)" }}>Integrations</h2>
                 <p className="text-xs" style={{ color: "var(--text-400)" }}>Connect third-party accounts to sync data automatically.</p>
+
+                {metaStatus === "connected" && (
+                  <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm"
+                    style={{ background: "#F0FDF4", color: "#16A34A", border: "1px solid #BBF7D0" }}>
+                    ✓ Meta Ads connected successfully. Your ad spend will sync daily.
+                  </div>
+                )}
+                {(metaStatus === "denied" || metaStatus === "error") && (
+                  <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm"
+                    style={{ background: "#FEF2F2", color: "#EF4444", border: "1px solid #FEE2E2" }}>
+                    ✗ Meta connection {metaStatus === "denied" ? "was cancelled" : "failed"}. Please try again.
+                  </div>
+                )}
 
                 {/* Meta Ads */}
                 <div className="rounded-xl p-5 flex items-center justify-between gap-4"
