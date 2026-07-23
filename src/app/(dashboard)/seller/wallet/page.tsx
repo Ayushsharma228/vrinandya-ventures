@@ -259,12 +259,15 @@ export default function SellerWalletPage() {
                         {isCredit ? "+" : "−"}₹{fmt(tx.amount)}
                       </p>
                       <div className="flex items-center justify-end gap-1 mt-0.5">
-                        {isPaid
-                          ? <><CheckCircle2 style={{ color: "#16A34A", width: 12, height: 12 }} /><span className="text-xs" style={{ color: "#16A34A" }}>Paid</span></>
-                          : !isCredit
-                          ? <><TrendingDown style={{ color: "#EF4444", width: 12, height: 12 }} /><span className="text-xs" style={{ color: "#EF4444" }}>Deduction</span></>
-                          : <><Clock style={{ color: "#F59E0B", width: 12, height: 12 }} /><span className="text-xs" style={{ color: "#F59E0B" }}>Upcoming</span></>
-                        }
+                        {(() => {
+                          if (isPaid) return <><CheckCircle2 style={{ color: "#16A34A", width: 12, height: 12 }} /><span className="text-xs" style={{ color: "#16A34A" }}>{isCredit ? "Paid" : "Settled"}</span></>;
+                          if (!isCredit) {
+                            const isOverdue = tx.remittanceDate && new Date(tx.remittanceDate) < new Date();
+                            return <><TrendingDown style={{ color: "#EF4444", width: 12, height: 12 }} /><span className="text-xs" style={{ color: "#EF4444" }}>{isOverdue ? "Overdue" : "Deduction"}</span></>;
+                          }
+                          const isOverdue = tx.remittanceDate && new Date(tx.remittanceDate) < new Date();
+                          return <><Clock style={{ color: isOverdue ? "#EF4444" : "#F59E0B", width: 12, height: 12 }} /><span className="text-xs" style={{ color: isOverdue ? "#EF4444" : "#F59E0B" }}>{isOverdue ? "Overdue" : "Upcoming"}</span></>;
+                        })()}
                       </div>
                     </div>
                   </div>

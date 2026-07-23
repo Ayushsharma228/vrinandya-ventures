@@ -104,9 +104,9 @@ export async function POST(req: NextRequest) {
   }
 
   const txType = totalRemittance >= 0 ? "CREDIT" : "DEBIT";
-  const txNote = note || (txType === "DEBIT"
+  const txNote = txType === "DEBIT"
     ? `RTO Deduction for ${includedOrders.length} order(s)`
-    : `Remittance for ${includedOrders.length} order(s)`);
+    : (note || `Remittance for ${includedOrders.length} order(s)`);
 
   const tx = await prisma.walletTransaction.create({
     data: {
