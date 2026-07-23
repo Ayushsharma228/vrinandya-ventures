@@ -85,6 +85,7 @@ export default function SellerDashboard() {
   const [chartDays, setChartDays] = useState(14);
   const [adSpend, setAdSpend] = useState(0);
   const [adRevenue, setAdRevenue] = useState(0);
+  const [metaConnected, setMetaConnected] = useState(false);
   const [openNdrs, setOpenNdrs] = useState(0);
   const [orderFilter, setOrderFilter] = useState("ALL");
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -102,6 +103,7 @@ export default function SellerDashboard() {
       setWallet(w);
       setAdSpend(ads.total ?? 0);
       setAdRevenue(ads.last30DaysRevenue ?? 0);
+      setMetaConnected(ads.metaConnected ?? false);
       setOpenNdrs(ndr.pending?.length ?? 0);
       setLoading(false);
     });
@@ -164,13 +166,13 @@ export default function SellerDashboard() {
     },
     {
       label: "Meta Ads Spent",
-      value: `₹${fmt(adSpend)}`,
+      value: metaConnected ? `₹${fmt(adSpend)}` : "—",
       icon: Megaphone,
       iconBg: "#F5F3FF",
       iconColor: "#7C3AED",
-      sub: adSpend > 0
-        ? `${(adRevenue / adSpend).toFixed(2)}x ROAS · Last 30 days`
-        : "No spend in last 30 days",
+      sub: metaConnected
+        ? (adSpend > 0 ? `${(adRevenue / adSpend).toFixed(2)}x ROAS · Last 30 days` : "No spend in last 30 days")
+        : "connect",
     },
     {
       label: "Net Payout",
@@ -251,9 +253,10 @@ export default function SellerDashboard() {
             ))
           ) : stats.map((s) => {
             const Icon = s.icon;
+            const isConnectPrompt = s.sub === "connect";
             return (
               <div key={s.label} className="rounded-xl px-4 py-4"
-                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+                style={{ background: "var(--bg-card)", border: `1px solid ${isConnectPrompt ? "rgba(124,58,237,0.3)" : "var(--border)"}` }}>
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>{s.label}</p>
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -262,7 +265,15 @@ export default function SellerDashboard() {
                   </div>
                 </div>
                 <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{s.value}</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{s.sub}</p>
+                {isConnectPrompt ? (
+                  <Link href="/seller/profile?tab=integrations"
+                    className="inline-flex items-center gap-1 text-xs font-semibold mt-1 px-2 py-0.5 rounded-full"
+                    style={{ background: "rgba(124,58,237,0.12)", color: "#7C3AED" }}>
+                    + Connect Meta Ads
+                  </Link>
+                ) : (
+                  <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{s.sub}</p>
+                )}
               </div>
             );
           })}
