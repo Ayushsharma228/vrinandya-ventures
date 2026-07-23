@@ -21,6 +21,7 @@ const DS_PLANS = [
       "Supplier Integration",
       "Order Dashboard Access",
       "Basic Training",
+      "RTO Charges Applicable",
       "30 Days Support",
     ],
   },
@@ -39,6 +40,7 @@ const DS_PLANS = [
       "Conversion Optimization",
       "Supplier Management",
       "NDR Management",
+      "0 RTO Management Charges for 12 Months",
       "Free Shipping Setup",
       "Priority Support",
       "Realtime Reports",
@@ -60,6 +62,8 @@ const DS_PLANS = [
       "Team Training",
       "Custom Branding",
       "Faster Turnaround",
+      "Lifetime 0 RTO Management Charges",
+      "Monthly Strategy Calls",
     ],
   },
   {
@@ -333,13 +337,18 @@ function PlanCard({ plan }: { plan: Plan }) {
       </div>
 
       <ul className="space-y-2.5 mb-7 flex-1">
-        {plan.features.map((f) => (
-          <li key={f} className="flex items-start gap-2 text-sm"
-            style={{ color: onBlue ? "#fff" : C.heading }}>
-            <span style={{ color: onBlue ? "rgba(255,255,255,0.8)" : C.green, flexShrink: 0, marginTop: 1 }}>✓</span>
-            {f}
-          </li>
-        ))}
+        {plan.features.map((f) => {
+          const isWarning = f.startsWith("RTO Charges Applicable");
+          return (
+            <li key={f} className="flex items-start gap-2 text-sm"
+              style={{ color: onBlue ? "#fff" : isWarning ? "#EF4444" : C.heading }}>
+              <span style={{ color: isWarning ? "#EF4444" : onBlue ? "rgba(255,255,255,0.8)" : C.green, flexShrink: 0, marginTop: 1 }}>
+                {isWarning ? "!" : "✓"}
+              </span>
+              {f}
+            </li>
+          );
+        })}
       </ul>
 
       <a
