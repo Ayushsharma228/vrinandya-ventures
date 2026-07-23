@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { User, Mail, Phone, Building2, FileText, CreditCard, Lock, Save, CheckCircle2, AlertCircle } from "lucide-react";
+import { User, Mail, Phone, Building2, FileText, CreditCard, Lock, Save, CheckCircle2, AlertCircle, Plug } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 const TABS = [
-  { id: "personal", label: "Personal Info",    icon: User },
-  { id: "business", label: "Business Details", icon: Building2 },
-  { id: "bank",     label: "Bank Details",     icon: CreditCard },
-  { id: "password", label: "Password",         icon: Lock },
+  { id: "personal",     label: "Personal Info",    icon: User },
+  { id: "business",     label: "Business Details", icon: Building2 },
+  { id: "bank",         label: "Bank Details",     icon: CreditCard },
+  { id: "password",     label: "Password",         icon: Lock },
+  { id: "integrations", label: "Integrations",     icon: Plug },
 ];
 
 export default function SellerProfilePage() {
@@ -23,6 +24,8 @@ export default function SellerProfilePage() {
   const [business, setBusiness] = useState({ brandName: "", gst: "" });
   const [bank, setBank] = useState({ accountHolder: "", accountNumber: "", ifsc: "", bankName: "" });
   const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
+  const [metaConnected, setMetaConnected] = useState(false);
+  const [metaLoading, setMetaLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/seller/profile").then((r) => r.json()).then((d) => {
@@ -30,9 +33,17 @@ export default function SellerProfilePage() {
         setPersonal({ name: d.user.name ?? "", email: d.user.email ?? "", phone: d.user.phone ?? "" });
         setBusiness({ brandName: d.user.brandName ?? "", gst: d.user.gstNumber ?? "" });
         setBank({ accountHolder: d.user.bankHolder ?? "", accountNumber: d.user.bankAccount ?? "", ifsc: d.user.bankIfsc ?? "", bankName: d.user.bankName ?? "" });
+        setMetaConnected(!!d.user.metaAdAccountId);
       }
     });
   }, []);
+
+  async function handleMetaDisconnect() {
+    setMetaLoading(true);
+    await fetch("/api/seller/meta/disconnect", { method: "POST" });
+    setMetaConnected(false);
+    setMetaLoading(false);
+  }
 
   async function handleSave() {
     setSaving(true); setError(""); setSaved(false);
@@ -141,6 +152,51 @@ export default function SellerProfilePage() {
               </div>
             )}
 
+            {activeTab === "integrations" && (
+              <div className="space-y-5">
+                <h2 className="text-base font-semibold" style={{ color: "var(--text-900)" }}>Integrations</h2>
+                <p className="text-xs" style={{ color: "var(--text-400)" }}>Connect third-party accounts to sync data automatically.</p>
+
+                {/* Meta Ads */}
+                <div className="rounded-xl p-5 flex items-center justify-between gap-4"
+                  style={{ border: "1px solid var(--border)", background: "var(--bg-page)" }}>
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-black flex-shrink-0"
+                      style={{ background: "#1877F2" }}>f</div>
+                    <div>
+                      <p className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Meta Ads</p>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>
+                        {metaConnected ? "Ad account connected — spend syncs daily" : "Connect to sync your ad spend to the dashboard"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {metaConnected ? (
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
+                        style={{ background: "#F0FDF4", color: "#16A34A" }}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                        Connected
+                      </span>
+                      <button
+                        onClick={handleMetaDisconnect}
+                        disabled={metaLoading}
+                        className="text-xs font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
+                        style={{ background: "#FEF2F2", color: "#EF4444", border: "1px solid #FEE2E2" }}>
+                        {metaLoading ? "Disconnecting..." : "Disconnect"}
+                      </button>
+                    </div>
+                  ) : (
+                    <a href="/api/seller/meta/connect"
+                      className="text-xs font-semibold px-4 py-2 rounded-xl text-white transition-opacity hover:opacity-90"
+                      style={{ background: "#1877F2" }}>
+                      Connect
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
             {activeTab === "password" && (
               <div className="space-y-5">
                 <h2 className="text-base font-semibold" style={{ color: "var(--text-900)" }}>Change Password</h2>
@@ -152,13 +208,13 @@ export default function SellerProfilePage() {
               </div>
             )}
 
-            <div className="mt-6 pt-5 flex items-center gap-3" style={{ borderTop: "1px solid var(--border)" }}>
+            {activeTab !== "integrations" && <div className="mt-6 pt-5 flex items-center gap-3" style={{ borderTop: "1px solid var(--border)" }}>
               <button onClick={handleSave} disabled={saving}
                 className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-60"
                 style={{ background: saved ? "#16A34A" : "var(--green-500)" }}>
                 {saved ? <><CheckCircle2 className="w-4 h-4" /> Saved!</> : saving ? "Saving..." : <><Save className="w-4 h-4" /> Save Changes</>}
               </button>
-            </div>
+            </div>}
           </div>
         </div>
       </div>
