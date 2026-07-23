@@ -22,8 +22,8 @@ const TESTIMONIALS = [
     color: C.green,
   },
   {
-    initials: "TZ",
-    name: "Thezolfcart",
+    initials: "AK",
+    name: "Alfaiz Khan",
     city: "Panipat",
     niche: "Electronics & Gadgets",
     quote: "19.45x ROAS on my first HD Camera campaign. ₹89,682 revenue in 13 days, 120 orders — and I spent under ₹5,100 on ads total. Never seen numbers like this before.",
@@ -143,10 +143,10 @@ export function Testimonials() {
                 className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black"
                 style={{ background: C.goldDim, color: C.gold }}
               >
-                TZ
+                AK
               </div>
               <div>
-                <p className="text-sm font-bold" style={{ color: C.heading }}>Thezolfcart · thezolfcart.store</p>
+                <p className="text-sm font-bold" style={{ color: C.heading }}>Alfaiz Khan · thezolfcart.store</p>
                 <p className="text-xs" style={{ color: C.muted }}>Electronics & Gadgets · Panipat</p>
               </div>
             </div>
