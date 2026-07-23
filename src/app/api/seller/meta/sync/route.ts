@@ -44,12 +44,12 @@ export async function syncSellerAdSpend(sellerId: string, adAccountId: string, a
 
     const date = new Date(row.date_start);
 
-    // Upsert by seller + date
-    await prisma.adSpend.upsert({
-      where: { sellerId_date: { sellerId, date } },
-      update: { amount, note: "Meta Ads (auto-synced)" },
-      create: { sellerId, date, amount, note: "Meta Ads (auto-synced)" },
-    });
+    const existing = await prisma.adSpend.findFirst({ where: { sellerId, date } });
+    if (existing) {
+      await prisma.adSpend.update({ where: { id: existing.id }, data: { amount, note: "Meta Ads (auto-synced)" } });
+    } else {
+      await prisma.adSpend.create({ data: { sellerId, date, amount, note: "Meta Ads (auto-synced)" } });
+    }
     synced++;
   }
 

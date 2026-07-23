@@ -493,7 +493,6 @@ model AdSpend {
   note      String?
   createdAt DateTime @default(now())
 
-  @@unique([sellerId, date])
   @@map("ad_spends")
 }
 
