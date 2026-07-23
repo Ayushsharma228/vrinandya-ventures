@@ -434,17 +434,6 @@ export default function SellerDashboard() {
               </div>
             )}
 
-            {/* Wallet summary */}
-            <div className="mt-5 pt-4 rounded-xl p-3" style={{ background: "var(--bg-sidebar)" }}>
-              <p className="text-xs mb-2" style={{ color: "var(--text-secondary)" }}>Wallet Balance</p>
-              <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>₹{fmt(wallet?.balance ?? 0)}</p>
-              <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>Your current payout balance</p>
-              <Link href="/seller/wallet"
-                className="mt-2 flex items-center gap-1 text-xs font-medium"
-                style={{ color: "var(--text-secondary)" }}>
-                View details <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
           </div>
         </div>
 
