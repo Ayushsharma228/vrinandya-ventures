@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { C } from "./constants";
 import { useInView } from "./useInView";
 
@@ -17,11 +18,16 @@ const TESTIMONIALS = [
       { label: "ROAS", value: "19.45x", sub: "on Meta Ads" },
       { label: "Ad Spend", value: "₹3,861", sub: "for 94 purchases" },
     ],
+    images: [
+      { src: "/testimonials/shopify-thezolfcart.png.png", alt: "Thezolfcart Shopify Dashboard – ₹89,682 revenue, 120 orders" },
+      { src: "/testimonials/meta-thezolfcart.png.png", alt: "Thezolfcart Meta Ads – 19.45x ROAS" },
+    ],
     color: C.amber,
   },
   {
     initials: "AM",
     name: "Ajay M.",
+    images: undefined,
     store: null,
     city: "Surat",
     niche: "Home & Kitchen",
@@ -37,6 +43,7 @@ const TESTIMONIALS = [
   {
     initials: "PR",
     name: "Priya R.",
+    images: undefined,
     store: null,
     city: "Pune",
     niche: "Beauty & Skincare",
@@ -131,6 +138,28 @@ export function Testimonials() {
               </div>
             ))}
           </div>
+
+          {/* Dashboard screenshots (Alfaiz Khan only) */}
+          {t.images && t.images.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+              {t.images.map((img) => (
+                <div
+                  key={img.src}
+                  className="rounded-xl overflow-hidden"
+                  style={{ border: `1px solid ${t.color}25` }}
+                >
+                  <Image
+                    src={img.src}
+                    alt={img.alt}
+                    width={600}
+                    height={340}
+                    className="w-full h-auto object-cover"
+                    style={{ display: "block" }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Author + nav */}
           <div className="flex items-center justify-between gap-4 flex-wrap">
