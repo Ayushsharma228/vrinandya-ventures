@@ -18,8 +18,10 @@ export default function SellerProfilePage() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const metaStatus = searchParams.get("meta");
+  const shopifyStatus = searchParams.get("shopify");
   const [activeTab, setActiveTab] = useState(
-    metaStatus === "connected" || metaStatus === "denied" || metaStatus === "error"
+    metaStatus === "connected" || metaStatus === "denied" || metaStatus === "error" ||
+    shopifyStatus === "connected" || shopifyStatus === "denied" || shopifyStatus === "error"
       ? "integrations"
       : "personal"
   );
@@ -33,6 +35,11 @@ export default function SellerProfilePage() {
   const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
   const [metaConnected, setMetaConnected] = useState(false);
   const [metaLoading, setMetaLoading] = useState(false);
+  const [shopifyConnected, setShopifyConnected] = useState(false);
+  const [shopifyStore, setShopifyStore] = useState<{ storeUrl: string; storeName: string } | null>(null);
+  const [shopifyLoading, setShopifyLoading] = useState(false);
+  const [shopifyInput, setShopifyInput] = useState("");
+  const [showShopifyInput, setShowShopifyInput] = useState(false);
 
   useEffect(() => {
     fetch("/api/seller/profile").then((r) => r.json()).then((d) => {
@@ -41,6 +48,10 @@ export default function SellerProfilePage() {
         setBusiness({ brandName: d.user.brandName ?? "", gst: d.user.gstNumber ?? "" });
         setBank({ accountHolder: d.user.bankHolder ?? "", accountNumber: d.user.bankAccount ?? "", ifsc: d.user.bankIfsc ?? "", bankName: d.user.bankName ?? "" });
         setMetaConnected(!!d.user.metaAdAccountId);
+        if (d.user.shopifyStore) {
+          setShopifyConnected(true);
+          setShopifyStore(d.user.shopifyStore);
+        }
       }
     });
   }, []);
@@ -50,6 +61,20 @@ export default function SellerProfilePage() {
     await fetch("/api/seller/meta/disconnect", { method: "POST" });
     setMetaConnected(false);
     setMetaLoading(false);
+  }
+
+  async function handleShopifyDisconnect() {
+    setShopifyLoading(true);
+    await fetch("/api/shopify/disconnect", { method: "POST" });
+    setShopifyConnected(false);
+    setShopifyStore(null);
+    setShopifyLoading(false);
+  }
+
+  function handleShopifyConnect() {
+    const domain = shopifyInput.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "");
+    if (!domain) return;
+    window.location.href = `/api/shopify/connect?shop=${encodeURIComponent(domain)}`;
   }
 
   async function handleSave() {
@@ -176,6 +201,18 @@ export default function SellerProfilePage() {
                     ✗ Meta connection {metaStatus === "denied" ? "was cancelled" : "failed"}. Please try again.
                   </div>
                 )}
+                {shopifyStatus === "connected" && (
+                  <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm"
+                    style={{ background: "#F0FDF4", color: "#16A34A", border: "1px solid #BBF7D0" }}>
+                    ✓ Shopify store connected successfully. Orders will sync automatically.
+                  </div>
+                )}
+                {(shopifyStatus === "denied" || shopifyStatus === "error") && (
+                  <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm"
+                    style={{ background: "#FEF2F2", color: "#EF4444", border: "1px solid #FEE2E2" }}>
+                    ✗ Shopify connection {shopifyStatus === "denied" ? "was cancelled" : "failed"}. Please try again.
+                  </div>
+                )}
 
                 {/* Meta Ads */}
                 <div className="rounded-xl p-5 flex items-center justify-between gap-4"
@@ -212,6 +249,71 @@ export default function SellerProfilePage() {
                       style={{ background: "#1877F2" }}>
                       Connect
                     </a>
+                  )}
+                </div>
+
+                {/* Shopify */}
+                <div className="rounded-xl p-5 flex flex-col gap-4"
+                  style={{ border: "1px solid var(--border)", background: "var(--bg-page)" }}>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: "#96BF48" }}>
+                        <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white">
+                          <path d="M15.337 23.979l6.15-1.33S18.769 7.823 18.75 7.706c-.019-.116-.116-.194-.213-.194s-1.922-.136-1.922-.136-.504-.503-1.272-.503c-.194 0-.388.019-.582.058.019.058.039.116.058.174.58.233.97.601.97.601s-.194-.097-.407-.097c-.194 0-.368.058-.503.155-.155-1.039-.911-1.786-1.942-1.786-.039 0-.077 0-.116.001-.291-.367-.678-.581-1.058-.581-.174 0-.349.039-.504.116C11.026 4.61 9.997 3.29 8.745 3.29c-.814 0-1.551.426-2.133 1.116-.407-.116-.834-.174-1.28-.174-1.59 0-2.754 1.01-3.23 2.522C1.319 7.609.892 9.054.892 10.519c0 1.961.891 3.019 2.406 3.019.387 0 .794-.077 1.2-.213v.058c0 1.513.814 2.367 2.036 2.367.116 0 .233-.01.349-.029.155.542.407 1.048.737 1.474-.58.155-1.085.407-1.494.737l4.868 5.786 4.343-1.745zM12 4.028c-.155.638-.407 1.687-.814 2.812-.717-.426-1.551-.639-2.406-.639.019-.029.039-.077.058-.116C9.453 4.61 10.5 4.028 12 4.028z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Shopify</p>
+                        <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>
+                          {shopifyConnected
+                            ? `${shopifyStore?.storeName} (${shopifyStore?.storeUrl})`
+                            : "Connect to auto-sync orders from your Shopify store"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {shopifyConnected ? (
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
+                          style={{ background: "#F0FDF4", color: "#16A34A" }}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                          Connected
+                        </span>
+                        <button onClick={handleShopifyDisconnect} disabled={shopifyLoading}
+                          className="text-xs font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
+                          style={{ background: "#FEF2F2", color: "#EF4444", border: "1px solid #FEE2E2" }}>
+                          {shopifyLoading ? "Disconnecting..." : "Disconnect"}
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setShowShopifyInput(v => !v)}
+                        className="text-xs font-semibold px-4 py-2 rounded-xl text-white flex-shrink-0 transition-opacity hover:opacity-90"
+                        style={{ background: "#96BF48" }}>
+                        Connect
+                      </button>
+                    )}
+                  </div>
+
+                  {showShopifyInput && !shopifyConnected && (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="yourstore.myshopify.com"
+                        value={shopifyInput}
+                        onChange={e => setShopifyInput(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && handleShopifyConnect()}
+                        className="flex-1 px-3 py-2 text-sm rounded-xl outline-none"
+                        style={{ border: "1px solid var(--border)", background: "white", color: "var(--text-900)" }}
+                        onFocus={e => e.currentTarget.style.border = "1px solid #96BF48"}
+                        onBlur={e => e.currentTarget.style.border = "1px solid var(--border)"}
+                      />
+                      <button onClick={handleShopifyConnect}
+                        className="px-4 py-2 text-xs font-semibold rounded-xl text-white"
+                        style={{ background: "#96BF48" }}>
+                        Authorize
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
