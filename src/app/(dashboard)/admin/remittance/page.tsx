@@ -125,6 +125,7 @@ export default function AdminRemittancePage() {
   const [bankTxInput, setBankTxInput] = useState<Record<string, string>>({});
   const [savingPaid, setSavingPaid] = useState<string | null>(null);
   const [resetting, setResetting] = useState<string | null>(null);
+  const [bulkFill, setBulkFill] = useState({ productCost: "", shippingCharge: "", packingCharge: "", rtoCharge: "" });
 
   useEffect(() => {
     fetch("/api/admin/sellers").then((r) => r.json()).then((d) => setSellers(d.sellers ?? []));
@@ -191,6 +192,21 @@ export default function AdminRemittancePage() {
   }
   function toggleAll() {
     setCharges((p) => { const n = { ...p }; orders.forEach((o) => { n[o.id] = { ...n[o.id], include: !allSelected }; }); return n; });
+  }
+
+  function applyBulkFill() {
+    setCharges((prev) => {
+      const next = { ...prev };
+      selectedOrders.forEach((order) => {
+        const rto = isRTO(order);
+        if (bulkFill.productCost   !== "") next[order.id] = { ...next[order.id], productCost:    bulkFill.productCost };
+        if (bulkFill.shippingCharge !== "" && !rto) next[order.id] = { ...next[order.id], shippingCharge: bulkFill.shippingCharge };
+        if (bulkFill.packingCharge  !== "") next[order.id] = { ...next[order.id], packingCharge:  bulkFill.packingCharge };
+        if (bulkFill.rtoCharge      !== "" && rto)  next[order.id] = { ...next[order.id], rtoCharge:      bulkFill.rtoCharge };
+      });
+      return next;
+    });
+    setBulkFill({ productCost: "", shippingCharge: "", packingCharge: "", rtoCharge: "" });
   }
 
   async function handleSubmit() {
@@ -406,6 +422,29 @@ export default function AdminRemittancePage() {
                     {allSelected ? "Deselect All" : "Select All"}
                   </button>
                 </div>
+                {selectedOrders.length > 0 && (
+                  <div className="px-5 py-3 flex items-center gap-3 flex-wrap" style={{ background: "#EFF6FF", borderBottom: "1px solid #BFDBFE" }}>
+                    <span className="text-xs font-semibold text-blue-700 whitespace-nowrap">{selectedOrders.length} selected — bulk fill:</span>
+                    <input type="number" min="0" placeholder="Product Cost" value={bulkFill.productCost}
+                      onChange={(e) => setBulkFill((p) => ({ ...p, productCost: e.target.value }))}
+                      className="w-28 text-right px-2 py-1 text-xs border border-purple-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white" />
+                    <input type="number" min="0" placeholder="Shipping" value={bulkFill.shippingCharge}
+                      onChange={(e) => setBulkFill((p) => ({ ...p, shippingCharge: e.target.value }))}
+                      className="w-24 text-right px-2 py-1 text-xs border border-blue-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white" />
+                    <input type="number" min="0" placeholder="Platform" value={bulkFill.packingCharge}
+                      onChange={(e) => setBulkFill((p) => ({ ...p, packingCharge: e.target.value }))}
+                      className="w-24 text-right px-2 py-1 text-xs border border-orange-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-400 bg-white" />
+                    <input type="number" min="0" placeholder="RTO Charge" value={bulkFill.rtoCharge}
+                      onChange={(e) => setBulkFill((p) => ({ ...p, rtoCharge: e.target.value }))}
+                      className="w-24 text-right px-2 py-1 text-xs border border-red-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-400 bg-white" />
+                    <button onClick={applyBulkFill}
+                      className="px-4 py-1.5 text-white text-xs font-semibold rounded-lg"
+                      style={{ background: "#2563EB" }}>
+                      Apply to {selectedOrders.length} orders
+                    </button>
+                  </div>
+                )}
+
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
