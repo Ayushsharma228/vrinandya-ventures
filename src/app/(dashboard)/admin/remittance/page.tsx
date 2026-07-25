@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   IndianRupee, CheckSquare, Square, Calculator, Send,
-  ChevronDown, ChevronRight, History, Clock, CheckCircle2, BadgeCheck,
+  ChevronDown, ChevronRight, History, Clock, CheckCircle2, BadgeCheck, RotateCcw,
 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
@@ -124,6 +124,7 @@ export default function AdminRemittancePage() {
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
   const [bankTxInput, setBankTxInput] = useState<Record<string, string>>({});
   const [savingPaid, setSavingPaid] = useState<string | null>(null);
+  const [resetting, setResetting] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/sellers").then((r) => r.json()).then((d) => setSellers(d.sellers ?? []));
@@ -211,6 +212,15 @@ export default function AdminRemittancePage() {
     setSubmitting(false);
   }
 
+  async function handleReset(txId: string) {
+    if (!confirm("Reset this remittance? The orders will return to Pending and can be recalculated.")) return;
+    setResetting(txId);
+    const res = await fetch(`/api/admin/remittance?txId=${txId}`, { method: "DELETE" });
+    if (res.ok) { await fetchPending(); await fetchHistory(); }
+    else { const d = await res.json(); alert(d.error || "Failed to reset"); }
+    setResetting(null);
+  }
+
   async function handleMarkPaid(txId: string) {
     const bankTxId = bankTxInput[txId]?.trim();
     if (!bankTxId) return alert("Enter bank/UPI transaction ID");
@@ -275,10 +285,17 @@ export default function AdminRemittancePage() {
                 <button onClick={() => setMarkingPaid(null)} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700">Cancel</button>
               </div>
             ) : (
-              <button onClick={() => setMarkingPaid(entry.transaction.id)}
-                className="flex items-center gap-1.5 text-xs font-semibold text-green-700 hover:text-green-900">
-                <CheckCircle2 className="w-4 h-4" /> Mark as Paid — attach bank/UPI transaction ID
-              </button>
+              <div className="flex items-center gap-4">
+                <button onClick={() => setMarkingPaid(entry.transaction.id)}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-green-700 hover:text-green-900">
+                  <CheckCircle2 className="w-4 h-4" /> Mark as Paid — attach bank/UPI transaction ID
+                </button>
+                <button onClick={() => handleReset(entry.transaction.id)} disabled={resetting === entry.transaction.id}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-red-500 hover:text-red-700 disabled:opacity-50 ml-auto">
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  {resetting === entry.transaction.id ? "Resetting..." : "Reset & Recalculate"}
+                </button>
+              </div>
             )}
           </div>
         )}

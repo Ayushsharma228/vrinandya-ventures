@@ -136,6 +136,31 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ success: true, transaction: tx, totalRemittance });
 }
 
+// DELETE: reset a remittance — un-remits linked orders so admin can recalculate
+export async function DELETE(req: NextRequest) {
+  const session = await getRouteSession(req);
+  if (!session || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const txId = searchParams.get("txId");
+  if (!txId) return NextResponse.json({ error: "txId required" }, { status: 400 });
+
+  const tx = await prisma.walletTransaction.findUnique({ where: { id: txId } });
+  if (!tx) return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
+  if (tx.bankTxId) return NextResponse.json({ error: "Cannot reset a paid remittance" }, { status: 400 });
+
+  await prisma.order.updateMany({
+    where: { remittanceTxId: txId },
+    data: { remittedAt: null, remittanceTxId: null },
+  });
+
+  await prisma.walletTransaction.delete({ where: { id: txId } });
+
+  return NextResponse.json({ success: true });
+}
+
 // PATCH: mark remittance as paid with bank transaction ID
 export async function PATCH(req: NextRequest) {
   const session = await getRouteSession(req);
