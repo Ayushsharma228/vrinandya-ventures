@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   RefreshCw, TrendingUp, ShoppingCart, Truck, Users,
   Calendar, BadgeIndianRupee, ArrowUpRight, BanknoteIcon,
-  UserCheck, MessageCircle, Zap,
+  UserCheck, MessageCircle, Zap, Package, Trophy, AlertTriangle,
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -41,6 +41,11 @@ interface TopSeller {
   orderCount: number; gmv: number; platformEarnings: number; netPayable: number;
 }
 
+interface CourierStat {
+  courier: string; total: number; delivered: number; rto: number;
+  deliveryRate: number; rtoRate: number;
+}
+
 interface AnalyticsData {
   period:              { from: string | null; to: string | null };
   orders:              OrdersData;
@@ -57,6 +62,7 @@ interface AnalyticsData {
     productCost: number; shipping: number; gmv: number;
     revenueTrend: { date: string; gmv: number; platformCharges: number; productCost: number }[];
   };
+  courierStats: CourierStat[];
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
@@ -376,6 +382,140 @@ export default function AdminAnalyticsPage() {
                 </div>
               )}
             </div>
+
+            {/* ── Courier Performance ───────────────────────────────────── */}
+            {(data.courierStats?.length ?? 0) > 0 && (() => {
+              const couriers   = data.courierStats;
+              const withOrders = couriers.filter(c => c.total > 0);
+              const best  = [...withOrders].sort((a, b) => b.deliveryRate - a.deliveryRate)[0];
+              const worst = [...withOrders].sort((a, b) => a.deliveryRate - b.deliveryRate)[0];
+              const avgRTO = withOrders.length > 0
+                ? Math.round(withOrders.reduce((s, c) => s + c.rtoRate, 0) / withOrders.length)
+                : 0;
+              const ranked = [...withOrders].sort((a, b) => b.deliveryRate - a.deliveryRate);
+
+              // chart data: each courier bar side-by-side delivered vs rto %
+              const chartData = couriers
+                .slice(0, 12)
+                .map(c => ({ name: c.courier.length > 14 ? c.courier.slice(0, 13) + "…" : c.courier, "Delivered %": c.deliveryRate, "RTO %": c.rtoRate }));
+
+              return (
+                <div className="space-y-4">
+                  <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>
+                    Courier Performance
+                  </h2>
+
+                  {/* Highlight cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="card p-4 flex items-start gap-3" style={{ borderLeft: "4px solid #16A34A" }}>
+                      <Trophy className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: "#16A34A" }} />
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-400)" }}>Best Performer</p>
+                        <p className="text-base font-bold mt-0.5" style={{ color: "var(--text-900)" }}>{best?.courier ?? "—"}</p>
+                        <p className="text-xs mt-0.5 font-medium" style={{ color: "#16A34A" }}>{best?.deliveryRate ?? 0}% delivery · {best?.rtoRate ?? 0}% RTO</p>
+                        <p className="text-xs" style={{ color: "var(--text-400)" }}>{best?.total ?? 0} orders</p>
+                      </div>
+                    </div>
+                    <div className="card p-4 flex items-start gap-3" style={{ borderLeft: "4px solid #EF4444" }}>
+                      <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: "#EF4444" }} />
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-400)" }}>Worst Performer</p>
+                        <p className="text-base font-bold mt-0.5" style={{ color: "var(--text-900)" }}>{worst?.courier ?? "—"}</p>
+                        <p className="text-xs mt-0.5 font-medium" style={{ color: "#EF4444" }}>{worst?.deliveryRate ?? 0}% delivery · {worst?.rtoRate ?? 0}% RTO</p>
+                        <p className="text-xs" style={{ color: "var(--text-400)" }}>{worst?.total ?? 0} orders</p>
+                      </div>
+                    </div>
+                    <div className="card p-4 flex items-start gap-3" style={{ borderLeft: "4px solid #F59E0B" }}>
+                      <Package className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: "#F59E0B" }} />
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-400)" }}>Platform Avg RTO</p>
+                        <p className="text-2xl font-bold mt-0.5" style={{ color: "#F59E0B" }}>{avgRTO}%</p>
+                        <p className="text-xs" style={{ color: "var(--text-400)" }}>{withOrders.length} courier{withOrders.length !== 1 ? "s" : ""} tracked</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bar chart */}
+                  <div className="card p-5">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide mb-4" style={{ color: "var(--text-400)" }}>
+                      Delivery % vs RTO % by Courier
+                    </h3>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <BarChart data={chartData} margin={{ left: 0, right: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fill: "var(--text-400)" }} />
+                        <YAxis tickFormatter={(v) => `${v}%`} tick={{ fontSize: 10, fill: "var(--text-400)" }} domain={[0, 100]} />
+                        <Tooltip
+                          formatter={(val) => [`${val}%`]}
+                          contentStyle={{ fontSize: 12, background: "var(--bg-card)", border: "1px solid var(--border)" }} />
+                        <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+                        <Bar dataKey="Delivered %" fill="#16A34A" radius={[3,3,0,0]} />
+                        <Bar dataKey="RTO %"       fill="#F59E0B" radius={[3,3,0,0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Ranked comparison table */}
+                  <div className="card overflow-hidden">
+                    <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
+                      <h3 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Courier Comparison — Ranked by Delivery Rate</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-muted)" }}>
+                            {["#", "Courier", "Total Orders", "Delivered", "RTO", "Delivery %", "RTO %", "Rating"].map(h => (
+                              <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
+                                style={{ color: "var(--text-400)" }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y" style={{ borderColor: "var(--border)" }}>
+                          {ranked.map((c, idx) => {
+                            const rating  = c.deliveryRate >= 70 ? { label: "Good",    color: "#16A34A", bg: "#F0FDF4" }
+                                          : c.deliveryRate >= 50 ? { label: "Average", color: "#D97706", bg: "#FFFBEB" }
+                                          :                        { label: "Poor",    color: "#DC2626", bg: "#FEF2F2" };
+                            return (
+                              <tr key={c.courier} className="hover:bg-gray-50/20">
+                                <td className="px-4 py-3 text-xs font-mono" style={{ color: "var(--text-400)" }}>{idx + 1}</td>
+                                <td className="px-4 py-3">
+                                  <p className="text-xs font-semibold" style={{ color: "var(--text-900)" }}>{c.courier}</p>
+                                </td>
+                                <td className="px-4 py-3 text-xs font-medium" style={{ color: "var(--text-900)" }}>{c.total}</td>
+                                <td className="px-4 py-3 text-xs font-bold" style={{ color: "#16A34A" }}>{c.delivered}</td>
+                                <td className="px-4 py-3 text-xs font-bold" style={{ color: "#F59E0B" }}>{c.rto}</td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--bg-muted)", minWidth: "4rem" }}>
+                                      <div className="h-1.5 rounded-full" style={{ width: `${c.deliveryRate}%`, background: "#16A34A" }} />
+                                    </div>
+                                    <span className="text-xs font-bold w-8 text-right" style={{ color: "#16A34A" }}>{c.deliveryRate}%</span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--bg-muted)", minWidth: "4rem" }}>
+                                      <div className="h-1.5 rounded-full" style={{ width: `${c.rtoRate}%`, background: "#F59E0B" }} />
+                                    </div>
+                                    <span className="text-xs font-bold w-8 text-right" style={{ color: "#F59E0B" }}>{c.rtoRate}%</span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                                    style={{ color: rating.color, background: rating.bg }}>
+                                    {rating.label}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* ── Finance summary bar ────────────────────────────────────── */}
             <div className="card p-5">

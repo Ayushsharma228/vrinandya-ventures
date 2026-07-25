@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const [orders, settlements, sellerRows, supplierPaymentAgg, activeSellers, pendingWd, leadStages, waStatuses, activationStages, walletCreditAgg, orderChargeAgg] = await Promise.all([
     prisma.order.findMany({
       where: dateWhere,
-      select: { status: true, totalAmount: true, createdAt: true, sellerId: true, packingCharge: true, productCost: true, shippingCharge: true },
+      select: { status: true, totalAmount: true, createdAt: true, sellerId: true, packingCharge: true, productCost: true, shippingCharge: true, courier: true },
       orderBy: { createdAt: "asc" },
     }),
     prisma.settlement.findMany({
@@ -192,6 +192,27 @@ export async function GET(req: NextRequest) {
   }
   const revenueTrend = Array.from(revenueTrendMap.entries()).map(([date, v]) => ({ date, ...v }));
 
+  // ── Courier performance ───────────────────────────────────────────────────
+  const courierMap = new Map<string, { total: number; delivered: number; rto: number }>();
+  for (const o of orders) {
+    const c = (o.courier?.trim()) || "Unknown";
+    const cur = courierMap.get(c) ?? { total: 0, delivered: 0, rto: 0 };
+    cur.total++;
+    if (o.status === "DELIVERED") cur.delivered++;
+    if (o.status === "RTO")       cur.rto++;
+    courierMap.set(c, cur);
+  }
+  const courierStats = Array.from(courierMap.entries())
+    .map(([courier, v]) => ({
+      courier,
+      total:        v.total,
+      delivered:    v.delivered,
+      rto:          v.rto,
+      deliveryRate: v.total > 0 ? Math.round((v.delivered / v.total) * 100) : 0,
+      rtoRate:      v.total > 0 ? Math.round((v.rto       / v.total) * 100) : 0,
+    }))
+    .sort((a, b) => b.total - a.total);
+
   return NextResponse.json({
     period: { from: from ?? null, to: to ?? null },
     orders: {
@@ -237,5 +258,6 @@ export async function GET(req: NextRequest) {
       gmv: totalGMV,
       revenueTrend,
     },
+    courierStats,
   });
 }
