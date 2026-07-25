@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
   const supplierId = searchParams.get("supplierId") ?? "";
   const dateFrom   = searchParams.get("dateFrom")   ?? "";
   const dateTo     = searchParams.get("dateTo")     ?? "";
+  const source     = searchParams.get("source")     ?? "";
   const page       = Math.max(1, parseInt(searchParams.get("page")  ?? "1"));
   const limit      = Math.min(100, parseInt(searchParams.get("limit") ?? "50"));
 
@@ -23,6 +24,7 @@ export async function GET(req: NextRequest) {
     ...(sellerId   ? { sellerId }   : {}),
     ...(supplierId ? { supplierId } : {}),
     ...(status     ? { status: status as never } : {}),
+    ...(source     ? { source: source as never } : {}),
     ...(dateFrom || dateTo ? {
       createdAt: {
         ...(dateFrom ? { gte: new Date(dateFrom) }                               : {}),

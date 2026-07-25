@@ -7,9 +7,12 @@ import { PageHero } from "@/components/layout/page-hero";
 
 interface Seller   { id: string; name: string | null; email: string; }
 interface Supplier { id: string; name: string | null; email: string; }
+const SOURCES = ["SHOPIFY", "AMAZON", "FLIPKART", "MEESHO", "EBAY", "ETSY", "WALMART", "OTHER"] as const;
+
 interface Order {
   id: string;
   externalOrderId: string;
+  source: string;
   status: string;
   supplierStatus: string | null;
   supplierId: string | null;
@@ -312,6 +315,7 @@ export default function AdminOrdersPage() {
   const [search, setSearch]               = useState("");
   const [sellerFilter, setSellerFilter]   = useState("");
   const [statusFilter, setStatusFilter]   = useState("");
+  const [sourceFilter, setSourceFilter]   = useState("");
   const [dateFrom, setDateFrom]           = useState("");
   const [dateTo, setDateTo]               = useState("");
   const [dateInputs, setDateInputs]       = useState<Record<string, string>>({});
@@ -341,6 +345,7 @@ export default function AdminOrdersPage() {
     if (search)       params.set("search",   search);
     if (statusFilter) params.set("status",   statusFilter);
     if (sellerFilter) params.set("sellerId", sellerFilter);
+    if (sourceFilter) params.set("source",   sourceFilter);
     if (dateFrom)     params.set("dateFrom", dateFrom);
     if (dateTo)       params.set("dateTo",   dateTo);
     params.set("page",  String(page));
@@ -351,9 +356,9 @@ export default function AdminOrdersPage() {
     setTotalOrders(data.total ?? 0);
     setTotalPages(data.pages ?? 1);
     setLoading(false);
-  }, [search, statusFilter, sellerFilter, dateFrom, dateTo, page]);
+  }, [search, statusFilter, sellerFilter, sourceFilter, dateFrom, dateTo, page]);
 
-  useEffect(() => { setPage(1); }, [search, statusFilter, sellerFilter, dateFrom, dateTo]);
+  useEffect(() => { setPage(1); }, [search, statusFilter, sellerFilter, sourceFilter, dateFrom, dateTo]);
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
   // Quick confirm: NEW → PROCESSING
@@ -469,6 +474,7 @@ export default function AdminOrdersPage() {
     if (search)       params.set("search",   search);
     if (statusFilter) params.set("status",   statusFilter);
     if (sellerFilter) params.set("sellerId", sellerFilter);
+    if (sourceFilter) params.set("source",   sourceFilter);
     if (dateFrom)     params.set("from",     dateFrom);
     if (dateTo)       params.set("to",       dateTo);
     window.location.href = `/api/admin/orders/export?${params}`;
@@ -518,6 +524,11 @@ export default function AdminOrdersPage() {
               className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)", background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <option value="" className="text-gray-900 bg-white">All Statuses</option>
               {STATUSES.map((s) => <option key={s} value={s} className="text-gray-900 bg-white">{s}</option>)}
+            </select>
+            <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)}
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)", background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+              <option value="" className="text-gray-900 bg-white">All Platforms</option>
+              {SOURCES.map((s) => <option key={s} value={s} className="text-gray-900 bg-white">{s}</option>)}
             </select>
             <input
               type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
@@ -626,14 +637,14 @@ export default function AdminOrdersPage() {
                       <input type="checkbox" checked={selected.size === orders.length && orders.length > 0}
                         onChange={toggleAll} className="rounded cursor-pointer" />
                     </th>
-                    {["Order #", "Seller", "Customer", "Products", "Amount", "Status", "Supplier", "Date", "Actions"].map((h) => (
+                    {["Order #", "Platform", "Seller", "Customer", "Products", "Amount", "Status", "Supplier", "Date", "Actions"].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {orders.length === 0 ? (
-                    <tr><td colSpan={10} className="py-12 text-center text-gray-400 text-sm">No orders found</td></tr>
+                    <tr><td colSpan={11} className="py-12 text-center text-gray-400 text-sm">No orders found</td></tr>
                   ) : orders.map((order) => {
                     const isSelected = selected.has(order.id);
                     const isActing   = quickActing === order.id;
@@ -650,6 +661,11 @@ export default function AdminOrdersPage() {
                             {order.externalOrderId}
                             <ExternalLink className="w-2.5 h-2.5 opacity-50" />
                           </Link>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
+                            {order.source || "OTHER"}
+                          </span>
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">{order.seller.name || order.seller.email}</td>
                         <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">{order.customerName || "—"}</td>
