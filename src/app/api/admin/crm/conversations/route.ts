@@ -7,7 +7,10 @@ export async function GET(req: NextRequest) {
   if (!session || (session.user.role !== "ADMIN" && session.user.role !== "SALES"))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const isSales = session.user.role === "SALES";
+
   const conversations = await prisma.wAConversation.findMany({
+    where: isSales ? { lead: { assignedToId: session.user.id } } : undefined,
     orderBy: { lastMessageAt: "desc" },
     take: 100,
     include: {

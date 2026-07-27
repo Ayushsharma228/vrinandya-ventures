@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   UserCheck, Target, TrendingUp, CalendarClock,
-  Phone, MapPin, ArrowRight, Loader2,
+  Phone, MapPin, ArrowRight, Loader2, MessageCircle,
 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
@@ -66,6 +66,13 @@ export default function SalesDashboard() {
       <PageHero
         title={`Hey, ${data.name?.split(" ")[0] || "there"} 👋`}
         subtitle={data.salesTitle || "Sales Team · Axiqen"}
+        actions={
+          <Link href="/sales/inbox"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold"
+            style={{ background: "rgba(22,163,74,0.1)", color: "#16A34A", border: "1px solid rgba(22,163,74,0.2)" }}>
+            <MessageCircle className="w-4 h-4" /> WhatsApp
+          </Link>
+        }
         cards={
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
