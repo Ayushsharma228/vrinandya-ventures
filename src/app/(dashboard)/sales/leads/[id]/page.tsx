@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Phone, MapPin, CalendarClock, ArrowLeft, Loader2,
   PhoneCall, StickyNote, ChevronDown, CheckCircle, AlertTriangle, MessageCircle,
@@ -184,11 +185,20 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-red-50 text-red-600">NI</span>
         )}
         <div className="flex items-center gap-2">
+          {/* Chat on WhatsApp — opens inbox via company number 8679993305 */}
+          <Link
+            href={`/sales/inbox?leadId=${lead.id}`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors"
+            style={{ background: "rgba(37,211,102,0.12)", color: "#16A34A", border: "1px solid rgba(37,211,102,0.25)" }}>
+            <MessageCircle className="w-3.5 h-3.5" />
+            Chat on WhatsApp
+          </Link>
+          {/* Send via Arya — sends outreach template */}
           <button
             onClick={handleWhatsAppOutreach}
             disabled={sendingWa || waResult?.ok === true}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold disabled:opacity-60 transition-colors"
-            style={{ background: "rgba(37,211,102,0.12)", color: "#16A34A", border: "1px solid rgba(37,211,102,0.25)" }}>
+            style={{ background: "var(--bg-muted)", color: "var(--text-600)", border: "1px solid var(--border)" }}>
             {sendingWa
               ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
               : <MessageCircle className="w-3.5 h-3.5" />}
@@ -196,7 +206,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           </button>
           {waResult && (
             <span className="text-xs font-medium" style={{ color: waResult.ok ? "#16A34A" : "#EF4444" }}>
-              {waResult.ok ? "✓ Sent! Arya will handle replies." : waResult.error}
+              {waResult.ok ? "✓ Sent!" : waResult.error}
             </span>
           )}
         </div>

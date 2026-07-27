@@ -193,9 +193,12 @@ export async function GET(req: NextRequest) {
   const revenueTrend = Array.from(revenueTrendMap.entries()).map(([date, v]) => ({ date, ...v }));
 
   // ── Courier performance ───────────────────────────────────────────────────
+  // Only include orders with a named courier — blank/null orders skew the chart
   const courierMap = new Map<string, { total: number; delivered: number; rto: number }>();
+  let courierUncategorized = 0;
   for (const o of orders) {
-    const c = (o.courier?.trim()) || "Unknown";
+    const c = o.courier?.trim();
+    if (!c) { courierUncategorized++; continue; }
     const cur = courierMap.get(c) ?? { total: 0, delivered: 0, rto: 0 };
     cur.total++;
     if (o.status === "DELIVERED") cur.delivered++;
@@ -258,6 +261,6 @@ export async function GET(req: NextRequest) {
       gmv: totalGMV,
       revenueTrend,
     },
-    courierStats,
+    courierStats, courierUncategorized,
   });
 }

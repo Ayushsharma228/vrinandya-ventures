@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { MessageCircle, Send, RefreshCw, Phone, MapPin, ArrowLeft, User } from "lucide-react";
 import Link from "next/link";
 
@@ -56,6 +57,9 @@ function formatDate(iso: string) {
 }
 
 export default function SalesWhatsAppInboxPage() {
+  const searchParams  = useSearchParams();
+  const targetLeadId  = searchParams.get("leadId");
+
   const [convs,       setConvs]       = useState<Conversation[]>([]);
   const [activeId,    setActiveId]    = useState<string | null>(null);
   const [messages,    setMessages]    = useState<Message[]>([]);
@@ -64,7 +68,8 @@ export default function SalesWhatsAppInboxPage() {
   const [sending,     setSending]     = useState(false);
   const [loading,     setLoading]     = useState(true);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const autoOpened    = useRef(false);
+  const bottomRef     = useRef<HTMLDivElement>(null);
 
   const fetchConvs = useCallback(async () => {
     const r = await fetch("/api/admin/crm/conversations");
@@ -87,6 +92,14 @@ export default function SalesWhatsAppInboxPage() {
   }, []);
 
   useEffect(() => { fetchConvs(); }, [fetchConvs]);
+
+  // Auto-open conversation when arriving from a lead page via ?leadId=
+  useEffect(() => {
+    if (!targetLeadId || autoOpened.current || loading || convs.length === 0) return;
+    const match = convs.find(c => c.lead?.id === targetLeadId);
+    if (match) { autoOpened.current = true; openConv(match.id); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetLeadId, loading, convs]);
 
   useEffect(() => {
     if (!activeId) return;
