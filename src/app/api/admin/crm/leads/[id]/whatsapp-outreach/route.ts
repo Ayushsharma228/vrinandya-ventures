@@ -38,7 +38,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const templateLang = rawLang === "en" ? "en_US" : rawLang;
 
   const firstName = (lead.name ?? "there").split(" ")[0];
-  const result = await sendTemplateMessage(waId, templateName, templateLang, [firstName]);
+  const bodyParams = templateName === "hello_world" ? [] : [firstName];
+  const result = await sendTemplateMessage(waId, templateName, templateLang, bodyParams);
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: 502 });
 
   // Create or reopen WAConversation

@@ -44,7 +44,8 @@ export async function GET(req: NextRequest) {
     if (lastMsg?.role === "ASSISTANT") { skipped.push(conv.waId); continue; }
 
     const firstName = (conv.lead?.name ?? "there").split(" ")[0];
-    const result = await sendTemplateMessage(conv.waId, templateName, templateLang, [firstName]);
+    const bodyParams = templateName === "hello_world" ? [] : [firstName];
+    const result = await sendTemplateMessage(conv.waId, templateName, templateLang, bodyParams);
     if ("error" in result) { skipped.push(conv.waId); continue; }
 
     await prisma.wAMessage.create({
