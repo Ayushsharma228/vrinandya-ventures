@@ -78,10 +78,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const pageToken = process.env.META_PAGE_TOKEN;
+  // Prefer DB-stored permanent page token (set via exchange-token API), fall back to env var
+  const [dbToken, dbExpiry] = await Promise.all([
+    prisma.platformConfig.findUnique({ where: { key: "META_PAGE_TOKEN_DB" } }),
+    prisma.platformConfig.findUnique({ where: { key: "META_USER_TOKEN_EXPIRES" } }),
+  ]);
+  const pageToken = dbToken?.value || process.env.META_PAGE_TOKEN;
   if (!pageToken) {
-    return NextResponse.json({ error: "META_PAGE_TOKEN not configured" }, { status: 500 });
+    return NextResponse.json(
+      { error: "No Meta page token configured — use the Token Manager in the CRM page to set a permanent token" },
+      { status: 500 }
+    );
   }
+  const expiresAt = dbExpiry?.value ? new Date(dbExpiry.value) : null;
+  const daysLeft = expiresAt ? Math.floor((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+  const tokenExpiringSoon = daysLeft !== null && daysLeft <= 7;
 
   const { searchParams } = new URL(req.url);
   const full = searchParams.get("full") === "true";
@@ -150,5 +161,5 @@ export async function POST(req: NextRequest) {
     setImmediate(() => { onBulkLeadsImported(importedLeadIds).catch(() => {}); });
   }
 
-  return NextResponse.json({ imported, skipped, found, errors, sampleFields });
+  return NextResponse.json({ imported, skipped, found, errors, sampleFields, tokenExpiringSoon, daysLeft });
 }

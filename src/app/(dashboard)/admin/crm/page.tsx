@@ -98,6 +98,13 @@ export default function AdminCRMPage() {
   const [deduping, setDeduping] = useState(false);
   const [dedupResult, setDedupResult] = useState<{ deleted: number } | null>(null);
 
+  // Token manager
+  const [showTokenPanel, setShowTokenPanel] = useState(false);
+  const [tokenInput, setTokenInput] = useState("");
+  const [exchanging, setExchanging] = useState(false);
+  const [exchangeResult, setExchangeResult] = useState<{ ok?: boolean; message?: string; error?: string; daysUntilExpiry?: number; pageName?: string } | null>(null);
+  const [tokenInfo, setTokenInfo] = useState<{ hasDbToken: boolean; usingEnvFallback: boolean; daysUntilExpiry: number | null; expiringSoon: boolean } | null>(null);
+
   // WhatsApp outreach
   const [startingWa, setStartingWa] = useState<string | null>(null);
 
@@ -108,6 +115,34 @@ export default function AdminCRMPage() {
     setStartingWa(null);
     if (!res.ok) { alert(data.error || "Failed to send WhatsApp message"); return; }
     alert("WhatsApp intro sent! Arya will handle the conversation when they reply.");
+  }
+
+  async function fetchTokenInfo() {
+    try {
+      const res = await fetch("/api/admin/meta/exchange-token");
+      const data = await res.json();
+      setTokenInfo(data);
+    } catch { /* silent */ }
+  }
+
+  async function handleExchangeToken() {
+    if (!tokenInput.trim()) return;
+    setExchanging(true);
+    setExchangeResult(null);
+    try {
+      const res = await fetch("/api/admin/meta/exchange-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userToken: tokenInput.trim() }),
+      });
+      const data = await res.json();
+      setExchangeResult(data);
+      if (data.ok) { setTokenInput(""); fetchTokenInfo(); }
+    } catch {
+      setExchangeResult({ error: "Network error — check Vercel logs" });
+    } finally {
+      setExchanging(false);
+    }
   }
 
   const fetchData = useCallback(async () => {
@@ -131,7 +166,7 @@ export default function AdminCRMPage() {
     setRefreshing(false);
   }
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchData(); fetchTokenInfo(); }, [fetchData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-refresh every 30 seconds so new leads appear without clicking Refresh
   useEffect(() => {
@@ -286,6 +321,21 @@ export default function AdminCRMPage() {
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
               style={{ background: "var(--bg-muted)", color: "var(--text-primary)", border: "1px solid var(--border)" }}>
               <Upload className="w-4 h-4" /> Bulk Upload
+            </button>
+            <button
+              onClick={() => { setShowTokenPanel(p => !p); setExchangeResult(null); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+              style={{
+                background: tokenInfo?.expiringSoon ? "rgba(239,68,68,0.12)" : tokenInfo?.hasDbToken ? "rgba(0,198,122,0.12)" : "var(--bg-muted)",
+                color: tokenInfo?.expiringSoon ? "#EF4444" : tokenInfo?.hasDbToken ? "#16A34A" : "var(--text-400)",
+                border: `1px solid ${tokenInfo?.expiringSoon ? "rgba(239,68,68,0.3)" : tokenInfo?.hasDbToken ? "rgba(0,198,122,0.3)" : "var(--border)"}`,
+              }}>
+              <span style={{ fontSize: 13 }}>🔒</span>
+              {tokenInfo?.expiringSoon
+                ? `Token expiring in ${tokenInfo.daysUntilExpiry}d`
+                : tokenInfo?.hasDbToken
+                  ? "Token Active"
+                  : "Token Manager"}
             </button>
             <button
               onClick={async () => {
@@ -702,6 +752,96 @@ export default function AdminCRMPage() {
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {/* Meta Token Manager */}
+        {showTokenPanel && (
+          <div className="card p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span style={{ fontSize: 16 }}>🔒</span>
+                <h2 className="text-sm font-bold" style={{ color: "var(--text-900)" }}>Meta Token Manager</h2>
+                {tokenInfo?.hasDbToken && (
+                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(0,198,122,0.12)", color: "#16A34A" }}>
+                    Permanent token active
+                  </span>
+                )}
+                {tokenInfo?.usingEnvFallback && !tokenInfo.hasDbToken && (
+                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(245,158,11,0.12)", color: "#D97706" }}>
+                    Using short-lived env token
+                  </span>
+                )}
+              </div>
+              <button onClick={() => setShowTokenPanel(false)} className="text-xs px-2 py-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">✕</button>
+            </div>
+
+            {tokenInfo?.hasDbToken && tokenInfo.daysUntilExpiry !== null && (
+              <div className="rounded-xl px-4 py-3 text-sm"
+                style={{
+                  background: tokenInfo.expiringSoon ? "rgba(239,68,68,0.08)" : "rgba(0,198,122,0.08)",
+                  border: `1px solid ${tokenInfo.expiringSoon ? "rgba(239,68,68,0.2)" : "rgba(0,198,122,0.2)"}`,
+                  color: tokenInfo.expiringSoon ? "#DC2626" : "#15803D",
+                }}>
+                {tokenInfo.expiringSoon
+                  ? `⚠ User token expires in ${tokenInfo.daysUntilExpiry} day(s) — paste a fresh user token below to refresh.`
+                  : `✓ Permanent page token active. User token valid for ~${tokenInfo.daysUntilExpiry} more days — no action needed until then.`}
+              </div>
+            )}
+
+            {!tokenInfo?.hasDbToken && (
+              <div className="rounded-xl px-4 py-3 text-sm" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", color: "#92400E" }}>
+                No permanent token stored yet. Follow the steps below to generate one.
+              </div>
+            )}
+
+            <div className="rounded-xl p-4 space-y-2 text-xs" style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+              <p className="font-semibold" style={{ color: "var(--text-900)" }}>How to get a fresh user token:</p>
+              <ol className="list-decimal list-inside space-y-1" style={{ color: "var(--text-600)" }}>
+                <li>Open <strong>Meta Graph API Explorer</strong> (developers.facebook.com/tools/explorer)</li>
+                <li>Top-right dropdown → select <strong>Vrinandya Ventures</strong> app</li>
+                <li>Click <strong>Generate Access Token</strong> — grant all requested permissions</li>
+                <li>Copy the token from the "Access Token" field and paste it below</li>
+              </ol>
+              <p className="text-xs mt-1" style={{ color: "var(--text-400)" }}>
+                The server exchanges it for a 60-day long-lived token, then derives a <strong>permanent page token</strong> that never expires.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold" style={{ color: "var(--text-600)" }}>Paste short-lived user token from Graph API Explorer</label>
+              <textarea
+                value={tokenInput}
+                onChange={e => setTokenInput(e.target.value)}
+                rows={3}
+                placeholder="EAAxxxxxx..."
+                className="w-full px-3 py-2 text-xs font-mono border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                style={{ color: "var(--text-primary)" }}
+              />
+            </div>
+
+            {exchangeResult && (
+              <div className="rounded-xl px-4 py-3 text-sm"
+                style={{
+                  background: exchangeResult.ok ? "rgba(0,198,122,0.08)" : "rgba(239,68,68,0.08)",
+                  border: `1px solid ${exchangeResult.ok ? "rgba(0,198,122,0.2)" : "rgba(239,68,68,0.2)"}`,
+                  color: exchangeResult.ok ? "#15803D" : "#DC2626",
+                }}>
+                {exchangeResult.ok
+                  ? `✓ ${exchangeResult.message} (Page: ${exchangeResult.pageName})`
+                  : `✗ ${exchangeResult.error}`}
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <button
+                onClick={handleExchangeToken}
+                disabled={exchanging || !tokenInput.trim()}
+                className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white rounded-xl disabled:opacity-50"
+                style={{ background: "var(--green-500)" }}>
+                {exchanging ? <><RefreshCw className="w-4 h-4 animate-spin" />Exchanging...</> : <><span>🔄</span> Exchange &amp; Save Token</>}
+              </button>
+            </div>
           </div>
         )}
 

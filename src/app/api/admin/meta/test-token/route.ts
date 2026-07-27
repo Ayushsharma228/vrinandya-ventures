@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
 
 const FORM_IDS = ["2038602106739692"]; // 10 July form
 
@@ -22,9 +23,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const token = process.env.META_PAGE_TOKEN;
+  const [dbToken, dbExpiry] = await Promise.all([
+    prisma.platformConfig.findUnique({ where: { key: "META_PAGE_TOKEN_DB" } }),
+    prisma.platformConfig.findUnique({ where: { key: "META_USER_TOKEN_EXPIRES" } }),
+  ]);
+  const token = dbToken?.value || process.env.META_PAGE_TOKEN;
+  const usingDb = !!dbToken?.value;
+  const expiresAt = dbExpiry?.value ? new Date(dbExpiry.value) : null;
+  const daysUntilExpiry = expiresAt
+    ? Math.floor((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+
   if (!token) {
-    return NextResponse.json({ ok: false, reason: "META_PAGE_TOKEN is not set in Vercel environment variables" });
+    return NextResponse.json({ ok: false, reason: "No Meta page token found — set one via the Token Manager in CRM" });
   }
 
   // Step 1: validate token
@@ -70,5 +81,14 @@ export async function GET(req: NextRequest) {
   }
 
   const leadCount = ((formCheck as { data?: unknown[] }).data ?? []).length;
-  return NextResponse.json({ ok: true, page: pageName, formLeadsAccessible: true, sampleLeadsFound: leadCount });
+  return NextResponse.json({
+    ok: true,
+    page: pageName,
+    formLeadsAccessible: true,
+    sampleLeadsFound: leadCount,
+    usingDb,
+    daysUntilExpiry,
+    expiringSoon: daysUntilExpiry !== null && daysUntilExpiry <= 7,
+    userTokenExpiresAt: expiresAt?.toISOString() ?? null,
+  });
 }
