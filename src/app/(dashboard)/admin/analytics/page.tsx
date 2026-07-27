@@ -63,6 +63,7 @@ interface AnalyticsData {
     revenueTrend: { date: string; gmv: number; platformCharges: number; productCost: number }[];
   };
   courierStats: CourierStat[];
+  courierUncategorized: number;
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
@@ -384,14 +385,26 @@ export default function AdminAnalyticsPage() {
             </div>
 
             {/* ── Courier Performance ───────────────────────────────────── */}
-            {(data.courierStats?.length ?? 0) > 0 && (() => {
-              const couriers   = data.courierStats;
+            {(() => {
+              const couriers   = data.courierStats ?? [];
+              const uncategorized = data.courierUncategorized ?? 0;
               const withOrders = couriers.filter(c => c.total > 0);
+
+              if (withOrders.length === 0) return (
+                <div className="card p-6 flex flex-col items-center gap-2 text-center">
+                  <Package className="w-8 h-8" style={{ color: "var(--border)" }} />
+                  <p className="text-sm font-semibold" style={{ color: "var(--text-600)" }}>No courier data yet</p>
+                  <p className="text-xs" style={{ color: "var(--text-400)" }}>
+                    {uncategorized > 0
+                      ? `${uncategorized.toLocaleString()} order${uncategorized !== 1 ? "s" : ""} have no courier assigned. Fill in the courier field on orders to see performance stats.`
+                      : "No orders in the selected period."}
+                  </p>
+                </div>
+              );
+
               const best  = [...withOrders].sort((a, b) => b.deliveryRate - a.deliveryRate)[0];
               const worst = [...withOrders].sort((a, b) => a.deliveryRate - b.deliveryRate)[0];
-              const avgRTO = withOrders.length > 0
-                ? Math.round(withOrders.reduce((s, c) => s + c.rtoRate, 0) / withOrders.length)
-                : 0;
+              const avgRTO = Math.round(withOrders.reduce((s, c) => s + c.rtoRate, 0) / withOrders.length);
               const ranked = [...withOrders].sort((a, b) => b.deliveryRate - a.deliveryRate);
 
               // chart data: each courier bar side-by-side delivered vs rto %
@@ -513,6 +526,12 @@ export default function AdminAnalyticsPage() {
                       </table>
                     </div>
                   </div>
+
+                  {uncategorized > 0 && (
+                    <p className="text-xs px-1" style={{ color: "var(--text-400)" }}>
+                      ⚠ {uncategorized.toLocaleString()} order{uncategorized !== 1 ? "s" : ""} have no courier field set and are excluded from the above stats.
+                    </p>
+                  )}
                 </div>
               );
             })()}
