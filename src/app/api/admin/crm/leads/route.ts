@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
   const stage        = searchParams.get("stage") || undefined;
   const source       = searchParams.get("source") || undefined;
   const search       = searchParams.get("search") || undefined;
+  const isExport     = searchParams.get("export") === "true";
   const page         = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
   const limit        = 50;
 
@@ -31,6 +32,45 @@ export async function GET(req: NextRequest) {
       ],
     } : {}),
   };
+
+  // CSV export — return all matching leads as a downloadable file
+  if (isExport) {
+    const allLeads = await prisma.lead.findMany({
+      where,
+      select: {
+        name: true, phone: true, email: true, city: true,
+        investment: true, stage: true, source: true, isNI: true,
+        notes: true, followUpDate: true, createdAt: true,
+        assignedTo: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const escape = (v: unknown) => {
+      const s = v == null ? "" : String(v).replace(/"/g, '""');
+      return `"${s}"`;
+    };
+    const header = ["Name","Phone","Email","City","Investment","Stage","Source","NI","Assigned To","Follow-up Date","Notes","Added"];
+    const rows = allLeads.map(l => [
+      l.name, l.phone, l.email, l.city,
+      l.investment ?? "",
+      l.stage,
+      l.source === "META_ADS" ? "Meta Ads" : l.source === "WEBSITE" ? "Website Form" : l.source,
+      l.isNI ? "Yes" : "No",
+      l.assignedTo?.name ?? "Unassigned",
+      l.followUpDate ? new Date(l.followUpDate).toLocaleDateString("en-IN") : "",
+      l.notes ?? "",
+      new Date(l.createdAt).toLocaleDateString("en-IN"),
+    ].map(escape).join(","));
+
+    const csv = [header.join(","), ...rows].join("\r\n");
+    return new NextResponse(csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="leads-${new Date().toISOString().slice(0,10)}.csv"`,
+      },
+    });
+  }
 
   const [leads, total] = await Promise.all([
     prisma.lead.findMany({

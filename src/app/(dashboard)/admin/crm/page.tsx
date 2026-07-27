@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   UserCheck, Plus, Trash2, Loader2, Target,
   TrendingUp, Users, Phone, MapPin, ChevronDown, UserPlus,
-  Upload, Download, RefreshCw, XCircle, Sparkles, DollarSign, AlertCircle, MessageCircle,
+  Upload, Download, RefreshCw, XCircle, Sparkles, DollarSign, AlertCircle, MessageCircle, FileDown,
 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
@@ -133,6 +133,18 @@ export default function AdminCRMPage() {
     setStartingWa(null);
     if (!res.ok) { alert(data.error || "Failed to send WhatsApp message"); return; }
     alert("WhatsApp intro sent! Arya will handle the conversation when they reply.");
+  }
+
+  function exportCSV() {
+    const params = new URLSearchParams({ export: "true" });
+    if (search)       params.set("search", search);
+    if (repFilter)    params.set("assignedToId", repFilter);
+    if (stageFilter)  params.set("stage", stageFilter);
+    if (sourceFilter) params.set("source", sourceFilter);
+    const a = document.createElement("a");
+    a.href = `/api/admin/crm/leads?${params}`;
+    a.download = "";
+    a.click();
   }
 
   async function fetchTokenInfo() {
@@ -343,6 +355,12 @@ export default function AdminCRMPage() {
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
               style={{ background: "var(--bg-muted)", color: "var(--text-primary)", border: "1px solid var(--border)" }}>
               <Upload className="w-4 h-4" /> Bulk Upload
+            </button>
+            <button
+              onClick={exportCSV}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+              style={{ background: "var(--bg-muted)", color: "var(--text-primary)", border: "1px solid var(--border)" }}>
+              <FileDown className="w-4 h-4" /> Export CSV
             </button>
             <button
               onClick={() => { setShowTokenPanel(p => !p); setExchangeResult(null); }}
