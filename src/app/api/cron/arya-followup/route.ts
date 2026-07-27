@@ -43,15 +43,15 @@ export async function GET(req: NextRequest) {
     if (lastMsg?.role === "ASSISTANT") { skipped.push(conv.waId); continue; }
 
     const firstName = (conv.lead?.name ?? "there").split(" ")[0];
-    const msgId = await sendTemplateMessage(conv.waId, templateName, templateLang, [firstName]);
-    if (!msgId) { skipped.push(conv.waId); continue; }
+    const result = await sendTemplateMessage(conv.waId, templateName, templateLang, [firstName]);
+    if ("error" in result) { skipped.push(conv.waId); continue; }
 
     await prisma.wAMessage.create({
       data: {
         conversationId: conv.id,
         role: WAMessageRole.ASSISTANT,
         content: `[Follow-up template sent: ${templateName}]`,
-        waMessageId: msgId,
+        waMessageId: result.messageId,
       },
     });
 
