@@ -153,7 +153,7 @@ export default function CRMOverviewPage() {
     <div className="flex flex-col gap-6 pb-12">
       <PageHero
         title="CRM Overview"
-        description="Pipeline health, team performance, and lead activity at a glance"
+        subtitle="Pipeline health, team performance, and lead activity at a glance"
         actions={
           <Link href="/admin/crm"
             className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
