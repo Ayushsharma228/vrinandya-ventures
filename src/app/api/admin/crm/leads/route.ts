@@ -12,12 +12,14 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const assignedToId = searchParams.get("assignedToId") || undefined;
   const stage        = searchParams.get("stage") || undefined;
+  const source       = searchParams.get("source") || undefined;
   const search       = searchParams.get("search") || undefined;
 
   const leads = await prisma.lead.findMany({
     where: {
       ...(assignedToId ? { assignedToId } : {}),
       ...(stage        ? { stage: stage as never } : {}),
+      ...(source       ? { source: source as never } : {}),
       ...(search       ? {
         OR: [
           { name:  { contains: search, mode: "insensitive" } },

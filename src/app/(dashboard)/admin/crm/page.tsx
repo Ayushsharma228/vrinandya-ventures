@@ -57,6 +57,7 @@ export default function AdminCRMPage() {
   const [search, setSearch] = useState("");
   const [repFilter, setRepFilter] = useState("");
   const [stageFilter, setStageFilter] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [assigning, setAssigning] = useState<string | null>(null);
@@ -161,9 +162,10 @@ export default function AdminCRMPage() {
 
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams();
-    if (search)     params.set("search", search);
-    if (repFilter)  params.set("assignedToId", repFilter);
-    if (stageFilter) params.set("stage", stageFilter);
+    if (search)       params.set("search", search);
+    if (repFilter)    params.set("assignedToId", repFilter);
+    if (stageFilter)  params.set("stage", stageFilter);
+    if (sourceFilter) params.set("source", sourceFilter);
     const res = await fetch(`/api/admin/crm/leads?${params}`);
     const data = await res.json();
     setLeads(data.leads ?? []);
@@ -172,7 +174,7 @@ export default function AdminCRMPage() {
     setStageCounts(data.stageCounts ?? {});
     setNotUpdated(data.notUpdated ?? 0);
     setLoading(false);
-  }, [search, repFilter, stageFilter]);
+  }, [search, repFilter, stageFilter, sourceFilter]);
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -459,6 +461,13 @@ export default function AdminCRMPage() {
               className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)", background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <option value="" className="text-gray-900 bg-white">All Stages</option>
               {STAGES.map(s => <option key={s} value={s} className="text-gray-900 bg-white">{STAGE_LABEL[s]}</option>)}
+            </select>
+            <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}
+              className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)", background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+              <option value="" className="text-gray-900 bg-white">All Sources</option>
+              <option value="META_ADS" className="text-gray-900 bg-white">Meta Ads</option>
+              <option value="WEBSITE" className="text-gray-900 bg-white">Website Form</option>
+              <option value="MANUAL" className="text-gray-900 bg-white">Manual</option>
             </select>
           </div>
         }
