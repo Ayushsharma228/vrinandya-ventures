@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { UserCheck, Phone, MapPin, CalendarClock, Search, RefreshCw, ChevronRight } from "lucide-react";
+import { UserCheck, Phone, MapPin, CalendarClock, RefreshCw, ChevronRight, ArrowUpDown } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 const STAGES = [
@@ -48,6 +48,7 @@ export default function SalesLeadsPage() {
   const [search, setSearch] = useState("");
   const [showNI, setShowNI] = useState(false);
   const [overdue, setOverdue] = useState(false);
+  const [sort, setSort] = useState<"followUp" | "added" | "updated">("followUp");
   const [loading, setLoading] = useState(true);
   const [updatingStage, setUpdatingStage] = useState<string | null>(null);
 
@@ -58,11 +59,12 @@ export default function SalesLeadsPage() {
     if (search) params.set("search", search);
     if (showNI) params.set("ni", "true");
     if (overdue) params.set("overdue", "true");
+    if (sort !== "followUp") params.set("sort", sort);
     const res = await fetch(`/api/sales/leads?${params}`);
     const data = await res.json();
     setLeads(data.leads ?? []);
     setLoading(false);
-  }, [stage, search, showNI, overdue]);
+  }, [stage, search, showNI, overdue, sort]);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
@@ -126,13 +128,31 @@ export default function SalesLeadsPage() {
               );
             })}
           </div>
-          <button onClick={() => setShowNI(p => !p)}
-            className="ml-auto px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-            style={showNI
-              ? { background: "#DC2626", color: "var(--text-primary)" }
-              : { background: "#FEF2F2", color: "#DC2626" }}>
-            {showNI ? "Showing NI" : "Show NI"}
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            <div className="flex items-center gap-1 p-0.5 rounded-xl" style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+              <ArrowUpDown className="w-3 h-3 ml-2 flex-shrink-0" style={{ color: "var(--text-400)" }} />
+              {([
+                ["followUp", "Follow-up"],
+                ["added",    "Newest"],
+                ["updated",  "Updated"],
+              ] as const).map(([val, label]) => (
+                <button key={val} onClick={() => setSort(val)}
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
+                  style={sort === val
+                    ? { background: "var(--bg-card)", color: "var(--text-900)", boxShadow: "0 1px 2px rgba(0,0,0,0.08)" }
+                    : { color: "var(--text-400)" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowNI(p => !p)}
+              className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+              style={showNI
+                ? { background: "#DC2626", color: "var(--text-primary)" }
+                : { background: "#FEF2F2", color: "#DC2626" }}>
+              {showNI ? "Showing NI" : "Show NI"}
+            </button>
+          </div>
         </div>
 
         {/* Leads grid */}

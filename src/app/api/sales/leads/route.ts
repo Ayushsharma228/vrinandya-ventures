@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
   const search  = searchParams.get("search") || undefined;
   const ni      = searchParams.get("ni") === "true";
   const overdue = searchParams.get("overdue") === "true";
+  const sort    = searchParams.get("sort") || "followUp";
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -32,7 +33,11 @@ export async function GET(req: NextRequest) {
         ],
       } : {}),
     },
-    orderBy: [{ followUpDate: "asc" }, { updatedAt: "desc" }],
+    orderBy: sort === "added"
+      ? [{ createdAt: "desc" as const }]
+      : sort === "updated"
+        ? [{ updatedAt: "desc" as const }]
+        : [{ followUpDate: "asc" as const }, { updatedAt: "desc" as const }],
     include: {
       _count: { select: { activities: true } },
     },
