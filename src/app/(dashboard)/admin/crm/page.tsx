@@ -94,6 +94,20 @@ export default function AdminCRMPage() {
   const [tokenStatus, setTokenStatus] = useState<{ ok: boolean; page?: string; reason?: string; formLeadsAccessible?: boolean; sampleLeadsFound?: number } | null>(null);
   const [testingToken, setTestingToken] = useState(false);
 
+  // Inline stage update
+  const [updatingStage, setUpdatingStage] = useState<string | null>(null);
+
+  async function handleStageUpdate(leadId: string, stage: string) {
+    setUpdatingStage(leadId);
+    setLeads(p => p.map(l => l.id === leadId ? { ...l, stage } : l));
+    await fetch(`/api/admin/crm/leads/${leadId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage }),
+    });
+    setUpdatingStage(null);
+  }
+
   // Deduplication
   const [deduping, setDeduping] = useState(false);
   const [dedupResult, setDedupResult] = useState<{ deleted: number } | null>(null);
@@ -985,11 +999,19 @@ export default function AdminCRMPage() {
                           {lead.investment ? `₹${lead.investment.toLocaleString("en-IN")}` : "—"}
                         </td>
                         <td className="px-4 py-3">
-                          <span className="px-2.5 py-1 rounded-full text-xs font-semibold"
-                            style={{ background: cfg.bg, color: cfg.color }}>
-                            {STAGE_LABEL[lead.stage] ?? lead.stage}
-                          </span>
-                          {lead.isNI && <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-600">NI</span>}
+                          <div className="flex items-center gap-1.5">
+                            <select
+                              value={lead.stage}
+                              disabled={updatingStage === lead.id}
+                              onChange={e => handleStageUpdate(lead.id, e.target.value)}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-full cursor-pointer outline-none disabled:opacity-60"
+                              style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}33` }}>
+                              {STAGES.map(s => (
+                                <option key={s} value={s} className="bg-white text-gray-900">{STAGE_LABEL[s]}</option>
+                              ))}
+                            </select>
+                            {lead.isNI && <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-600">NI</span>}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <div className="relative">
