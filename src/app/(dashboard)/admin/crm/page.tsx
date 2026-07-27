@@ -58,6 +58,9 @@ export default function AdminCRMPage() {
   const [repFilter, setRepFilter] = useState("");
   const [stageFilter, setStageFilter] = useState("");
   const [sourceFilter, setSourceFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalLeadsCount, setTotalLeadsCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [assigning, setAssigning] = useState<string | null>(null);
@@ -166,6 +169,7 @@ export default function AdminCRMPage() {
     if (repFilter)    params.set("assignedToId", repFilter);
     if (stageFilter)  params.set("stage", stageFilter);
     if (sourceFilter) params.set("source", sourceFilter);
+    params.set("page", String(page));
     const res = await fetch(`/api/admin/crm/leads?${params}`);
     const data = await res.json();
     setLeads(data.leads ?? []);
@@ -173,8 +177,10 @@ export default function AdminCRMPage() {
     setPerfStats(data.perfStats ?? []);
     setStageCounts(data.stageCounts ?? {});
     setNotUpdated(data.notUpdated ?? 0);
+    setTotalLeadsCount(data.total ?? 0);
+    setTotalPages(data.pages ?? 1);
     setLoading(false);
-  }, [search, repFilter, stageFilter, sourceFilter]);
+  }, [search, repFilter, stageFilter, sourceFilter, page]);
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -322,7 +328,7 @@ export default function AdminCRMPage() {
         subtitle="Manage leads and track sales team performance"
         searchValue={search}
         searchPlaceholder="Search name, phone, city..."
-        onSearchChange={setSearch}
+        onSearchChange={v => { setSearch(v); setPage(1); }}
         onSearchSubmit={fetchData}
         actions={
           <div className="flex items-center gap-2">
@@ -452,17 +458,17 @@ export default function AdminCRMPage() {
         }
         filters={
           <div className="flex items-center gap-2">
-            <select value={repFilter} onChange={e => setRepFilter(e.target.value)}
+            <select value={repFilter} onChange={e => { setRepFilter(e.target.value); setPage(1); }}
               className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)", background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <option value="" className="text-gray-900 bg-white">All Reps</option>
               {salesTeam.map(r => <option key={r.id} value={r.id} className="text-gray-900 bg-white">{r.name}</option>)}
             </select>
-            <select value={stageFilter} onChange={e => setStageFilter(e.target.value)}
+            <select value={stageFilter} onChange={e => { setStageFilter(e.target.value); setPage(1); }}
               className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)", background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <option value="" className="text-gray-900 bg-white">All Stages</option>
               {STAGES.map(s => <option key={s} value={s} className="text-gray-900 bg-white">{STAGE_LABEL[s]}</option>)}
             </select>
-            <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}
+            <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setPage(1); }}
               className="px-3 py-2 text-sm rounded-xl outline-none" style={{ color: "var(--text-primary)", background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
               <option value="" className="text-gray-900 bg-white">All Sources</option>
               <option value="META_ADS" className="text-gray-900 bg-white">Meta Ads</option>
@@ -936,9 +942,51 @@ export default function AdminCRMPage() {
 
         {/* Leads table */}
         <div className="card overflow-hidden">
-          <div className="px-5 py-3.5 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
-            <UserCheck className="w-4 h-4" style={{ color: "var(--text-400)" }} />
-            <span className="font-semibold text-sm" style={{ color: "var(--text-900)" }}>All Leads ({leads.length})</span>
+          <div className="px-5 py-3.5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
+            <div className="flex items-center gap-2">
+              <UserCheck className="w-4 h-4" style={{ color: "var(--text-400)" }} />
+              <span className="font-semibold text-sm" style={{ color: "var(--text-900)" }}>
+                All Leads ({totalLeadsCount})
+              </span>
+              {totalPages > 1 && (
+                <span className="text-xs" style={{ color: "var(--text-400)" }}>
+                  — page {page} of {totalPages}
+                </span>
+              )}
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40 transition-colors hover:bg-gray-100"
+                  style={{ color: "var(--text-600)", border: "1px solid var(--border)" }}>
+                  ← Prev
+                </button>
+                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                  const p = totalPages <= 7 ? i + 1
+                    : page <= 4 ? i + 1
+                    : page >= totalPages - 3 ? totalPages - 6 + i
+                    : page - 3 + i;
+                  return (
+                    <button key={p} onClick={() => setPage(p)}
+                      className="w-8 h-8 rounded-lg text-xs font-semibold transition-colors"
+                      style={p === page
+                        ? { background: "var(--accent)", color: "#fff" }
+                        : { color: "var(--text-600)", border: "1px solid var(--border)" }}>
+                      {p}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40 transition-colors hover:bg-gray-100"
+                  style={{ color: "var(--text-600)", border: "1px solid var(--border)" }}>
+                  Next →
+                </button>
+              </div>
+            )}
           </div>
           {loading ? (
             <div className="py-16 text-center text-sm" style={{ color: "var(--text-400)" }}>Loading...</div>

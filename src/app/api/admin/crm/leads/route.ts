@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { onNewLead } from "@/lib/ai-workforce/arya/hooks";
 
 export async function GET(req: NextRequest) {
@@ -14,28 +15,37 @@ export async function GET(req: NextRequest) {
   const stage        = searchParams.get("stage") || undefined;
   const source       = searchParams.get("source") || undefined;
   const search       = searchParams.get("search") || undefined;
+  const page         = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
+  const limit        = 50;
 
-  const leads = await prisma.lead.findMany({
-    where: {
-      ...(assignedToId ? { assignedToId } : {}),
-      ...(stage        ? { stage: stage as never } : {}),
-      ...(source       ? { source: source as never } : {}),
-      ...(search       ? {
-        OR: [
-          { name:  { contains: search, mode: "insensitive" } },
-          { phone: { contains: search } },
-          { email: { contains: search, mode: "insensitive" } },
-          { city:  { contains: search, mode: "insensitive" } },
-        ],
-      } : {}),
-    },
-    include: {
-      assignedTo:  { select: { id: true, name: true } },
-      scoreDetail: true,
-      _count:      { select: { activities: true, aiConversations: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const where: Prisma.LeadWhereInput = {
+    ...(assignedToId ? { assignedToId } : {}),
+    ...(stage        ? { stage: stage as never } : {}),
+    ...(source       ? { source: source as never } : {}),
+    ...(search       ? {
+      OR: [
+        { name:  { contains: search, mode: "insensitive" } },
+        { phone: { contains: search } },
+        { email: { contains: search, mode: "insensitive" } },
+        { city:  { contains: search, mode: "insensitive" } },
+      ],
+    } : {}),
+  };
+
+  const [leads, total] = await Promise.all([
+    prisma.lead.findMany({
+      where,
+      include: {
+        assignedTo:  { select: { id: true, name: true } },
+        scoreDetail: true,
+        _count:      { select: { activities: true, aiConversations: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.lead.count({ where }),
+  ]);
 
   const salesTeam = await prisma.user.findMany({
     where: { role: "SALES" },
@@ -66,7 +76,10 @@ export async function GET(req: NextRequest) {
   // "Not Updated" = still in LEAD stage (never called/moved)
   const notUpdated = stageCounts["LEAD"] ?? 0;
 
-  return NextResponse.json({ leads, salesTeam, perfStats, stageCounts, notUpdated });
+  return NextResponse.json({
+    leads, salesTeam, perfStats, stageCounts, notUpdated,
+    total, page, pages: Math.ceil(total / limit), limit,
+  });
 }
 
 export async function POST(req: NextRequest) {
