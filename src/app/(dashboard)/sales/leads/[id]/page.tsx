@@ -91,10 +91,15 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
 
   async function handleWhatsAppOutreach() {
     setSendingWa(true); setWaResult(null);
-    const res = await fetch(`/api/sales/leads/${id}/whatsapp-outreach`, { method: "POST" });
-    const data = await res.json();
-    setWaResult(res.ok ? { ok: true } : { error: data.error || "Failed to send" });
-    setSendingWa(false);
+    try {
+      const res = await fetch(`/api/sales/leads/${id}/whatsapp-outreach`, { method: "POST" });
+      const data = await res.json();
+      setWaResult(res.ok ? { ok: true } : { error: data.error || "Failed to send" });
+    } catch {
+      setWaResult({ error: "Network error — try again" });
+    } finally {
+      setSendingWa(false);
+    }
   }
 
   async function fetchLead() {
@@ -181,7 +186,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
         <div className="flex items-center gap-2">
           <button
             onClick={handleWhatsAppOutreach}
-            disabled={sendingWa}
+            disabled={sendingWa || waResult?.ok === true}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold disabled:opacity-60 transition-colors"
             style={{ background: "rgba(37,211,102,0.12)", color: "#16A34A", border: "1px solid rgba(37,211,102,0.25)" }}>
             {sendingWa
