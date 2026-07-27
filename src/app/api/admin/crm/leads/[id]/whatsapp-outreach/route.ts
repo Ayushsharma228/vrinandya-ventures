@@ -18,16 +18,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const lead = await prisma.lead.findUnique({
     where: { id },
-    select: { id: true, name: true, phone: true, waConversations: { select: { id: true, status: true } } },
+    select: { id: true, name: true, phone: true },
   });
   if (!lead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   if (!lead.phone) return NextResponse.json({ error: "Lead has no phone number" }, { status: 400 });
-
-  // Check for an existing active conversation
-  const activeConv = lead.waConversations.find(c =>
-    c.status === WAConversationStatus.ACTIVE || c.status === WAConversationStatus.HANDED_OFF,
-  );
-  if (activeConv) return NextResponse.json({ error: "An active WhatsApp conversation already exists for this lead" }, { status: 409 });
 
   // Build waId — strip leading zeroes/country code, re-add 91
   const digits = lead.phone.replace(/\D/g, "");
@@ -42,26 +36,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const result = await sendTemplateMessage(waId, templateName, templateLang, bodyParams);
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: 502 });
 
-  // Create or reopen WAConversation
-  const existing = lead.waConversations[0];
-  let conv;
-  if (existing) {
-    conv = await prisma.wAConversation.update({
-      where: { id: existing.id },
-      data: { status: WAConversationStatus.ACTIVE, lastMessageAt: new Date() },
-    });
-  } else {
-    conv = await prisma.wAConversation.create({
-      data: {
-        waId,
-        phoneNumber: waId,
-        name: lead.name,
-        status: WAConversationStatus.ACTIVE,
-        leadId: lead.id,
-        lastMessageAt: new Date(),
-      },
-    });
-  }
+  // Upsert by waId so we never hit a unique-constraint error on repeat sends
+  const conv = await prisma.wAConversation.upsert({
+    where: { waId },
+    update: { status: WAConversationStatus.ACTIVE, lastMessageAt: new Date(), leadId: lead.id },
+    create: {
+      waId,
+      phoneNumber: waId,
+      name: lead.name,
+      status: WAConversationStatus.ACTIVE,
+      leadId: lead.id,
+      lastMessageAt: new Date(),
+    },
+  });
 
   // Log the outbound template as an ASSISTANT message so Arya has context
   await prisma.wAMessage.create({
