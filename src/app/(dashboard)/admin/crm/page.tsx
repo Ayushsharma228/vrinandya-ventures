@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import {
   UserCheck, Plus, Trash2, Loader2, Target,
   TrendingUp, Users, Phone, MapPin, ChevronDown, UserPlus,
-  Upload, Download, RefreshCw, XCircle, Sparkles, DollarSign, AlertCircle, MessageCircle, FileDown,
+  Upload, Download, RefreshCw, XCircle, Sparkles, DollarSign, AlertCircle, MessageCircle, FileDown, BarChart2,
 } from "lucide-react";
+import Link from "next/link";
 import { PageHero } from "@/components/layout/page-hero";
 
 const STAGES = [
@@ -552,16 +553,23 @@ export default function AdminCRMPage() {
       <div className="px-8 pt-6 space-y-6 pb-8">
 
         {/* Tab switcher */}
-        <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: "#F3F4F6" }}>
-          {([["leads", "Leads", UserCheck], ["team", "Sales Team", Users]] as const).map(([key, label, Icon]) => (
-            <button key={key} onClick={() => setTab(key)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-              style={tab === key
-                ? { background: "white", color: "var(--text-900)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
-                : { color: "var(--text-400)" }}>
-              <Icon className="w-4 h-4" /> {label}
-            </button>
-          ))}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: "#F3F4F6" }}>
+            {([["leads", "Leads", UserCheck], ["team", "Sales Team", Users]] as const).map(([key, label, Icon]) => (
+              <button key={key} onClick={() => setTab(key)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+                style={tab === key
+                  ? { background: "white", color: "var(--text-900)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+                  : { color: "var(--text-400)" }}>
+                <Icon className="w-4 h-4" /> {label}
+              </button>
+            ))}
+          </div>
+          <Link href="/admin/crm/overview"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+            style={{ background: "#F3F4F6", color: "var(--text-400)" }}>
+            <BarChart2 className="w-4 h-4" /> Overview
+          </Link>
         </div>
 
         {/* ── TEAM TAB ── */}
