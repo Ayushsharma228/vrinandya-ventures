@@ -4,7 +4,7 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import {
   Phone, MapPin, CalendarClock, ArrowLeft, Loader2,
-  PhoneCall, StickyNote, ChevronDown, CheckCircle, AlertTriangle,
+  PhoneCall, StickyNote, ChevronDown, CheckCircle, AlertTriangle, MessageCircle,
 } from "lucide-react";
 
 const STAGES = [
@@ -86,6 +86,16 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   // New activity
   const [actType, setActType] = useState<"CALL" | "NOTE">("CALL");
   const [actContent, setActContent] = useState("");
+  const [sendingWa, setSendingWa] = useState(false);
+  const [waResult, setWaResult] = useState<{ ok?: boolean; error?: string } | null>(null);
+
+  async function handleWhatsAppOutreach() {
+    setSendingWa(true); setWaResult(null);
+    const res = await fetch(`/api/sales/leads/${id}/whatsapp-outreach`, { method: "POST" });
+    const data = await res.json();
+    setWaResult(res.ok ? { ok: true } : { error: data.error || "Failed to send" });
+    setSendingWa(false);
+  }
 
   async function fetchLead() {
     const res = await fetch(`/api/sales/leads/${id}`);
@@ -168,6 +178,23 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
         {isNI && (
           <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-red-50 text-red-600">NI</span>
         )}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleWhatsAppOutreach}
+            disabled={sendingWa}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold disabled:opacity-60 transition-colors"
+            style={{ background: "rgba(37,211,102,0.12)", color: "#16A34A", border: "1px solid rgba(37,211,102,0.25)" }}>
+            {sendingWa
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : <MessageCircle className="w-3.5 h-3.5" />}
+            {sendingWa ? "Sending..." : "Send via Arya"}
+          </button>
+          {waResult && (
+            <span className="text-xs font-medium" style={{ color: waResult.ok ? "#16A34A" : "#EF4444" }}>
+              {waResult.ok ? "✓ Sent! Arya will handle replies." : waResult.error}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="px-4 md:px-8 py-6 grid grid-cols-1 md:grid-cols-3 gap-6">
