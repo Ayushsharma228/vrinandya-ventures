@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { handleIncomingMessage } from "@/lib/whatsapp/agent";
-import { markAsRead } from "@/lib/whatsapp/client";
+import { prisma } from "@/lib/prisma";
+import { WAConversationStatus, WAMessageRole } from "@prisma/client";
 
-// GET — Meta webhook verification
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
+  const { searchParams } = req.nextUrl;
   const mode      = searchParams.get("hub.mode");
   const token     = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
@@ -15,65 +14,79 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 }
 
-// POST — Incoming messages from Meta
 export async function POST(req: NextRequest) {
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Bad request" }, { status: 400 });
-  }
+  let body: Record<string, unknown>;
+  try { body = await req.json(); } catch { return NextResponse.json({ ok: true }); }
 
-  // Process synchronously — setImmediate is killed by Vercel after response
-  try {
-    await processWebhook(body);
-  } catch (err) {
-    console.error("[WA Webhook] processing error:", err);
-  }
-
-  return NextResponse.json({ status: "ok" });
-}
-
-async function processWebhook(body: unknown): Promise<void> {
-  const payload = body as Record<string, unknown>;
-  if (payload.object !== "whatsapp_business_account") return;
-
-  const entries = (payload.entry as unknown[]) ?? [];
+  const entries = (body?.entry as unknown[]) ?? [];
 
   for (const entry of entries) {
-    const e = entry as Record<string, unknown>;
-    const changes = (e.changes as unknown[]) ?? [];
-
+    const changes = ((entry as Record<string, unknown>)?.changes as unknown[]) ?? [];
     for (const change of changes) {
-      const c = change as Record<string, unknown>;
-      if (c.field !== "messages") continue;
+      const value = (change as Record<string, unknown>)?.value as Record<string, unknown>;
+      if (!value) continue;
 
-      const value = c.value as Record<string, unknown>;
-      const messages = (value.messages as unknown[]) ?? [];
-      const contacts = (value.contacts as unknown[]) ?? [];
+      const messages = (value?.messages as unknown[]) ?? [];
+      const contacts = (value?.contacts as unknown[]) ?? [];
 
-      for (const message of messages) {
-        const msg = message as Record<string, unknown>;
+      const contactMap: Record<string, string> = {};
+      for (const c of contacts) {
+        const contact = c as Record<string, unknown>;
+        const waId    = contact.wa_id as string;
+        const name    = ((contact.profile as Record<string, unknown>)?.name as string) ?? waId;
+        contactMap[waId] = name;
+      }
 
-        // Only handle text messages for now
-        if (msg.type !== "text") continue;
+      for (const msg of messages) {
+        const m = msg as Record<string, unknown>;
+        if (m.type !== "text") continue;
 
-        const waId      = msg.from as string;
-        const msgId     = msg.id as string;
-        const textBody  = ((msg.text as Record<string, unknown>)?.body as string) ?? "";
-        const contact   = (contacts[0] as Record<string, unknown>) ?? {};
-        const profile   = (contact.profile as Record<string, unknown>) ?? {};
-        const senderName = profile.name as string | undefined;
-        const phoneNumber = waId.startsWith("91") ? `+${waId}` : `+91${waId}`;
+        const waId        = m.from as string;
+        const text        = ((m.text as Record<string, unknown>)?.body as string) ?? "";
+        const waMessageId = m.id as string;
+        const contactName = contactMap[waId] ?? waId;
 
-        if (!textBody.trim()) continue;
+        if (!text.trim()) continue;
 
-        // Mark as read
-        await markAsRead(msgId);
+        let conv = await prisma.wAConversation.findUnique({ where: { waId } });
 
-        // Process with Arya
-        await handleIncomingMessage(waId, phoneNumber, senderName, textBody, msgId);
+        if (!conv) {
+          const digits      = waId.replace(/\D/g, "");
+          const shortDigits = digits.startsWith("91") ? digits.slice(2) : digits;
+          const lead = await prisma.lead.findFirst({
+            where: { OR: [{ phone: { contains: shortDigits } }, { phone: { contains: digits } }] },
+          });
+          conv = await prisma.wAConversation.create({
+            data: {
+              waId,
+              phoneNumber:   waId,
+              name:          lead?.name ?? contactName,
+              status:        WAConversationStatus.ACTIVE,
+              leadId:        lead?.id ?? null,
+              lastMessageAt: new Date(),
+            },
+          });
+        } else {
+          await prisma.wAConversation.update({
+            where: { id: conv.id },
+            data: {
+              lastMessageAt: new Date(),
+              name:   conv.name ?? contactName,
+              status: conv.status === WAConversationStatus.CLOSED
+                ? WAConversationStatus.ACTIVE : conv.status,
+            },
+          });
+        }
+
+        const dup = await prisma.wAMessage.findFirst({ where: { waMessageId } });
+        if (!dup) {
+          await prisma.wAMessage.create({
+            data: { conversationId: conv.id, role: WAMessageRole.USER, content: text, waMessageId },
+          });
+        }
       }
     }
   }
+
+  return NextResponse.json({ ok: true });
 }

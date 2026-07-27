@@ -372,6 +372,11 @@ export default function AdminCRMPage() {
         onSearchSubmit={fetchData}
         actions={
           <div className="flex items-center gap-2">
+            <Link href="/admin/crm/inbox"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold"
+              style={{ background: "rgba(22,163,74,0.1)", color: "#16A34A", border: "1px solid rgba(22,163,74,0.2)" }}>
+              <MessageCircle className="w-4 h-4" /> WhatsApp Inbox
+            </Link>
             <button onClick={handleRefresh} disabled={refreshing}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
               style={{ background: "var(--bg-muted)", color: "var(--text-primary)", border: "1px solid var(--border)" }}>
