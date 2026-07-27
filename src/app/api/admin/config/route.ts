@@ -10,7 +10,7 @@ const DEFAULTS: Record<string, { value: string; label: string; description: stri
   REMITTANCE_DAYS:          { value: "7",              label: "Remittance Days",            description: "Days after delivery before seller wallet credit is remitted", unit: "days" },
   ARYA_OUTREACH_TEMPLATE:   { value: "hello_world",   label: "Arya Outreach Template",     description: "Meta-approved WhatsApp template name for first outbound message", unit: "", type: "string" },
   ARYA_FOLLOWUP_TEMPLATE:   { value: "hello_world",   label: "Arya Follow-up Template",    description: "Meta-approved WhatsApp template name for automated follow-ups", unit: "", type: "string" },
-  ARYA_TEMPLATE_LANG:       { value: "en",            label: "Template Language Code",     description: "Language code for WhatsApp templates (e.g. en, hi, en_IN)", unit: "", type: "string" },
+  ARYA_TEMPLATE_LANG:       { value: "en_US",         label: "Template Language Code",     description: "Language code for WhatsApp templates (e.g. en_US, hi, en_IN)", unit: "", type: "string" },
 };
 
 export async function GET(req: NextRequest) {
