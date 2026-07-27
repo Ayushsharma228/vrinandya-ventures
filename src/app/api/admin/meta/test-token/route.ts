@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
-const FORM_IDS = ["2038602106739692"]; // 10 July form
+const DEFAULT_FORM_IDS = ["2038602106739692"]; // 10 July form
 
 async function metaGet(url: string): Promise<{ data: Record<string, unknown>; timedOut?: boolean }> {
   const controller = new AbortController();
@@ -23,10 +23,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [dbToken, dbExpiry] = await Promise.all([
+  const [dbToken, dbExpiry, dbFormIds] = await Promise.all([
     prisma.platformConfig.findUnique({ where: { key: "META_PAGE_TOKEN_DB" } }),
     prisma.platformConfig.findUnique({ where: { key: "META_USER_TOKEN_EXPIRES" } }),
+    prisma.platformConfig.findUnique({ where: { key: "META_FORM_IDS" } }),
   ]);
+  const FORM_IDS: string[] = dbFormIds?.value ? JSON.parse(dbFormIds.value) : DEFAULT_FORM_IDS;
   const token = dbToken?.value || process.env.META_PAGE_TOKEN;
   const usingDb = !!dbToken?.value;
   const expiresAt = dbExpiry?.value ? new Date(dbExpiry.value) : null;
@@ -86,6 +88,7 @@ export async function GET(req: NextRequest) {
     page: pageName,
     formLeadsAccessible: true,
     sampleLeadsFound: leadCount,
+    formCount: FORM_IDS.length,
     usingDb,
     daysUntilExpiry,
     expiringSoon: daysUntilExpiry !== null && daysUntilExpiry <= 7,

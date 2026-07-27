@@ -123,6 +123,12 @@ export default function AdminCRMPage() {
   const [exchangeResult, setExchangeResult] = useState<{ ok?: boolean; message?: string; error?: string; daysUntilExpiry?: number; pageName?: string } | null>(null);
   const [tokenInfo, setTokenInfo] = useState<{ hasDbToken: boolean; usingEnvFallback: boolean; daysUntilExpiry: number | null; expiringSoon: boolean } | null>(null);
 
+  // Form IDs manager
+  const [formIds, setFormIds] = useState<string[]>([]);
+  const [formIdsInput, setFormIdsInput] = useState("");
+  const [savingFormIds, setSavingFormIds] = useState(false);
+  const [formIdsResult, setFormIdsResult] = useState<{ ok?: boolean; error?: string } | null>(null);
+
   // WhatsApp outreach
   const [startingWa, setStartingWa] = useState<string | null>(null);
 
@@ -149,10 +155,31 @@ export default function AdminCRMPage() {
 
   async function fetchTokenInfo() {
     try {
-      const res = await fetch("/api/admin/meta/exchange-token");
-      const data = await res.json();
-      setTokenInfo(data);
+      const [tokenRes, formRes] = await Promise.all([
+        fetch("/api/admin/meta/exchange-token"),
+        fetch("/api/admin/meta/form-ids"),
+      ]);
+      const tokenData = await tokenRes.json();
+      const formData  = await formRes.json();
+      setTokenInfo(tokenData);
+      setFormIds(formData.formIds ?? []);
+      setFormIdsInput((formData.formIds ?? []).join("\n"));
     } catch { /* silent */ }
+  }
+
+  async function handleSaveFormIds() {
+    const ids = formIdsInput.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+    if (!ids.length) return;
+    setSavingFormIds(true); setFormIdsResult(null);
+    const res = await fetch("/api/admin/meta/form-ids", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ formIds: ids }),
+    });
+    const data = await res.json();
+    if (res.ok) { setFormIds(data.formIds); setFormIdsResult({ ok: true }); }
+    else         setFormIdsResult({ error: data.error || "Failed to save" });
+    setSavingFormIds(false);
   }
 
   async function handleExchangeToken() {
@@ -888,6 +915,41 @@ export default function AdminCRMPage() {
                 style={{ background: "var(--green-500)" }}>
                 {exchanging ? <><RefreshCw className="w-4 h-4 animate-spin" />Exchanging...</> : <><span>🔄</span> Exchange &amp; Save Token</>}
               </button>
+            </div>
+
+            {/* Form IDs section */}
+            <div className="pt-4 space-y-3" style={{ borderTop: "1px solid var(--border)" }}>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Meta Lead Form IDs</p>
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--bg-muted)", color: "var(--text-400)" }}>
+                  {formIds.length} form{formIds.length !== 1 ? "s" : ""} active
+                </span>
+              </div>
+              <p className="text-xs" style={{ color: "var(--text-400)" }}>
+                One form ID per line (or comma-separated). Find it in Meta Ads Manager → Lead forms → Form ID column.
+              </p>
+              <textarea
+                value={formIdsInput}
+                onChange={e => setFormIdsInput(e.target.value)}
+                rows={Math.max(2, formIds.length + 1)}
+                placeholder={"2038602106739692\n(paste additional form IDs here)"}
+                className="w-full px-3 py-2 text-xs font-mono border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                style={{ color: "var(--text-primary)" }}
+              />
+              {formIdsResult && (
+                <p className="text-xs font-medium" style={{ color: formIdsResult.ok ? "#16A34A" : "#EF4444" }}>
+                  {formIdsResult.ok ? `✓ ${formIds.length} form ID(s) saved — next sync will pull from all of them` : formIdsResult.error}
+                </p>
+              )}
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSaveFormIds}
+                  disabled={savingFormIds || !formIdsInput.trim()}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl disabled:opacity-50"
+                  style={{ background: "#EFF6FF", color: "#3B82F6", border: "1px solid #BFDBFE" }}>
+                  {savingFormIds ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Saving...</> : "Save Form IDs"}
+                </button>
+              </div>
             </div>
           </div>
         )}

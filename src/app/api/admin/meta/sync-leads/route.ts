@@ -3,7 +3,7 @@ import { getRouteSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { onBulkLeadsImported } from "@/lib/ai-workforce/arya/hooks";
 
-const FORM_IDS = ["2038602106739692"]; // 10 July form
+const DEFAULT_FORM_IDS = ["2038602106739692"]; // 10 July form
 
 interface MetaLead {
   id: string;
@@ -79,10 +79,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Prefer DB-stored permanent page token (set via exchange-token API), fall back to env var
-  const [dbToken, dbExpiry] = await Promise.all([
+  const [dbToken, dbExpiry, dbFormIds] = await Promise.all([
     prisma.platformConfig.findUnique({ where: { key: "META_PAGE_TOKEN_DB" } }),
     prisma.platformConfig.findUnique({ where: { key: "META_USER_TOKEN_EXPIRES" } }),
+    prisma.platformConfig.findUnique({ where: { key: "META_FORM_IDS" } }),
   ]);
+  const FORM_IDS: string[] = dbFormIds?.value ? JSON.parse(dbFormIds.value) : DEFAULT_FORM_IDS;
   const pageToken = dbToken?.value || process.env.META_PAGE_TOKEN;
   if (!pageToken) {
     return NextResponse.json(
