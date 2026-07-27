@@ -9,16 +9,21 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const stage  = searchParams.get("stage") || undefined;
-  const search = searchParams.get("search") || undefined;
-  const ni     = searchParams.get("ni") === "true";
+  const stage   = searchParams.get("stage") || undefined;
+  const search  = searchParams.get("search") || undefined;
+  const ni      = searchParams.get("ni") === "true";
+  const overdue = searchParams.get("overdue") === "true";
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
 
   const leads = await prisma.lead.findMany({
     where: {
       assignedToId: session.user.id,
-      ...(stage  ? { stage: stage as never } : {}),
-      ...(ni     ? { isNI: true } : { isNI: false }),
-      ...(search ? {
+      ...(stage   ? { stage: stage as never } : {}),
+      ...(ni      ? { isNI: true } : { isNI: false }),
+      ...(overdue ? { followUpDate: { lt: todayStart } } : {}),
+      ...(search  ? {
         OR: [
           { name:  { contains: search, mode: "insensitive" } },
           { phone: { contains: search } },

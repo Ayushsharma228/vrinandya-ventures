@@ -42,7 +42,7 @@ interface StageCount { stage: string; _count: number; }
 interface DashboardData {
   name: string; salesTitle: string | null;
   salesTarget: number; paidThisMonth: number; totalLeads: number;
-  followUpsToday: FollowUp[];
+  followUpsToday: FollowUp[]; // now includes overdue too
   stageBreakdown: StageCount[];
 }
 
@@ -71,7 +71,7 @@ export default function SalesDashboard() {
             {[
               { label: "Assigned Leads",    value: data.totalLeads,     icon: UserCheck,    color: "#3B82F6" },
               { label: "Paid This Month",   value: data.paidThisMonth,  icon: TrendingUp,   color: "#16A34A" },
-              { label: "Follow-ups Today",  value: data.followUpsToday.length, icon: CalendarClock, color: "#F59E0B" },
+              { label: "Follow-ups Due",  value: data.followUpsToday.length, icon: CalendarClock, color: "#F59E0B" },
             ].map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="rounded-2xl px-5 py-4 flex items-center gap-4"
                 style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
@@ -112,17 +112,17 @@ export default function SalesDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Today's Follow-ups */}
+          {/* Follow-ups Due (today + overdue) */}
           <div className="card overflow-hidden">
             <div className="px-5 py-3.5 flex items-center justify-between"
               style={{ borderBottom: "1px solid var(--border)" }}>
               <div className="flex items-center gap-2">
                 <CalendarClock className="w-4 h-4" style={{ color: "var(--text-400)" }} />
                 <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>
-                  Today&apos;s Follow-ups ({data.followUpsToday.length})
+                  Follow-ups Due ({data.followUpsToday.length})
                 </h2>
               </div>
-              <Link href="/sales/leads" className="text-xs font-medium flex items-center gap-1"
+              <Link href="/sales/leads?overdue=true" className="text-xs font-medium flex items-center gap-1"
                 style={{ color: "var(--green-500)" }}>
                 All leads <ArrowRight className="w-3 h-3" />
               </Link>
@@ -130,21 +130,30 @@ export default function SalesDashboard() {
             {data.followUpsToday.length === 0 ? (
               <div className="py-10 flex flex-col items-center gap-2">
                 <CalendarClock className="w-8 h-8" style={{ color: "var(--border)" }} />
-                <p className="text-sm" style={{ color: "var(--text-400)" }}>No follow-ups scheduled today</p>
+                <p className="text-sm" style={{ color: "var(--text-400)" }}>No follow-ups due</p>
               </div>
             ) : (
               <div className="divide-y" style={{ borderColor: "var(--border)" }}>
                 {data.followUpsToday.map(f => {
                   const cfg = STAGE_COLOR[f.stage] ?? STAGE_COLOR.LEAD;
+                  const followDate = new Date(f.followUpDate);
+                  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+                  const isOverdue = followDate < todayStart;
                   return (
                     <Link key={f.id} href={`/sales/leads/${f.id}`}
                       className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50/50 transition-colors">
                       <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold text-white"
-                        style={{ background: "var(--green-500)" }}>
+                        style={{ background: isOverdue ? "#DC2626" : "var(--green-500)" }}>
                         {f.name[0]?.toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate" style={{ color: "var(--text-900)" }}>{f.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-semibold truncate" style={{ color: "var(--text-900)" }}>{f.name}</p>
+                          {isOverdue && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                              style={{ background: "#FEF2F2", color: "#DC2626" }}>OVERDUE</span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 mt-0.5">
                           <Phone className="w-3 h-3" style={{ color: "var(--text-400)" }} />
                           <span className="text-xs" style={{ color: "var(--text-400)" }}>{f.phone}</span>

@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import { UserCheck, Phone, MapPin, CalendarClock, ArrowRight, Search, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { UserCheck, Phone, MapPin, CalendarClock, Search, RefreshCw, ChevronRight } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 const STAGES = [
@@ -42,11 +42,14 @@ interface Lead {
 }
 
 export default function SalesLeadsPage() {
+  const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [stage, setStage] = useState("ALL");
   const [search, setSearch] = useState("");
   const [showNI, setShowNI] = useState(false);
+  const [overdue, setOverdue] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [updatingStage, setUpdatingStage] = useState<string | null>(null);
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -54,15 +57,36 @@ export default function SalesLeadsPage() {
     if (stage !== "ALL") params.set("stage", stage);
     if (search) params.set("search", search);
     if (showNI) params.set("ni", "true");
+    if (overdue) params.set("overdue", "true");
     const res = await fetch(`/api/sales/leads?${params}`);
     const data = await res.json();
     setLeads(data.leads ?? []);
     setLoading(false);
-  }, [stage, search, showNI]);
+  }, [stage, search, showNI, overdue]);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
-  const today = new Date().toDateString();
+  async function handleStageChange(leadId: string, newStage: string) {
+    // Optimistic update
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, stage: newStage } : l));
+    setUpdatingStage(leadId);
+    try {
+      await fetch(`/api/sales/leads/${leadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage: newStage }),
+      });
+    } catch {
+      // revert on error
+      fetchLeads();
+    } finally {
+      setUpdatingStage(null);
+    }
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(today.getTime() + 86400000);
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
@@ -79,11 +103,20 @@ export default function SalesLeadsPage() {
         {/* Filters */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-1.5 flex-wrap">
+            {/* Overdue chip */}
+            <button
+              onClick={() => { setOverdue(p => !p); setStage("ALL"); }}
+              className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+              style={overdue
+                ? { background: "#DC2626", color: "#fff" }
+                : { background: "#FEF2F2", color: "#DC2626" }}>
+              Overdue
+            </button>
             {STAGES.map(s => {
               const cfg = STAGE_COLOR[s];
-              const isActive = stage === s;
+              const isActive = !overdue && stage === s;
               return (
-                <button key={s} onClick={() => setStage(s)}
+                <button key={s} onClick={() => { setStage(s); setOverdue(false); }}
                   className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
                   style={isActive
                     ? { background: s === "ALL" ? "var(--bg-sidebar)" : (cfg?.color ?? "#374151"), color: "var(--text-primary)" }
@@ -116,19 +149,23 @@ export default function SalesLeadsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {leads.map(lead => {
               const cfg = STAGE_COLOR[lead.stage] ?? STAGE_COLOR.LEAD;
-              const isFollowUpToday = lead.followUpDate && new Date(lead.followUpDate).toDateString() === today;
-              const isOverdue = lead.followUpDate && new Date(lead.followUpDate) < new Date() && !isFollowUpToday;
+              const followUpDate = lead.followUpDate ? new Date(lead.followUpDate) : null;
+              const isFollowUpToday = followUpDate && followUpDate >= today && followUpDate < todayEnd;
+              const isOverdue = followUpDate && followUpDate < today;
               return (
-                <Link key={lead.id} href={`/sales/leads/${lead.id}`}
-                  className="card p-5 hover:shadow-md transition-shadow block group">
+                <div
+                  key={lead.id}
+                  className="card p-5 hover:shadow-md transition-shadow cursor-pointer group"
+                  onClick={() => router.push(`/sales/leads/${lead.id}`)}>
+
                   <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
                         style={{ background: "var(--green-500)" }}>
                         {lead.name[0]?.toUpperCase()}
                       </div>
-                      <div>
-                        <p className="font-semibold text-sm" style={{ color: "var(--text-900)" }}>{lead.name}</p>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm truncate" style={{ color: "var(--text-900)" }}>{lead.name}</p>
                         {lead.city && (
                           <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "var(--text-400)" }}>
                             <MapPin className="w-3 h-3" /> {lead.city}
@@ -136,10 +173,20 @@ export default function SalesLeadsPage() {
                         )}
                       </div>
                     </div>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
-                      style={{ background: cfg.bg, color: cfg.color }}>
-                      {STAGE_LABEL[lead.stage]}
-                    </span>
+
+                    {/* Inline stage selector — click stops card navigation */}
+                    <div onClick={e => e.stopPropagation()} className="flex-shrink-0 ml-2">
+                      <select
+                        value={lead.stage}
+                        disabled={updatingStage === lead.id}
+                        onChange={e => handleStageChange(lead.id, e.target.value)}
+                        className="text-xs font-semibold px-2 py-0.5 rounded-full cursor-pointer outline-none disabled:opacity-60"
+                        style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}33` }}>
+                        {STAGES.filter(s => s !== "ALL").map(s => (
+                          <option key={s} value={s} className="bg-white text-gray-900">{STAGE_LABEL[s]}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
                   <div className="space-y-1.5 text-xs" style={{ color: "var(--text-500)" }}>
@@ -170,10 +217,10 @@ export default function SalesLeadsPage() {
                     <span className="text-xs" style={{ color: "var(--text-400)" }}>
                       {lead._count.activities} activit{lead._count.activities === 1 ? "y" : "ies"}
                     </span>
-                    <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                    <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
                       style={{ color: "var(--green-500)" }} />
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>

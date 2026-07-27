@@ -21,8 +21,9 @@ export async function GET(req: NextRequest) {
   const [totalLeads, paidThisMonth, followUpsToday, stageBreakdown] = await Promise.all([
     prisma.lead.count({ where: { assignedToId: session.user.id, isNI: false } }),
     prisma.lead.count({ where: { assignedToId: session.user.id, stage: "PAID", updatedAt: { gte: monthStart } } }),
+    // includes overdue (past) + today
     prisma.lead.findMany({
-      where: { assignedToId: session.user.id, isNI: false, followUpDate: { gte: todayStart, lt: todayEnd } },
+      where: { assignedToId: session.user.id, isNI: false, followUpDate: { lt: todayEnd } },
       orderBy: { followUpDate: "asc" },
       select: { id: true, name: true, phone: true, stage: true, followUpDate: true, city: true },
     }),
