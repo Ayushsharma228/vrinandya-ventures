@@ -48,37 +48,46 @@ export async function markAsRead(messageId: string): Promise<void> {
 export async function sendTemplateMessage(
   to: string,
   templateName: string,
-  languageCode: string = "en",
+  languageCode: string = "en_US",
   bodyParams: string[] = [],
-): Promise<string | null> {
+): Promise<{ messageId: string } | { error: string }> {
   const components = bodyParams.length > 0
     ? [{ type: "body", parameters: bodyParams.map(p => ({ type: "text", text: p })) }]
     : [];
 
-  const res = await fetch(`${BASE}/${getPhoneNumberId()}/messages`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getToken()}`,
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to,
-      type: "template",
-      template: {
-        name: templateName,
-        language: { code: languageCode },
-        ...(components.length > 0 ? { components } : {}),
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/${getPhoneNumberId()}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${getToken()}`,
       },
-    }),
-  });
-
-  if (!res.ok) {
-    console.error("[WA] sendTemplateMessage failed", await res.text());
-    return null;
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to,
+        type: "template",
+        template: {
+          name: templateName,
+          language: { code: languageCode },
+          ...(components.length > 0 ? { components } : {}),
+        },
+      }),
+    });
+  } catch (e) {
+    return { error: `Network error: ${e instanceof Error ? e.message : String(e)}` };
   }
+
   const data = await res.json();
-  return data?.messages?.[0]?.id ?? null;
+  if (!res.ok || data.error) {
+    const err = data?.error;
+    const msg = err
+      ? `Meta error ${err.code}: ${err.message}${err.error_data?.details ? ` — ${err.error_data.details}` : ""}`
+      : `HTTP ${res.status}`;
+    console.error("[WA] sendTemplateMessage failed", msg);
+    return { error: msg };
+  }
+  return { messageId: data?.messages?.[0]?.id ?? "" };
 }
 
 export function isWhatsAppConfigured(): boolean {

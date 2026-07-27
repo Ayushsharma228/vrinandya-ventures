@@ -36,12 +36,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const templateLang = await getConfig("ARYA_TEMPLATE_LANG", "en");
 
   const firstName = (lead.name ?? "there").split(" ")[0];
-  const msgId = await sendTemplateMessage(waId, templateName, templateLang, [firstName]);
-  if (!msgId)
-    return NextResponse.json(
-      { error: "Failed to send WhatsApp template. Check WHATSAPP_ACCESS_TOKEN and template name." },
-      { status: 502 }
-    );
+  const result = await sendTemplateMessage(waId, templateName, templateLang, [firstName]);
+  if ("error" in result)
+    return NextResponse.json({ error: result.error }, { status: 502 });
+  const msgId = result.messageId;
 
   const existing = lead.waConversations[0];
   let conv;
@@ -68,7 +66,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       conversationId: conv.id,
       role: WAMessageRole.ASSISTANT,
       content: `[Outreach template sent: ${templateName}]`,
-      waMessageId: msgId,
+      waMessageId: result.messageId,
     },
   });
 

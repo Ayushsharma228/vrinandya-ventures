@@ -34,12 +34,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const waId = digits.startsWith("91") ? digits : `91${digits}`;
 
   const templateName = await getConfig("ARYA_OUTREACH_TEMPLATE", "hello_world");
-  const templateLang = await getConfig("ARYA_TEMPLATE_LANG", "en");
+  const templateLang = await getConfig("ARYA_TEMPLATE_LANG", "en_US");
 
-  // Send template — pass lead name as first body param (works if template has {{1}})
   const firstName = (lead.name ?? "there").split(" ")[0];
-  const msgId = await sendTemplateMessage(waId, templateName, templateLang, [firstName]);
-  if (!msgId) return NextResponse.json({ error: "Failed to send WhatsApp template. Check WHATSAPP_ACCESS_TOKEN and template name." }, { status: 502 });
+  const result = await sendTemplateMessage(waId, templateName, templateLang, [firstName]);
+  if ("error" in result) return NextResponse.json({ error: result.error }, { status: 502 });
 
   // Create or reopen WAConversation
   const existing = lead.waConversations[0];
@@ -68,9 +67,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       conversationId: conv.id,
       role: WAMessageRole.ASSISTANT,
       content: `[Outreach template sent: ${templateName}]`,
-      waMessageId: msgId,
+      waMessageId: result.messageId,
     },
   });
 
-  return NextResponse.json({ ok: true, conversationId: conv.id, waId });
+  return NextResponse.json({ ok: true, conversationId: conv.id, waId, messageId: result.messageId });
 }
