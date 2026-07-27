@@ -60,14 +60,16 @@ export default function SalesWhatsAppInboxPage() {
   const searchParams  = useSearchParams();
   const targetLeadId  = searchParams.get("leadId");
 
-  const [convs,       setConvs]       = useState<Conversation[]>([]);
-  const [activeId,    setActiveId]    = useState<string | null>(null);
-  const [messages,    setMessages]    = useState<Message[]>([]);
-  const [activeLead,  setActiveLead]  = useState<Conversation | null>(null);
-  const [reply,       setReply]       = useState("");
-  const [sending,     setSending]     = useState(false);
-  const [loading,     setLoading]     = useState(true);
-  const [loadingMsgs, setLoadingMsgs] = useState(false);
+  const [convs,         setConvs]         = useState<Conversation[]>([]);
+  const [activeId,      setActiveId]      = useState<string | null>(null);
+  const [messages,      setMessages]      = useState<Message[]>([]);
+  const [activeLead,    setActiveLead]    = useState<Conversation | null>(null);
+  const [reply,         setReply]         = useState("");
+  const [sending,       setSending]       = useState(false);
+  const [loading,       setLoading]       = useState(true);
+  const [loadingMsgs,   setLoadingMsgs]   = useState(false);
+  const [startingConv,  setStartingConv]  = useState(false);
+  const [startError,    setStartError]    = useState<string | null>(null);
   const autoOpened    = useRef(false);
   const bottomRef     = useRef<HTMLDivElement>(null);
 
@@ -120,6 +122,23 @@ export default function SalesWhatsAppInboxPage() {
     setActiveId(id);
     setMessages([]);
     await fetchMessages(id);
+  }
+
+  async function startConversation() {
+    if (!targetLeadId || startingConv) return;
+    setStartingConv(true); setStartError(null);
+    try {
+      const r = await fetch(`/api/sales/leads/${targetLeadId}/whatsapp-outreach`, { method: "POST" });
+      const data = await r.json();
+      if (!r.ok) { setStartError(data.error || "Failed to send"); return; }
+      // Reload conversations and auto-open the new one
+      autoOpened.current = false;
+      await fetchConvs();
+    } catch {
+      setStartError("Network error — try again");
+    } finally {
+      setStartingConv(false);
+    }
   }
 
   async function sendReply() {
@@ -236,8 +255,30 @@ export default function SalesWhatsAppInboxPage() {
         {!activeId ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
             <MessageCircle className="w-12 h-12" style={{ color: "var(--border)" }} />
-            <p className="text-sm font-semibold" style={{ color: "var(--text-600)" }}>Select a conversation</p>
-            <p className="text-xs" style={{ color: "var(--text-400)" }}>Choose a lead from the left to start chatting</p>
+            {targetLeadId && !loading && !convs.find(c => c.lead?.id === targetLeadId) ? (
+              <>
+                <p className="text-sm font-semibold" style={{ color: "var(--text-600)" }}>No conversation yet</p>
+                <p className="text-xs text-center px-8" style={{ color: "var(--text-400)" }}>
+                  Send the first WhatsApp message to this lead to start chatting via the company number.
+                </p>
+                {startError && <p className="text-xs" style={{ color: "#EF4444" }}>{startError}</p>}
+                <button
+                  onClick={startConversation}
+                  disabled={startingConv}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60 transition-opacity"
+                  style={{ background: "rgba(22,163,74,0.12)", color: "#16A34A", border: "1px solid rgba(22,163,74,0.25)" }}>
+                  {startingConv
+                    ? <><RefreshCw className="w-4 h-4 animate-spin" /> Sending…</>
+                    : <><Send className="w-4 h-4" /> Send First Message</>}
+                </button>
+                <p className="text-xs" style={{ color: "var(--text-400)" }}>Sends the hello_world template to open the chat window</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-semibold" style={{ color: "var(--text-600)" }}>Select a conversation</p>
+                <p className="text-xs" style={{ color: "var(--text-400)" }}>Choose a lead from the left to start chatting</p>
+              </>
+            )}
           </div>
         ) : (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
