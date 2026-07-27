@@ -33,7 +33,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const waId = digits.startsWith("91") ? digits : `91${digits}`;
 
   const templateName = await getConfig("ARYA_OUTREACH_TEMPLATE", "hello_world");
-  const templateLang = await getConfig("ARYA_TEMPLATE_LANG", "en");
+  const rawLang      = await getConfig("ARYA_TEMPLATE_LANG", "en_US");
+  const templateLang = rawLang === "en" ? "en_US" : rawLang;
 
   const firstName = (lead.name ?? "there").split(" ")[0];
   const result = await sendTemplateMessage(waId, templateName, templateLang, [firstName]);
