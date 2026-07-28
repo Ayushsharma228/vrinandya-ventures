@@ -70,6 +70,7 @@ export default function SalesWhatsAppInboxPage() {
   const [loadingMsgs,   setLoadingMsgs]   = useState(false);
   const [startingConv,  setStartingConv]  = useState(false);
   const [startError,    setStartError]    = useState<string | null>(null);
+  const [sendError,     setSendError]     = useState<string | null>(null);
   const autoOpened    = useRef(false);
   const bottomRef     = useRef<HTMLDivElement>(null);
 
@@ -144,6 +145,7 @@ export default function SalesWhatsAppInboxPage() {
   async function sendReply() {
     if (!reply.trim() || !activeId || sending) return;
     setSending(true);
+    setSendError(null);
     const text = reply.trim();
     setReply("");
     try {
@@ -155,7 +157,14 @@ export default function SalesWhatsAppInboxPage() {
       if (r.ok) {
         await fetchMessages(activeId, true);
         await fetchConvs();
+      } else {
+        const data = await r.json().catch(() => ({}));
+        setSendError(data.error || `Failed (${r.status})`);
+        setReply(text); // restore the message so they can retry
       }
+    } catch {
+      setSendError("Network error — try again");
+      setReply(text);
     } finally {
       setSending(false);
     }
@@ -390,9 +399,15 @@ export default function SalesWhatsAppInboxPage() {
                   {sending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </button>
               </div>
-              <p className="text-xs mt-1.5" style={{ color: "var(--text-400)" }}>
-                Free-text works within 24h of the lead&apos;s last reply. After that, use a template.
-              </p>
+              {sendError ? (
+                <p className="text-xs mt-1.5 font-medium" style={{ color: "#EF4444" }}>
+                  ✕ {sendError}
+                </p>
+              ) : (
+                <p className="text-xs mt-1.5" style={{ color: "var(--text-400)" }}>
+                  Free-text works within 24h of the lead&apos;s last reply. After that, use a template.
+                </p>
+              )}
             </div>
           </div>
         )}

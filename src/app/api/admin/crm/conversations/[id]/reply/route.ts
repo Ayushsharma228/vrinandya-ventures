@@ -16,12 +16,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const conv = await prisma.wAConversation.findUnique({ where: { id } });
   if (!conv) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const msgId = await sendTextMessage(conv.waId, message.trim());
-  if (!msgId) return NextResponse.json({ error: "Failed to send — check WHATSAPP_ACCESS_TOKEN" }, { status: 502 });
+  const result = await sendTextMessage(conv.waId, message.trim());
+  if ("error" in result) return NextResponse.json({ error: result.error }, { status: 502 });
 
   const [saved] = await Promise.all([
     prisma.wAMessage.create({
-      data: { conversationId: conv.id, role: WAMessageRole.ASSISTANT, content: message.trim(), waMessageId: msgId },
+      data: { conversationId: conv.id, role: WAMessageRole.ASSISTANT, content: message.trim(), waMessageId: result.messageId },
     }),
     prisma.wAConversation.update({
       where: { id },

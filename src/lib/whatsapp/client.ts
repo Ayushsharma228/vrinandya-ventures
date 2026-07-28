@@ -7,7 +7,7 @@ function getPhoneNumberId() {
   return process.env.WHATSAPP_PHONE_NUMBER_ID ?? "";
 }
 
-export async function sendTextMessage(to: string, text: string): Promise<string | null> {
+export async function sendTextMessage(to: string, text: string): Promise<{ messageId: string } | { error: string }> {
   const res = await fetch(`${BASE}/${getPhoneNumberId()}/messages`, {
     method: "POST",
     headers: {
@@ -22,12 +22,16 @@ export async function sendTextMessage(to: string, text: string): Promise<string 
       text: { preview_url: false, body: text },
     }),
   });
-  if (!res.ok) {
-    console.error("[WA] sendTextMessage failed", await res.text());
-    return null;
-  }
   const data = await res.json();
-  return data?.messages?.[0]?.id ?? null;
+  if (!res.ok || data.error) {
+    const err = data?.error;
+    const msg = err
+      ? `Meta error ${err.code}: ${err.message}${err.error_data?.details ? ` — ${err.error_data.details}` : ""}`
+      : `HTTP ${res.status}`;
+    console.error("[WA] sendTextMessage failed", msg);
+    return { error: msg };
+  }
+  return { messageId: data?.messages?.[0]?.id ?? "" };
 }
 
 export async function markAsRead(messageId: string): Promise<void> {
