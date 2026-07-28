@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   Phone, MapPin, CalendarClock, ArrowLeft, Loader2,
   PhoneCall, StickyNote, ChevronDown, CheckCircle, AlertTriangle, MessageCircle,
+  Sparkles, Copy, CopyCheck, ChevronRight,
 } from "lucide-react";
 
 const STAGES = [
@@ -90,6 +91,22 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const [sendingWa, setSendingWa] = useState(false);
   const [waResult, setWaResult] = useState<{ ok?: boolean; error?: string } | null>(null);
 
+  // AI Coach
+  interface AiSuggestion {
+    insight: string;
+    openingScript: string;
+    talkingPoints: string[];
+    objections: { o: string; r: string }[];
+    suggestedFollowUpDays: number;
+    suggestedFollowUpNote: string;
+  }
+  const [aiCoach, setAiCoach]         = useState<AiSuggestion | null>(null);
+  const [loadingCoach, setLoadingCoach] = useState(false);
+  const [coachError, setCoachError]   = useState<string | null>(null);
+  const [copied, setCopied]           = useState(false);
+  const [objOpen, setObjOpen]         = useState(false);
+  const [acceptedDate, setAcceptedDate] = useState(false);
+
   async function handleWhatsAppOutreach() {
     setSendingWa(true); setWaResult(null);
     try {
@@ -127,6 +144,42 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
     });
     await fetchLead();
     setSaving(false);
+  }
+
+  async function fetchAiCoach() {
+    setLoadingCoach(true); setCoachError(null); setAiCoach(null); setAcceptedDate(false);
+    try {
+      const res = await fetch(`/api/sales/leads/${id}/ai-coach`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) { setCoachError(data.error || "AI unavailable"); return; }
+      setAiCoach(data.suggestion);
+    } catch {
+      setCoachError("Network error — try again");
+    } finally {
+      setLoadingCoach(false);
+    }
+  }
+
+  async function acceptFollowUp(days: number, note: string) {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    const dateStr = d.toISOString().split("T")[0];
+    setFollowUpDate(dateStr);
+    setAcceptedDate(true);
+    // Auto-log the note
+    if (note) {
+      await fetch(`/api/sales/leads/${id}/activity`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "NOTE", content: `[AI Coach] ${note}` }),
+      });
+    }
+  }
+
+  function copyScript(text: string) {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   async function handleAddActivity() {
@@ -185,6 +238,12 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-red-50 text-red-600">NI</span>
         )}
         <div className="flex items-center gap-2">
+          <button onClick={fetchAiCoach} disabled={loadingCoach}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold disabled:opacity-60 transition-colors"
+            style={{ background: "rgba(124,58,237,0.1)", color: "#7C3AED", border: "1px solid rgba(124,58,237,0.2)" }}>
+            {loadingCoach ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+            {loadingCoach ? "Thinking..." : "AI Coach"}
+          </button>
           {/* Chat on WhatsApp — opens inbox via company number 8679993305 */}
           <Link
             href={`/sales/inbox?leadId=${lead.id}`}
@@ -327,8 +386,96 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
 
-        {/* Right — Activity log */}
+        {/* Right — AI Coach + Activity log */}
         <div className="md:col-span-2 space-y-4">
+
+          {/* AI Coach panel */}
+          {(aiCoach || coachError) && (
+            <div className="card p-5 space-y-4" style={{ border: "1px solid rgba(124,58,237,0.2)", background: "rgba(124,58,237,0.02)" }}>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4" style={{ color: "#7C3AED" }} />
+                <h2 className="text-sm font-bold" style={{ color: "#7C3AED" }}>AI Coach Suggestion</h2>
+              </div>
+
+              {coachError && <p className="text-sm" style={{ color: "#EF4444" }}>{coachError}</p>}
+
+              {aiCoach && (<>
+                {/* Insight */}
+                <div className="rounded-xl px-4 py-3" style={{ background: "rgba(124,58,237,0.08)" }}>
+                  <p className="text-xs font-semibold mb-0.5" style={{ color: "#7C3AED" }}>💡 Key Insight</p>
+                  <p className="text-sm" style={{ color: "var(--text-900)" }}>{aiCoach.insight}</p>
+                </div>
+
+                {/* Opening script */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-semibold" style={{ color: "var(--text-600)" }}>📝 Opening Script</p>
+                    <button onClick={() => copyScript(aiCoach.openingScript)}
+                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors"
+                      style={{ background: "var(--bg-muted)", color: "var(--text-400)" }}>
+                      {copied ? <CopyCheck className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {copied ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                  <div className="rounded-xl px-4 py-3 text-sm italic" style={{ background: "var(--bg-muted)", color: "var(--text-700)" }}>
+                    &ldquo;{aiCoach.openingScript}&rdquo;
+                  </div>
+                </div>
+
+                {/* Talking points */}
+                <div>
+                  <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-600)" }}>✅ Talking Points</p>
+                  <ul className="space-y-1.5">
+                    {aiCoach.talkingPoints.map((pt, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm" style={{ color: "var(--text-700)" }}>
+                        <span className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold"
+                          style={{ background: "rgba(124,58,237,0.12)", color: "#7C3AED" }}>{i + 1}</span>
+                        {pt}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Objections */}
+                <div>
+                  <button onClick={() => setObjOpen(p => !p)}
+                    className="flex items-center gap-1.5 text-xs font-semibold mb-2"
+                    style={{ color: "var(--text-600)" }}>
+                    <ChevronRight className="w-3.5 h-3.5 transition-transform" style={{ transform: objOpen ? "rotate(90deg)" : "none" }} />
+                    🔄 Likely Objections ({aiCoach.objections.length})
+                  </button>
+                  {objOpen && (
+                    <div className="space-y-2">
+                      {aiCoach.objections.map((obj, i) => (
+                        <div key={i} className="rounded-xl p-3" style={{ background: "var(--bg-muted)" }}>
+                          <p className="text-xs font-semibold mb-1" style={{ color: "#D97706" }}>"{obj.o}"</p>
+                          <p className="text-xs" style={{ color: "var(--text-700)" }}>→ {obj.r}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Suggested follow-up */}
+                <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: "rgba(22,163,74,0.06)", border: "1px solid rgba(22,163,74,0.15)" }}>
+                  <div>
+                    <p className="text-xs font-semibold" style={{ color: "#16A34A" }}>📅 Suggested Follow-up</p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--text-600)" }}>
+                      In {aiCoach.suggestedFollowUpDays} day{aiCoach.suggestedFollowUpDays !== 1 ? "s" : ""} — {aiCoach.suggestedFollowUpNote}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => acceptFollowUp(aiCoach.suggestedFollowUpDays, aiCoach.suggestedFollowUpNote)}
+                    disabled={acceptedDate}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold disabled:opacity-60 transition-colors"
+                    style={{ background: acceptedDate ? "rgba(22,163,74,0.1)" : "#16A34A", color: acceptedDate ? "#16A34A" : "#fff" }}>
+                    {acceptedDate ? <><CheckCircle className="w-3.5 h-3.5" /> Accepted</> : "Accept →"}
+                  </button>
+                </div>
+              </>)}
+            </div>
+          )}
+
           {/* Log activity */}
           <div className="card p-5 space-y-3">
             <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Log Activity</h2>

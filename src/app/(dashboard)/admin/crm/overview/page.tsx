@@ -103,14 +103,27 @@ function HeatmapGrid({ cells }: { cells: { date: string; count: number }[] }) {
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
+interface FollowUpStage { stage: string; total: number; overdue: number; dueToday: number; upcoming: number; none: number }
+interface FollowUpAnalytics {
+  stageAnalysis: FollowUpStage[];
+  avgDaysInStage: { stage: string; avgDays: number }[];
+  summary: { total: number; overdue: number; dueToday: number; noDate: number };
+}
+
+const STAGE_ORDER = ["LEAD","CALL_NOT_PICKED","BUSY","SCHEDULE_MEETING","PROSPECT","INTERESTED","WILL_PAY","PAID","ONBOARDED","NOT_INTERESTED"];
+
 export default function CRMOverviewPage() {
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fuData, setFuData] = useState<FollowUpAnalytics | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/crm/overview")
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); });
+    fetch("/api/admin/crm/followup-analytics")
+      .then(r => r.json())
+      .then(setFuData);
   }, []);
 
   if (loading || !data) {
@@ -496,6 +509,81 @@ export default function CRMOverviewPage() {
         </div>
 
       </div>
+
+      {/* ── Follow-up Analytics ─────────────────────────────────────────────── */}
+      {fuData && (
+        <div className="px-4 md:px-8 pb-10 space-y-5">
+          <h2 className="text-base font-bold" style={{ color: "var(--text-900)" }}>Follow-up Health</h2>
+
+          {/* Summary tiles */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Total Leads",   value: fuData.summary.total,   color: "#3B82F6" },
+              { label: "Overdue",        value: fuData.summary.overdue,  color: "#EF4444" },
+              { label: "Due Today",      value: fuData.summary.dueToday, color: "#F59E0B" },
+              { label: "No Date Set",    value: fuData.summary.noDate,   color: "#9CA3AF" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="card px-5 py-4">
+                <p className="text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>{label}</p>
+                <p className="text-2xl font-bold" style={{ color }}>{value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Per-stage follow-up breakdown */}
+          <div className="card overflow-hidden">
+            <div className="px-5 py-3.5" style={{ borderBottom: "1px solid var(--border)" }}>
+              <h3 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Follow-up Status by Stage</h3>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>
+                Stages with high overdue % need immediate attention
+              </p>
+            </div>
+            <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+              {fuData.stageAnalysis
+                .filter(s => s.total > 0)
+                .sort((a, b) => STAGE_ORDER.indexOf(a.stage) - STAGE_ORDER.indexOf(b.stage))
+                .map(s => {
+                  const overdueRate = s.total > 0 ? Math.round((s.overdue / s.total) * 100) : 0;
+                  const color = STAGE_COLOR[s.stage] ?? "#9CA3AF";
+                  const avgDays = fuData.avgDaysInStage.find(d => d.stage === s.stage)?.avgDays ?? 0;
+                  return (
+                    <div key={s.stage} className="px-5 py-3 flex items-center gap-4">
+                      <div className="w-28 flex-shrink-0">
+                        <p className="text-xs font-semibold truncate" style={{ color }}>{STAGE_LABEL[s.stage] ?? s.stage}</p>
+                        <p className="text-xs" style={{ color: "var(--text-400)" }}>{s.total} lead{s.total !== 1 ? "s" : ""} · avg {avgDays}d</p>
+                      </div>
+                      <div className="flex-1 flex items-center gap-2 min-w-0">
+                        <div className="flex-1 h-2 rounded-full overflow-hidden flex gap-0.5" style={{ background: "var(--bg-muted)" }}>
+                          {s.overdue  > 0 && <div style={{ width: `${(s.overdue / s.total) * 100}%`, background: "#EF4444" }} className="h-full" />}
+                          {s.dueToday > 0 && <div style={{ width: `${(s.dueToday / s.total) * 100}%`, background: "#F59E0B" }} className="h-full" />}
+                          {s.upcoming > 0 && <div style={{ width: `${(s.upcoming / s.total) * 100}%`, background: "#16A34A" }} className="h-full" />}
+                          {s.none     > 0 && <div style={{ width: `${(s.none / s.total) * 100}%`, background: "#D1D5DB" }} className="h-full" />}
+                        </div>
+                      </div>
+                      <div className="flex gap-3 flex-shrink-0 text-xs">
+                        {s.overdue  > 0 && <span style={{ color: "#EF4444" }}>{s.overdue} overdue</span>}
+                        {s.dueToday > 0 && <span style={{ color: "#F59E0B" }}>{s.dueToday} today</span>}
+                        {s.upcoming > 0 && <span style={{ color: "#16A34A" }}>{s.upcoming} upcoming</span>}
+                        {overdueRate > 30 && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: "#FEF2F2", color: "#DC2626" }}>
+                            {overdueRate}% overdue
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+            <div className="px-5 py-2.5 flex items-center gap-4 text-[10px]" style={{ borderTop: "1px solid var(--border)", color: "var(--text-400)" }}>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#EF4444" }} /> Overdue</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#F59E0B" }} /> Due today</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#16A34A" }} /> Upcoming</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#D1D5DB" }} /> No date</span>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
