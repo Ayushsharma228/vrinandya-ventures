@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!lead.phone) return NextResponse.json({ error: "Lead has no phone number" }, { status: 400 });
 
   // Build waId — strip leading zeroes/country code, re-add 91
-  const digits = lead.phone.replace(/\D/g, "");
+  const digits = lead.phone.replace(/\D/g, "").replace(/^0+/, "");
   const waId = digits.startsWith("91") ? digits : `91${digits}`;
 
   const templateName = await getConfig("ARYA_OUTREACH_TEMPLATE", "hello_world");
