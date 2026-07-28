@@ -32,7 +32,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const templateLang = rawLang === "en" ? "en_US" : rawLang;
 
   const firstName = (lead.name ?? "there").split(" ")[0];
-  const bodyParams = templateName === "hello_world" ? [] : [firstName];
+  const repName   = (session.user.name ?? "our team").split(" ")[0];
+  const bodyParams = templateName === "hello_world" ? [] : [firstName, repName];
   const result = await sendTemplateMessage(waId, templateName, templateLang, bodyParams);
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: 502 });
 
