@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 
   const templateName = await getConfig("ARYA_FOLLOWUP_TEMPLATE", "hello_world");
   const rawLang      = await getConfig("ARYA_TEMPLATE_LANG", "en_US");
-  const templateLang = rawLang === "en" ? "en_US" : rawLang;
+  const templateLang = (templateName === "hello_world" && rawLang === "en") ? "en_US" : rawLang;
 
   let sent = 0;
   const skipped: string[] = [];

@@ -28,7 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const templateName = await getConfig("ARYA_OUTREACH_TEMPLATE", "hello_world");
   const rawLang      = await getConfig("ARYA_TEMPLATE_LANG", "en_US");
-  const templateLang = rawLang === "en" ? "en_US" : rawLang;
+  const templateLang = (templateName === "hello_world" && rawLang === "en") ? "en_US" : rawLang;
 
   const firstName = (lead.name ?? "there").split(" ")[0];
   const repName   = (session.user.name ?? "our team").split(" ")[0];
