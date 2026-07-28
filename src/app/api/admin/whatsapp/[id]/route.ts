@@ -44,13 +44,14 @@ export async function POST(
   if (!conversation) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (body.action === "send_message" && body.message) {
-    const msgId = await sendTextMessage(conversation.waId, body.message);
+    const result = await sendTextMessage(conversation.waId, body.message);
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 502 });
     await prisma.wAMessage.create({
       data: {
         conversationId: id,
         role: "ASSISTANT",
         content: `[Admin] ${body.message}`,
-        waMessageId: msgId ?? undefined,
+        waMessageId: result.messageId || undefined,
       },
     });
     await prisma.wAConversation.update({
