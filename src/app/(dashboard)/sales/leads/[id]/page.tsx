@@ -182,6 +182,49 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
     setTimeout(() => setCopied(false), 2000);
   }
 
+  const [quickLoading, setQuickLoading] = useState<string | null>(null);
+  const [pickedNote, setPickedNote]     = useState("");
+  const [showPickedInput, setShowPickedInput] = useState(false);
+
+  async function logQuickCall(outcome: "not_picked" | "busy" | "scheduled") {
+    const map = {
+      not_picked: { content: "Called — not picked up",         stage: "CALL_NOT_PICKED" },
+      busy:       { content: "Called — said busy, will retry", stage: "BUSY"            },
+      scheduled:  { content: "Call done — meeting scheduled",  stage: "SCHEDULE_MEETING"},
+    };
+    const { content, stage: newStage } = map[outcome];
+    setQuickLoading(outcome);
+    await Promise.all([
+      fetch(`/api/sales/leads/${id}/activity`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "CALL", content }),
+      }),
+      fetch(`/api/sales/leads/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage: newStage }),
+      }),
+    ]);
+    setStage(newStage);
+    await fetchLead();
+    setQuickLoading(null);
+  }
+
+  async function logPickedCall() {
+    const content = pickedNote.trim() ? `Call picked — ${pickedNote.trim()}` : "Call picked";
+    setQuickLoading("picked");
+    await fetch(`/api/sales/leads/${id}/activity`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "CALL", content }),
+    });
+    setPickedNote("");
+    setShowPickedInput(false);
+    await fetchLead();
+    setQuickLoading(null);
+  }
+
   async function handleAddActivity() {
     if (!actContent.trim()) return;
     setAddingActivity(true);
@@ -479,6 +522,51 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           {/* Log activity */}
           <div className="card p-5 space-y-3">
             <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Log Activity</h2>
+
+            {/* Quick call outcomes — one tap */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold" style={{ color: "var(--text-400)" }}>Quick call outcome</p>
+              <div className="flex gap-2 flex-wrap">
+                {([
+                  { key: "not_picked", label: "📵 Not Picked", bg: "#FFF7ED", color: "#D97706", border: "#FDE68A" },
+                  { key: "busy",       label: "🔁 Busy",        bg: "#FFF7ED", color: "#D97706", border: "#FDE68A" },
+                  { key: "picked",     label: "✅ Picked",      bg: "#F0FDF4", color: "#16A34A", border: "#BBF7D0" },
+                  { key: "scheduled",  label: "🗓 Scheduled",   bg: "#EFF6FF", color: "#3B82F6", border: "#BFDBFE" },
+                ] as const).map(({ key, label, bg, color, border }) => (
+                  <button key={key}
+                    disabled={quickLoading !== null}
+                    onClick={() => key === "picked" ? setShowPickedInput(p => !p) : logQuickCall(key as "not_picked" | "busy" | "scheduled")}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold disabled:opacity-50 transition-all"
+                    style={{ background: bg, color, border: `1px solid ${border}` }}>
+                    {quickLoading === key
+                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                      : label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Picked outcome input */}
+              {showPickedInput && (
+                <div className="flex gap-2">
+                  <input
+                    autoFocus
+                    value={pickedNote}
+                    onChange={e => setPickedNote(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") logPickedCall(); }}
+                    placeholder="What was the outcome? (optional, press Enter)"
+                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400"
+                  />
+                  <button onClick={logPickedCall} disabled={quickLoading === "picked"}
+                    className="px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+                    style={{ background: "#16A34A" }}>
+                    {quickLoading === "picked" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Log"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="h-px" style={{ background: "var(--border)" }} />
+
             <div className="flex gap-2">
               {(["CALL", "NOTE"] as const).map(t => (
                 <button key={t} onClick={() => setActType(t)}
