@@ -40,8 +40,23 @@ export async function GET(req: NextRequest) {
         : [{ followUpDate: "asc" as const }, { updatedAt: "desc" as const }],
     include: {
       _count: { select: { activities: true } },
+      activities: { orderBy: { createdAt: "desc" as const }, take: 1, select: { createdAt: true } },
     },
   });
 
-  return NextResponse.json({ leads });
+  // For "stale" sort: re-sort by last activity ascending (least recently contacted first)
+  const result = sort === "stale"
+    ? [...leads].sort((a, b) => {
+        const aT = a.activities[0]?.createdAt?.getTime() ?? 0;
+        const bT = b.activities[0]?.createdAt?.getTime() ?? 0;
+        return aT - bT;
+      })
+    : leads;
+
+  // Always return total overdue count regardless of current filters
+  const overdueCount = await prisma.lead.count({
+    where: { assignedToId: session.user.id, isNI: false, followUpDate: { lt: todayStart } },
+  });
+
+  return NextResponse.json({ leads: result, overdueCount });
 }

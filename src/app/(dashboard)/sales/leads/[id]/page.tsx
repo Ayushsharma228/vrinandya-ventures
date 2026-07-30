@@ -396,9 +396,31 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
             </div>
 
             <div>
-              <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-600)" }}>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-600)" }}>
                 Follow-up Date
               </label>
+              <div className="flex gap-1.5 flex-wrap mb-2">
+                {([
+                  { label: "Tomorrow",   days: 1 },
+                  { label: "2 days",     days: 2 },
+                  { label: "Next week",  days: 7 },
+                  { label: "2 weeks",    days: 14 },
+                ] as const).map(({ label, days }) => {
+                  const d = new Date();
+                  d.setDate(d.getDate() + days);
+                  const val = d.toISOString().split("T")[0];
+                  const isActive = followUpDate === val;
+                  return (
+                    <button key={label} type="button" onClick={() => setFollowUpDate(val)}
+                      className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
+                      style={isActive
+                        ? { background: "#3B82F6", color: "#fff" }
+                        : { background: "var(--bg-muted)", color: "var(--text-600)", border: "1px solid var(--border)" }}>
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
               <input type="date" value={followUpDate} onChange={e => setFollowUpDate(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
             </div>

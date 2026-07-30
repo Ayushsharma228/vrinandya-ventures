@@ -39,16 +39,18 @@ interface Lead {
   city: string | null; investment: number | null; stage: string;
   isNI: boolean; followUpDate: string | null; createdAt: string;
   _count: { activities: number };
+  activities: { createdAt: string }[];
 }
 
 export default function SalesLeadsPage() {
   const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [overdueCount, setOverdueCount] = useState(0);
   const [stage, setStage] = useState("ALL");
   const [search, setSearch] = useState("");
   const [showNI, setShowNI] = useState(false);
   const [overdue, setOverdue] = useState(false);
-  const [sort, setSort] = useState<"followUp" | "added" | "updated">("followUp");
+  const [sort, setSort] = useState<"followUp" | "added" | "updated" | "stale">("followUp");
   const [loading, setLoading] = useState(true);
   const [updatingStage, setUpdatingStage] = useState<string | null>(null);
 
@@ -63,6 +65,7 @@ export default function SalesLeadsPage() {
     const res = await fetch(`/api/sales/leads?${params}`);
     const data = await res.json();
     setLeads(data.leads ?? []);
+    setOverdueCount(data.overdueCount ?? 0);
     setLoading(false);
   }, [stage, search, showNI, overdue, sort]);
 
@@ -90,6 +93,15 @@ export default function SalesLeadsPage() {
   today.setHours(0, 0, 0, 0);
   const todayEnd = new Date(today.getTime() + 86400000);
 
+  function lastContactedLabel(activities: { createdAt: string }[]): { text: string; urgent: boolean } {
+    if (!activities.length) return { text: "Never contacted", urgent: true };
+    const ms = Date.now() - new Date(activities[0].createdAt).getTime();
+    const days = Math.floor(ms / 86400000);
+    if (days === 0) return { text: "Contacted today", urgent: false };
+    if (days === 1) return { text: "Yesterday", urgent: false };
+    return { text: `${days}d ago`, urgent: days >= 7 };
+  }
+
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
       <PageHero
@@ -102,6 +114,17 @@ export default function SalesLeadsPage() {
       />
 
       <div className="px-4 md:px-8 py-6 space-y-4">
+        {/* Overdue banner */}
+        {overdueCount > 0 && !overdue && (
+          <button
+            onClick={() => { setOverdue(true); setStage("ALL"); }}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+            style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
+            <span>⚠️ {overdueCount} lead{overdueCount !== 1 ? "s" : ""} with overdue follow-up</span>
+            <span className="text-xs font-medium underline">View all →</span>
+          </button>
+        )}
+
         {/* Filters */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -133,6 +156,7 @@ export default function SalesLeadsPage() {
               <ArrowUpDown className="w-3 h-3 ml-2 flex-shrink-0" style={{ color: "var(--text-400)" }} />
               {([
                 ["followUp", "Follow-up"],
+                ["stale",    "Stale first"],
                 ["added",    "Newest"],
                 ["updated",  "Updated"],
               ] as const).map(([val, label]) => (
@@ -172,6 +196,7 @@ export default function SalesLeadsPage() {
               const followUpDate = lead.followUpDate ? new Date(lead.followUpDate) : null;
               const isFollowUpToday = followUpDate && followUpDate >= today && followUpDate < todayEnd;
               const isOverdue = followUpDate && followUpDate < today;
+              const lastContacted = lastContactedLabel(lead.activities);
               return (
                 <div
                   key={lead.id}
@@ -213,6 +238,11 @@ export default function SalesLeadsPage() {
                     <div className="flex items-center gap-1.5">
                       <Phone className="w-3.5 h-3.5 flex-shrink-0" />
                       <span>{lead.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5"
+                      style={{ color: lastContacted.urgent ? "#DC2626" : "var(--text-400)" }}>
+                      <span className="text-[11px]">🕐</span>
+                      <span>{lastContacted.text}</span>
                     </div>
                     {lead.investment && (
                       <div className="flex items-center gap-1.5">
