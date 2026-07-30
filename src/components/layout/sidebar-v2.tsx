@@ -70,6 +70,7 @@ const sellerNav: NavItem[] = [
 const salesNav: NavItem[] = [
   { label: "Dashboard",  href: "/sales",         icon: LayoutDashboard, section: "MAIN" },
   { label: "My Leads",   href: "/sales/leads",   icon: UserCheck },
+  { label: "Inbox",      href: "/sales/inbox",   icon: MessageCircle },
 ];
 
 const supplierNav: NavItem[] = [
@@ -94,13 +95,24 @@ interface SidebarV2Props {
 
 export function SidebarV2({ role, userName, userEmail }: SidebarV2Props) {
   const pathname = usePathname();
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadCount,  setUnreadCount]  = useState(0);
+  const [waUnread,     setWaUnread]     = useState(0);
+  const [mobileOpen,   setMobileOpen]   = useState(false);
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
+
   useEffect(() => {
     if (role !== "seller") return;
     fetch("/api/seller/notifications").then(r => r.json()).then(d => setUnreadCount(d.unreadCount ?? 0)).catch(() => {});
+  }, [role]);
+
+  useEffect(() => {
+    if (role !== "sales") return;
+    const poll = () =>
+      fetch("/api/sales/conversations/unread").then(r => r.json()).then(d => setWaUnread(d.unread ?? 0)).catch(() => {});
+    poll();
+    const t = setInterval(poll, 30000);
+    return () => clearInterval(t);
   }, [role]);
 
   const nav = role === "admin" ? adminNav : role === "seller" ? sellerNav : role === "sales" ? salesNav : supplierNav;
@@ -147,6 +159,11 @@ export function SidebarV2({ role, userName, userEmail }: SidebarV2Props) {
                 {item.href === "/seller/notifications" && unreadCount > 0 && (
                   <span className="w-5 h-5 text-[10px] font-bold rounded-full bg-red-500 text-white flex items-center justify-center flex-shrink-0">
                     {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+                {item.href === "/sales/inbox" && waUnread > 0 && (
+                  <span className="w-5 h-5 text-[10px] font-bold rounded-full bg-green-500 text-white flex items-center justify-center flex-shrink-0">
+                    {waUnread > 9 ? "9+" : waUnread}
                   </span>
                 )}
               </Link>
