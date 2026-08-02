@@ -304,7 +304,7 @@ export default function SellerAnalyticsPage() {
                   <XAxis dataKey="date" tickFormatter={fmt} tick={{ fontSize: 10, fill: "#9ca3af" }} />
                   <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`} />
                   <Tooltip labelFormatter={(v) => fmt(v as string)}
-                    formatter={(val: number) => [inr(val)]}
+                    formatter={(val) => [inr(Number(val))]}
                     contentStyle={{ fontSize: 12 }} />
                   <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
                   <Bar dataKey="gmv"             fill="#3b5bdb" name="GMV"               radius={[2,2,0,0]} />
@@ -402,7 +402,7 @@ export default function SellerAnalyticsPage() {
                       <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} unit="%" domain={[0, 100]} axisLine={false} tickLine={false} />
                       <Tooltip contentStyle={{ fontSize: 12 }}
-                        formatter={(val: number) => [`${val}%`]} />
+                        formatter={(val) => [`${val}%`]} />
                       <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
                       <Bar dataKey="delRate" name="Delivery %" fill="#40c057" radius={[3, 3, 0, 0]} />
                       <Bar dataKey="rtoRate" name="RTO %" fill="#fd7e14" radius={[3, 3, 0, 0]} />
