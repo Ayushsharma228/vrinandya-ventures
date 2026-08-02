@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { RefreshCw, ShoppingCart, Truck, AlertTriangle, XCircle, TrendingUp, Calendar, Wallet, BadgeIndianRupee } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -91,6 +91,51 @@ export default function SellerAnalyticsPage() {
   }
 
   const storeName = data?.store?.storeName ?? data?.store?.storeUrl ?? "All Stores";
+
+  const dowData = useMemo(() => {
+    const labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    if (!data?.trend?.length) return [];
+    const buckets = Array(7).fill(null).map(() => ({ orders: 0, delivered: 0, rto: 0, days: 0 }));
+    for (const d of data.trend) {
+      const dow = new Date(d.date).getDay();
+      buckets[dow].orders += d.total;
+      buckets[dow].delivered += d.delivered;
+      buckets[dow].rto += d.rto;
+      buckets[dow].days += 1;
+    }
+    return labels.map((name, i) => ({
+      name,
+      orders: buckets[i].orders,
+      delRate: buckets[i].orders > 0 ? Math.round((buckets[i].delivered / buckets[i].orders) * 100) : 0,
+      rtoRate: buckets[i].orders > 0 ? Math.round((buckets[i].rto / buckets[i].orders) * 100) : 0,
+      avgOrders: buckets[i].days > 0 ? +(buckets[i].orders / buckets[i].days).toFixed(1) : 0,
+    }));
+  }, [data]);
+
+  const weeklyData = useMemo(() => {
+    if (!data?.trend?.length) return [];
+    const weeks: Record<string, { weekLabel: string; total: number; delivered: number; rto: number; cancelled: number }> = {};
+    for (const d of data.trend) {
+      const date = new Date(d.date);
+      const day = date.getDay();
+      const monday = new Date(date);
+      monday.setDate(date.getDate() - (day === 0 ? 6 : day - 1));
+      const key = monday.toISOString().split("T")[0];
+      if (!weeks[key]) {
+        weeks[key] = {
+          weekLabel: monday.toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
+          total: 0, delivered: 0, rto: 0, cancelled: 0,
+        };
+      }
+      weeks[key].total += d.total;
+      weeks[key].delivered += d.delivered;
+      weeks[key].rto += d.rto;
+      weeks[key].cancelled += d.cancelled;
+    }
+    return Object.entries(weeks)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([, v]) => ({ ...v, inTransit: Math.max(0, v.total - v.delivered - v.rto - v.cancelled) }));
+  }, [data]);
 
   return (
     <div className="p-6 space-y-5">
@@ -308,6 +353,144 @@ export default function SellerAnalyticsPage() {
               )}
             </div>
           </div>
+
+          {/* Day-of-week pattern */}
+          {dowData.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-xl p-5">
+              <div className="flex items-start justify-between mb-1">
+                <div>
+                  <h2 className="font-semibold text-gray-900">Day-of-Week Patterns</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">Which days drive orders and which lose to RTO</p>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-gray-500">
+                  {(() => {
+                    const best = [...dowData].sort((a, b) => b.orders - a.orders)[0];
+                    const worst = [...dowData].sort((a, b) => b.rtoRate - a.rtoRate)[0];
+                    return (
+                      <>
+                        <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium">
+                          Best: {best?.name} ({best?.orders} orders)
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 font-medium">
+                          High RTO: {worst?.name} ({worst?.rtoRate}%)
+                        </span>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">Orders by Day</p>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <BarChart data={dowData} barSize={28}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} allowDecimals={false} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ fontSize: 12 }}
+                        formatter={(val: unknown, name: string) => [val, name === "orders" ? "Total Orders" : name]} />
+                      <Bar dataKey="orders" name="orders" radius={[4, 4, 0, 0]}
+                        fill="#3b5bdb"
+                        label={{ position: "top", fontSize: 10, fill: "#6b7280", formatter: (v: number) => v > 0 ? v : "" }} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">Delivery vs RTO Rate</p>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <BarChart data={dowData} barSize={12}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} unit="%" domain={[0, 100]} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ fontSize: 12 }}
+                        formatter={(val: unknown) => [`${val}%`]} />
+                      <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+                      <Bar dataKey="delRate" name="Delivery %" fill="#40c057" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="rtoRate" name="RTO %" fill="#fd7e14" radius={[3, 3, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              {/* Heatmap row */}
+              <div className="mt-4 grid grid-cols-7 gap-1.5">
+                {dowData.map((d) => {
+                  const intensity = Math.min(1, d.orders / (Math.max(...dowData.map((x) => x.orders)) || 1));
+                  const bg = intensity > 0.75 ? "#1d4ed8" : intensity > 0.5 ? "#3b82f6" : intensity > 0.25 ? "#93c5fd" : intensity > 0 ? "#dbeafe" : "#f1f5f9";
+                  const textColor = intensity > 0.5 ? "white" : "#374151";
+                  return (
+                    <div key={d.name} className="rounded-lg p-2 text-center" style={{ background: bg }}>
+                      <p className="text-xs font-semibold" style={{ color: textColor }}>{d.name}</p>
+                      <p className="text-sm font-bold mt-0.5" style={{ color: textColor }}>{d.orders}</p>
+                      <p className="text-xs mt-0.5" style={{ color: intensity > 0.5 ? "rgba(255,255,255,0.8)" : "#6b7280" }}>
+                        {d.avgOrders}/day
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Weekly cohort */}
+          {weeklyData.length > 1 && (
+            <div className="bg-white border border-gray-200 rounded-xl p-5">
+              <div className="mb-4">
+                <h2 className="font-semibold text-gray-900">Weekly Cohort View</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Orders, deliveries, RTO and in-transit grouped by week placed</p>
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={weeklyData} barSize={16}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <XAxis dataKey="weekLabel" tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} allowDecimals={false} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ fontSize: 12 }} />
+                  <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="delivered" name="Delivered" stackId="a" fill="#40c057" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="inTransit" name="In Transit" stackId="a" fill="#3b82f6" />
+                  <Bar dataKey="rto" name="RTO" stackId="a" fill="#fd7e14" />
+                  <Bar dataKey="cancelled" name="Cancelled" stackId="a" fill="#f03e3e" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              {/* Cohort table */}
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      {["Week of", "Orders", "Delivered", "In Transit", "RTO", "Cancelled", "Del %", "RTO %"].map((h) => (
+                        <th key={h} className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {weeklyData.map((w, i) => {
+                      const delPct = w.total > 0 ? Math.round((w.delivered / w.total) * 100) : 0;
+                      const rtoPct = w.total > 0 ? Math.round((w.rto / w.total) * 100) : 0;
+                      return (
+                        <tr key={i} className="hover:bg-gray-50">
+                          <td className="px-3 py-2 text-gray-600 font-medium text-xs">{w.weekLabel}</td>
+                          <td className="px-3 py-2 text-gray-900 font-semibold">{w.total}</td>
+                          <td className="px-3 py-2 text-green-600">{w.delivered}</td>
+                          <td className="px-3 py-2 text-blue-500">{w.inTransit}</td>
+                          <td className="px-3 py-2 text-orange-500">{w.rto}</td>
+                          <td className="px-3 py-2 text-red-500">{w.cancelled}</td>
+                          <td className="px-3 py-2">
+                            <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${delPct >= 70 ? "bg-green-50 text-green-700" : delPct >= 50 ? "bg-yellow-50 text-yellow-700" : "bg-red-50 text-red-700"}`}>
+                              {delPct}%
+                            </span>
+                          </td>
+                          <td className="px-3 py-2">
+                            <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${rtoPct <= 15 ? "bg-green-50 text-green-700" : rtoPct <= 25 ? "bg-yellow-50 text-yellow-700" : "bg-red-50 text-red-700"}`}>
+                              {rtoPct}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Top Products */}
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
