@@ -133,11 +133,18 @@ export default function AdminDeliveryPage() {
       (o: Order) => o.status !== "CANCELLED" || o.awbNumber
     );
     setOrders(fetched);
-    // Pre-fill AWB inputs with existing AWB values (only on first load)
+    // Pre-fill AWB + courier inputs with existing values (only on first load)
     setAwbInputs((prev) => {
       const next = { ...prev };
       fetched.forEach((o) => {
         if (o.awbNumber && next[o.id] === undefined) next[o.id] = o.awbNumber;
+      });
+      return next;
+    });
+    setCourierInputs((prev) => {
+      const next = { ...prev };
+      fetched.forEach((o) => {
+        if (o.courier && next[o.id] === undefined) next[o.id] = o.courier;
       });
       return next;
     });
@@ -305,29 +312,23 @@ export default function AdminDeliveryPage() {
                       <td className="px-4 py-3">
                         {isCancelled ? (
                           <span className="text-xs text-gray-300">—</span>
-                        ) : order.awbNumber ? (
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-mono text-xs font-medium text-gray-800">{order.awbNumber}</span>
-                            {order.courier && <span className="text-xs text-gray-400">{order.courier}</span>}
-                            {order.trackingUrl && (
-                              <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="text-blue-500 text-xs hover:underline">Track →</a>
-                            )}
-                          </div>
                         ) : (
                           <div className="flex flex-col gap-1.5">
-                            <button
-                              onClick={() => handleGetAwb(order.id)}
-                              disabled={gettingAwb === order.id}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50 whitespace-nowrap"
-                              style={{ background: "#EFF6FF", color: "#3B82F6" }}>
-                              {gettingAwb === order.id
-                                ? <><Loader2 className="w-3 h-3 animate-spin" /> Getting...</>
-                                : <><Truck className="w-3 h-3" /> Get AWB</>}
-                            </button>
+                            {!order.awbNumber && (
+                              <button
+                                onClick={() => handleGetAwb(order.id)}
+                                disabled={gettingAwb === order.id}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50 whitespace-nowrap"
+                                style={{ background: "#EFF6FF", color: "#3B82F6" }}>
+                                {gettingAwb === order.id
+                                  ? <><Loader2 className="w-3 h-3 animate-spin" /> Getting...</>
+                                  : <><Truck className="w-3 h-3" /> Get AWB</>}
+                              </button>
+                            )}
                             <input
                               type="text"
                               placeholder="AWB number"
-                              value={awbInputs[order.id] ?? ""}
+                              value={awbInputs[order.id] ?? order.awbNumber ?? ""}
                               onChange={(e) => setAwbInputs((p) => ({ ...p, [order.id]: e.target.value }))}
                               className="w-32 px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
                             />
@@ -339,6 +340,9 @@ export default function AdminDeliveryPage() {
                                 <option key={c} value={c}>{c}</option>
                               ))}
                             </select>
+                            {order.trackingUrl && (
+                              <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="text-blue-500 text-xs hover:underline">Track →</a>
+                            )}
                           </div>
                         )}
                       </td>
