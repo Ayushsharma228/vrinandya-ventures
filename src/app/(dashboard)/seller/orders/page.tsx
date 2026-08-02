@@ -12,7 +12,19 @@ interface Order {
   customerName: string | null; customerEmail: string | null;
   customerAddress: { phone?: string; address?: string; city?: string; state?: string; pincode?: string } | null;
   totalAmount: number; awbNumber: string | null; createdAt: string; items: OrderItem[];
+  supplierStatus: string | null;
 }
+
+const SUPPLIER_LABEL: Record<string, string> = {
+  PENDING_ASSIGNMENT: "Pending Supplier",
+  ASSIGNED:           "Supplier Assigned",
+  ACCEPTED:           "Supplier Accepted",
+  REJECTED:           "Supplier Rejected",
+  PROCESSING:         "Supplier Processing",
+  PACKED:             "Packed",
+  READY_TO_SHIP:      "Ready to Ship",
+  DISPATCHED:         "Supplier Dispatched",
+};
 interface Stats { totalOrders: number; totalRevenue: number; totalItems: number; topProduct: string | null; }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -352,6 +364,12 @@ export default function SellerOrdersPage() {
                           style={{ background: cfg.bg, color: cfg.color }}>
                           {cfg.label}
                         </span>
+                        {order.supplierStatus && (
+                          <p className="text-[10px] mt-1 pl-0.5"
+                            style={{ color: order.supplierStatus === "REJECTED" ? "#DC2626" : order.supplierStatus === "DISPATCHED" ? "#16A34A" : "var(--text-400)" }}>
+                            {SUPPLIER_LABEL[order.supplierStatus] ?? order.supplierStatus}
+                          </p>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-xs" style={{ color: "var(--text-400)" }}>
                         {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
