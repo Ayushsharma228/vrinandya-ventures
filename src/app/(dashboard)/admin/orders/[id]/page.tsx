@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Package, User, Truck, Receipt, Clock,
   CheckCircle2, XCircle, AlertTriangle, RefreshCw,
-  MapPin, Phone, Tag, ChevronRight, UserCheck, Loader2, Plus,
+  MapPin, Phone, Tag, ChevronRight, UserCheck, Loader2, Plus, Pencil, X,
 } from "lucide-react";
 
 interface OrderItem { id: string; name: string; quantity: number; price: number; productId: string | null; }
@@ -93,6 +93,12 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   const [statusChanging, setStatusChanging] = useState(false);
   const [newStatus, setNewStatus]   = useState("");
 
+  // Courier edit
+  const [courierEdit, setCourierEdit]   = useState(false);
+  const [courierValue, setCourierValue] = useState("");
+  const [courierCustom, setCourierCustom] = useState("");
+  const [courierSaving, setCourierSaving] = useState(false);
+
   // Supplier assignment
   const [suppliers, setSuppliers]           = useState<Supplier[]>([]);
   const [assignSupplierId, setAssignSupplierId] = useState("");
@@ -110,6 +116,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
       setOrder(d.order);
       setSettlement(d.settlement ?? null);
       setNewStatus(d.order.status);
+      setCourierValue(d.order.courier ?? "");
     }
     setLoading(false);
   }, [id]);
@@ -155,6 +162,19 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
     });
     if (r.ok) fetchOrder();
     setStatusChanging(false);
+  }
+
+  async function saveCourier() {
+    if (!order) return;
+    const finalValue = courierValue === "__custom__" ? courierCustom.trim() : courierValue;
+    setCourierSaving(true);
+    const r = await fetch(`/api/admin/orders/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courier: finalValue || null }),
+    });
+    if (r.ok) { await fetchOrder(); setCourierEdit(false); setCourierCustom(""); }
+    setCourierSaving(false);
   }
 
   if (loading) {
@@ -211,7 +231,43 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
                 <Row label="Product Cost"   value={fmt(order.productCost)} />
                 <Row label="Shipping"       value={fmt(order.shippingCharge)} />
                 <Row label="AWB"            value={order.awbNumber ?? "—"} mono />
-                <Row label="Courier"        value={order.courier ?? "—"} />
+                <Row label="Courier" value={
+                  courierEdit ? (
+                    <div className="flex flex-col gap-1.5 items-end">
+                      <select value={courierValue} onChange={e => setCourierValue(e.target.value)}
+                        className="text-xs rounded-lg px-2 py-1 border w-full"
+                        style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }}>
+                        <option value="">— None —</option>
+                        {["Delhivery","Ekart","Blue Dart","DTDC","Xpressbees","Shadowfax","Ecom Express","Amazon Logistics","Shiprocket","__custom__"].map(c => (
+                          <option key={c} value={c}>{c === "__custom__" ? "Other (type below)" : c}</option>
+                        ))}
+                      </select>
+                      {courierValue === "__custom__" && (
+                        <input value={courierCustom} onChange={e => setCourierCustom(e.target.value)}
+                          placeholder="Enter courier name"
+                          className="text-xs rounded-lg px-2 py-1 border w-full"
+                          style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }} />
+                      )}
+                      <div className="flex gap-1.5">
+                        <button onClick={() => { setCourierEdit(false); setCourierCustom(""); }}
+                          className="px-2 py-1 rounded-lg text-xs" style={{ color: "var(--text-400)" }}>
+                          <X className="w-3 h-3" />
+                        </button>
+                        <button onClick={saveCourier} disabled={courierSaving}
+                          className="px-2.5 py-1 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
+                          style={{ background: "#3B82F6" }}>
+                          {courierSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => { setCourierEdit(true); setCourierValue(order.courier ?? ""); }}
+                      className="flex items-center gap-1.5 group/courier">
+                      <span>{order.courier ?? "—"}</span>
+                      <Pencil className="w-3 h-3 opacity-0 group-hover/courier:opacity-60 transition-opacity" />
+                    </button>
+                  )
+                } />
               </div>
               <div>
                 <Row label="Status" value={
