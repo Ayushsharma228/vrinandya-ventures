@@ -61,6 +61,23 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   CANCELLED:  { label: "Cancelled",  color: "#6B7280", bg: "#F9FAFB" },
 };
 
+function Sparkline({ values, color }: { values: number[]; color: string }) {
+  if (values.length < 2) return null;
+  const max = Math.max(...values, 1);
+  const min = Math.min(...values, 0);
+  const range = max - min || 1;
+  const W = 52, H = 18;
+  const pts = values.map((v, i) =>
+    `${((i / (values.length - 1)) * W).toFixed(1)},${(H - ((v - min) / range) * H).toFixed(1)}`
+  ).join(" ");
+  return (
+    <svg width={W} height={H} style={{ display: "block", flexShrink: 0 }}>
+      <polyline fill="none" stroke={color} strokeWidth="1.5"
+        strokeLinecap="round" strokeLinejoin="round" points={pts} opacity={0.55} />
+    </svg>
+  );
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
@@ -87,6 +104,7 @@ export default function SellerDashboard() {
   const [adRevenue, setAdRevenue] = useState(0);
   const [metaConnected, setMetaConnected] = useState(false);
   const [openNdrs, setOpenNdrs] = useState(0);
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [orderFilter, setOrderFilter] = useState("ALL");
   const [ordersLoading, setOrdersLoading] = useState(false);
 
@@ -107,6 +125,9 @@ export default function SellerDashboard() {
       setOpenNdrs(ndr.pending?.length ?? 0);
       setLoading(false);
     });
+    fetch("/api/seller/orders?status=NEW&limit=1").then(r => r.json()).then(d => {
+      setNewOrdersCount(d.total ?? 0);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -131,6 +152,38 @@ export default function SellerDashboard() {
   const deliveryRate = analytics?.deliveryRate ?? 0;
   const rtoRate      = analytics?.rtoRate ?? 0;
 
+  // Today vs yesterday from trend
+  const todayData      = analytics?.trend?.at(-1);
+  const yesterdayData  = analytics?.trend?.at(-2);
+  const todayOrders    = todayData?.total ?? 0;
+  const yesterdayOrders = yesterdayData?.total ?? 0;
+  const todayDelta     = todayOrders - yesterdayOrders;
+  const avgOrderValue  = analytics ? analytics.totalRevenue / Math.max(analytics.totalOrders, 1) : 0;
+  const todayRevEst    = Math.round(todayOrders * avgOrderValue);
+
+  // Week-over-week
+  const last7  = analytics?.trend?.slice(-7)   ?? [];
+  const prior7 = analytics?.trend?.slice(-14, -7) ?? [];
+  const last7Total  = last7.reduce((s, d) => s + d.total, 0);
+  const prior7Total = prior7.reduce((s, d) => s + d.total, 0);
+  const weekOverWeek = prior7Total > 0
+    ? Math.round(((last7Total - prior7Total) / prior7Total) * 100) : 0;
+
+  // Best day
+  const bestDay = analytics?.trend?.reduce<typeof analytics.trend[0] | null>(
+    (best, d) => (d.total > (best?.total ?? 0) ? d : best), null
+  );
+  const bestDayLabel = bestDay
+    ? new Date(bestDay.date).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })
+    : null;
+
+  // Sparkline series (last 7 data points)
+  const orderSparkline   = analytics?.trend?.slice(-7).map(d => d.total) ?? [];
+  const deliverySparkline = analytics?.trend?.slice(-7).map(d =>
+    d.total > 0 ? (d.delivered / d.total) * 100 : 0) ?? [];
+  const rtoSparkline = analytics?.trend?.slice(-7).map(d =>
+    d.total > 0 ? (d.rto / d.total) * 100 : 0) ?? [];
+
   const stats = [
     {
       label: "Total Orders",
@@ -138,7 +191,10 @@ export default function SellerDashboard() {
       icon: ShoppingCart,
       iconBg: "#EFF6FF",
       iconColor: "#3B82F6",
-      sub: `${analytics?.inTransitCount ?? 0} in transit`,
+      sub: todayOrders > 0
+        ? `${todayOrders} today · ${todayDelta >= 0 ? "▲" : "▼"}${Math.abs(todayDelta)} vs yesterday`
+        : `${analytics?.inTransitCount ?? 0} in transit`,
+      sparkline: orderSparkline,
     },
     {
       label: "Total Revenue",
@@ -146,7 +202,10 @@ export default function SellerDashboard() {
       icon: IndianRupee,
       iconBg: "#F0FDF4",
       iconColor: "#16A34A",
-      sub: wallet ? `₹${fmt(wallet.totalCredit)} remitted` : "—",
+      sub: todayOrders > 0 && avgOrderValue > 0
+        ? `~₹${fmt(todayRevEst)} today`
+        : wallet ? `₹${fmt(wallet.totalCredit)} remitted` : "—",
+      sparkline: orderSparkline.map(v => v * avgOrderValue),
     },
     {
       label: "Delivery Rate",
@@ -155,6 +214,7 @@ export default function SellerDashboard() {
       iconBg: deliveryRate >= 80 ? "#F0FDF4" : deliveryRate >= 60 ? "#FFF7ED" : "#FEF2F2",
       iconColor: deliveryRate >= 80 ? "#16A34A" : deliveryRate >= 60 ? "#F59E0B" : "#EF4444",
       sub: `${analytics?.deliveredCount ?? 0} delivered`,
+      sparkline: deliverySparkline,
     },
     {
       label: "RTO Rate",
@@ -163,6 +223,7 @@ export default function SellerDashboard() {
       iconBg: rtoRate <= 10 ? "#F0FDF4" : rtoRate <= 20 ? "#FFF7ED" : "#FEF2F2",
       iconColor: rtoRate <= 10 ? "#16A34A" : rtoRate <= 20 ? "#F59E0B" : "#EF4444",
       sub: `${analytics?.rtoCount ?? 0} returned`,
+      sparkline: rtoSparkline,
     },
     {
       label: "Meta Ads Spent",
@@ -173,6 +234,7 @@ export default function SellerDashboard() {
       sub: metaConnected
         ? (adSpend > 0 ? `${(adRevenue / adSpend).toFixed(2)}x ROAS · Last 30 days` : "No spend in last 30 days")
         : "connect",
+      sparkline: [] as number[],
     },
     {
       label: "Net Payout",
@@ -181,6 +243,7 @@ export default function SellerDashboard() {
       iconBg: "#F0FDF4",
       iconColor: "#16A34A",
       sub: "Total paid to your account",
+      sparkline: [] as number[],
     },
   ];
 
@@ -244,8 +307,40 @@ export default function SellerDashboard() {
           </div>
         </div>
 
+        {/* Today at a glance strip */}
+        {!loading && analytics && (analytics.totalOrders > 0) && (
+          <div className="relative mt-5 flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
+              style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.9)" }}>
+              📅 Today:
+              <span className="text-white font-bold">{todayOrders} orders</span>
+              {todayOrders > 0 && avgOrderValue > 0 && (
+                <span style={{ color: "#4ADE80" }}>· ~₹{fmt(todayRevEst)}</span>
+              )}
+              <span style={{ color: todayDelta >= 0 ? "#4ADE80" : "#F87171" }}>
+                {todayDelta >= 0 ? "▲" : "▼"}{Math.abs(todayDelta)} vs yesterday
+              </span>
+            </span>
+            {Math.abs(weekOverWeek) > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+                style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.75)" }}>
+                📈 This week:
+                <span style={{ color: weekOverWeek >= 0 ? "#4ADE80" : "#F87171" }}>
+                  {weekOverWeek >= 0 ? "▲" : "▼"}{Math.abs(weekOverWeek)}% vs last week
+                </span>
+              </span>
+            )}
+            {bestDayLabel && bestDay && bestDay.total > 1 && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+                style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.75)" }}>
+                🏆 Best day: <span className="text-white">{bestDayLabel} ({bestDay.total} orders)</span>
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Mini stat row inside hero */}
-        <div className="relative mt-6 grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+        <div className="relative mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           {loading ? (
             [...Array(6)].map((_, i) => (
               <div key={i} className="h-20 rounded-xl animate-pulse"
@@ -264,16 +359,23 @@ export default function SellerDashboard() {
                     <Icon className="w-3.5 h-3.5" style={{ color: s.iconColor }} />
                   </div>
                 </div>
-                <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{s.value}</p>
-                {isConnectPrompt ? (
-                  <Link href="/seller/profile?tab=integrations"
-                    className="inline-flex items-center gap-1 text-xs font-semibold mt-1 px-2 py-0.5 rounded-full"
-                    style={{ background: "rgba(124,58,237,0.12)", color: "#7C3AED" }}>
-                    + Connect Meta Ads
-                  </Link>
-                ) : (
-                  <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{s.sub}</p>
-                )}
+                <div className="flex items-end justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{s.value}</p>
+                    {isConnectPrompt ? (
+                      <Link href="/seller/profile?tab=integrations"
+                        className="inline-flex items-center gap-1 text-xs font-semibold mt-1 px-2 py-0.5 rounded-full"
+                        style={{ background: "rgba(124,58,237,0.12)", color: "#7C3AED" }}>
+                        + Connect Meta Ads
+                      </Link>
+                    ) : (
+                      <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>{s.sub}</p>
+                    )}
+                  </div>
+                  {s.sparkline && s.sparkline.length >= 2 && (
+                    <Sparkline values={s.sparkline} color={s.iconColor} />
+                  )}
+                </div>
               </div>
             );
           })}
@@ -335,6 +437,32 @@ export default function SellerDashboard() {
           </div>
         )}
 
+        {/* New Orders Pending Banner */}
+        {!loading && newOrdersCount > 0 && (
+          <div className="flex items-center justify-between gap-4 rounded-2xl px-5 py-4"
+            style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)", border: "1px solid rgba(99,102,241,0.4)" }}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse"
+                style={{ background: "rgba(99,102,241,0.25)" }}>
+                <ShoppingCart className="w-5 h-5" style={{ color: "#A5B4FC" }} />
+              </div>
+              <div>
+                <p className="text-sm font-bold" style={{ color: "#E0E7FF" }}>
+                  {newOrdersCount} New Order{newOrdersCount > 1 ? "s" : ""} Waiting
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: "#A5B4FC" }}>
+                  Confirm them to trigger fulfillment
+                </p>
+              </div>
+            </div>
+            <Link href="/seller/orders"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex-shrink-0"
+              style={{ background: "rgba(99,102,241,0.25)", color: "#C7D2FE", border: "1px solid rgba(99,102,241,0.4)" }}>
+              View Orders <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div className="flex flex-wrap items-center gap-2 md:gap-3">
           {[
@@ -359,7 +487,7 @@ export default function SellerDashboard() {
         </div>
 
         {/* Charts Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
 
           {/* Area Chart — Order Trend */}
           <div className="md:col-span-2 card p-5">
@@ -415,6 +543,70 @@ export default function SellerDashboard() {
               </ResponsiveContainer>
             )}
           </div>
+
+          {/* 7-Day Snapshot */}
+          {analytics && last7.length >= 3 && (
+            <div className="card p-5">
+              <h2 className="text-sm font-semibold mb-4" style={{ color: "var(--text-900)" }}>Last 7 Days</h2>
+              <div className="space-y-3">
+                {[
+                  {
+                    label: "Orders",
+                    value: last7Total,
+                    delta: weekOverWeek,
+                    icon: ShoppingCart,
+                    color: "#3B82F6",
+                  },
+                  {
+                    label: "Delivered",
+                    value: last7.reduce((s, d) => s + d.delivered, 0),
+                    delta: null,
+                    icon: CheckCircle2,
+                    color: "#16A34A",
+                  },
+                  {
+                    label: "RTO",
+                    value: last7.reduce((s, d) => s + d.rto, 0),
+                    delta: null,
+                    icon: TrendingDown,
+                    color: "#EF4444",
+                  },
+                  {
+                    label: "Avg / day",
+                    value: +(last7Total / 7).toFixed(1),
+                    delta: null,
+                    icon: Clock,
+                    color: "#F59E0B",
+                  },
+                ].map((row) => {
+                  const Icon = row.icon;
+                  return (
+                    <div key={row.label} className="flex items-center justify-between py-1.5"
+                      style={{ borderBottom: "1px solid var(--border)" }}>
+                      <div className="flex items-center gap-2">
+                        <Icon className="w-3.5 h-3.5" style={{ color: row.color }} />
+                        <span className="text-xs font-medium" style={{ color: "var(--text-600)" }}>{row.label}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold" style={{ color: "var(--text-900)" }}>{row.value}</span>
+                        {row.delta !== null && Math.abs(row.delta) > 0 && (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                            style={{ background: row.delta >= 0 ? "#F0FDF4" : "#FEF2F2", color: row.delta >= 0 ? "#16A34A" : "#DC2626" }}>
+                            {row.delta >= 0 ? "▲" : "▼"}{Math.abs(row.delta)}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                {bestDayLabel && bestDay && (
+                  <p className="text-[10px] pt-1" style={{ color: "var(--text-400)" }}>
+                    🏆 Best day: {bestDayLabel} ({bestDay.total} orders)
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Delivery Breakdown */}
           <div className="card p-5">
