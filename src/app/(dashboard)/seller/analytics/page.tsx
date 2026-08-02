@@ -390,7 +390,7 @@ export default function SellerAnalyticsPage() {
                       <Tooltip contentStyle={{ fontSize: 12 }} />
                       <Bar dataKey="orders" name="Total Orders" radius={[4, 4, 0, 0]}
                         fill="#3b5bdb"
-                        label={{ position: "top", fontSize: 10, fill: "#6b7280", formatter: (v: number) => v > 0 ? v : "" }} />
+                        label={{ position: "top", fontSize: 10, fill: "#6b7280", formatter: (v) => Number(v) > 0 ? v : "" }} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
