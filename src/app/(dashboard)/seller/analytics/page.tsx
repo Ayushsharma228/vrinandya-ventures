@@ -388,7 +388,7 @@ export default function SellerAnalyticsPage() {
                       <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} allowDecimals={false} axisLine={false} tickLine={false} />
                       <Tooltip contentStyle={{ fontSize: 12 }}
-                        formatter={(val: unknown, name: string) => [val, name === "orders" ? "Total Orders" : name]} />
+                        formatter={(val: unknown) => [val, "Total Orders"]} />
                       <Bar dataKey="orders" name="orders" radius={[4, 4, 0, 0]}
                         fill="#3b5bdb"
                         label={{ position: "top", fontSize: 10, fill: "#6b7280", formatter: (v: number) => v > 0 ? v : "" }} />
