@@ -304,7 +304,7 @@ export default function SellerAnalyticsPage() {
                   <XAxis dataKey="date" tickFormatter={fmt} tick={{ fontSize: 10, fill: "#9ca3af" }} />
                   <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`} />
                   <Tooltip labelFormatter={(v) => fmt(v as string)}
-                    formatter={(val: unknown) => [inr(Number(val))]}
+                    formatter={(val: number) => [inr(val)]}
                     contentStyle={{ fontSize: 12 }} />
                   <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
                   <Bar dataKey="gmv"             fill="#3b5bdb" name="GMV"               radius={[2,2,0,0]} />
@@ -387,9 +387,8 @@ export default function SellerAnalyticsPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                       <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} allowDecimals={false} axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={{ fontSize: 12 }}
-                        formatter={(val: unknown) => [val, "Total Orders"]} />
-                      <Bar dataKey="orders" name="orders" radius={[4, 4, 0, 0]}
+                      <Tooltip contentStyle={{ fontSize: 12 }} />
+                      <Bar dataKey="orders" name="Total Orders" radius={[4, 4, 0, 0]}
                         fill="#3b5bdb"
                         label={{ position: "top", fontSize: 10, fill: "#6b7280", formatter: (v: number) => v > 0 ? v : "" }} />
                     </BarChart>
@@ -403,7 +402,7 @@ export default function SellerAnalyticsPage() {
                       <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} unit="%" domain={[0, 100]} axisLine={false} tickLine={false} />
                       <Tooltip contentStyle={{ fontSize: 12 }}
-                        formatter={(val: unknown) => [`${val}%`]} />
+                        formatter={(val: number) => [`${val}%`]} />
                       <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
                       <Bar dataKey="delRate" name="Delivery %" fill="#40c057" radius={[3, 3, 0, 0]} />
                       <Bar dataKey="rtoRate" name="RTO %" fill="#fd7e14" radius={[3, 3, 0, 0]} />

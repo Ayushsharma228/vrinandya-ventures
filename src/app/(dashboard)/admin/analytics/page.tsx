@@ -283,7 +283,7 @@ export default function AdminAnalyticsPage() {
                       <YAxis tick={{ fontSize: 10, fill: "var(--text-400)" }} tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`} />
                       <Tooltip
                         labelFormatter={(v) => fmt(v as string)}
-                        formatter={(val: unknown) => [inr(Number(val))]}
+                        formatter={(val: number) => [inr(val)]}
                         contentStyle={{ fontSize: 12, background: "var(--bg-card)", border: "1px solid var(--border)" }} />
                       <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
                       <Bar dataKey="gmv"             fill="#3B82F6" name="GMV"               radius={[2,2,0,0]} />
