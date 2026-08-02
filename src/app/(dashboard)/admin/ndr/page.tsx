@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   AlertTriangle, RotateCcw, PackageX, RefreshCw,
   CheckCircle2, Search, Loader2, ChevronDown, ChevronUp,
-  MapPin, Phone,
+  MapPin, Phone, Clock, Flame,
 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
@@ -21,6 +21,7 @@ interface NdrOrder {
   ndrStatus: string | null;
   ndrAttempts: number;
   ndrActionTaken: string | null;
+  ndrCreatedAt: string | null;
   updatedAt: string;
   createdAt: string;
   seller: { id: string; name: string | null; brandName: string | null; email: string };
@@ -31,7 +32,26 @@ interface Stats {
   actionedCount: number;
   rtoCount: number;
   reattemptCount: number;
+  escalatedCount: number;
 }
+
+function ndrAge(ndrCreatedAt: string | null) {
+  if (!ndrCreatedAt) return null;
+  const ms = Date.now() - new Date(ndrCreatedAt).getTime();
+  const hours = Math.floor(ms / 3600000);
+  const days  = Math.floor(ms / 86400000);
+  if (days === 0) return { label: hours <= 1 ? "< 1h" : `${hours}h`, level: "ok" as const };
+  if (days === 1) return { label: "1d",            level: "warn" as const };
+  if (days === 2) return { label: "2d",            level: "urgent" as const };
+  return { label: `${days}d`, level: "escalated" as const };
+}
+
+const AGE_STYLE: Record<string, { bg: string; color: string }> = {
+  ok:        { bg: "#F0FDF4", color: "#15803D" },
+  warn:      { bg: "#FFFBEB", color: "#B45309" },
+  urgent:    { bg: "#FFF7ED", color: "#C2410C" },
+  escalated: { bg: "#FEF2F2", color: "#DC2626" },
+};
 
 type Tab = "pending" | "actioned" | "all";
 
@@ -48,7 +68,7 @@ interface ActionForm {
 
 export default function AdminNdrPage() {
   const [orders,  setOrders]  = useState<NdrOrder[]>([]);
-  const [stats,   setStats]   = useState<Stats>({ pendingCount: 0, actionedCount: 0, rtoCount: 0, reattemptCount: 0 });
+  const [stats,   setStats]   = useState<Stats>({ pendingCount: 0, actionedCount: 0, rtoCount: 0, reattemptCount: 0, escalatedCount: 0 });
   const [loading, setLoading] = useState(true);
   const [tab,     setTab]     = useState<Tab>("pending");
   const [search,  setSearch]  = useState("");
@@ -137,12 +157,13 @@ export default function AdminNdrPage() {
         title="NDR Management"
         subtitle="Non-delivery reports — action pending orders or view history"
         cards={
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
-              { label: "Pending Action",       value: stats.pendingCount,   color: "#EF4444", icon: AlertTriangle },
-              { label: "Re-attempt Requested", value: stats.reattemptCount, color: "#3B82F6", icon: RotateCcw },
-              { label: "RTO Initiated",        value: stats.rtoCount,       color: "#F59E0B", icon: PackageX },
-              { label: "Total Actioned",       value: stats.actionedCount,  color: "#16A34A", icon: CheckCircle2 },
+              { label: "Pending Action",       value: stats.pendingCount,    color: "#EF4444", icon: AlertTriangle },
+              { label: "Escalated (2d+)",      value: stats.escalatedCount,  color: "#DC2626", icon: Flame },
+              { label: "Re-attempt Requested", value: stats.reattemptCount,  color: "#3B82F6", icon: RotateCcw },
+              { label: "RTO Initiated",        value: stats.rtoCount,        color: "#F59E0B", icon: PackageX },
+              { label: "Total Actioned",       value: stats.actionedCount,   color: "#16A34A", icon: CheckCircle2 },
             ].map(({ label, value, color, icon: Icon }) => (
               <div key={label} className="rounded-2xl px-5 py-4 flex items-center gap-4"
                 style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
@@ -205,6 +226,21 @@ export default function AdminNdrPage() {
           </div>
         )}
 
+        {tab === "pending" && stats.escalatedCount > 0 && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-red-200"
+            style={{ background: "#FEF2F2" }}>
+            <Flame className="w-4 h-4 text-red-600 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-red-700">
+                {stats.escalatedCount} NDR{stats.escalatedCount !== 1 ? "s" : ""} pending for 2+ days — sellers need to act
+              </p>
+              <p className="text-xs text-red-500 mt-0.5">
+                Courier may auto-RTO unactioned shipments. Consider calling sellers to escalate.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Table / cards */}
         {loading ? (
           <div className="py-16 flex items-center justify-center gap-2 text-sm"
@@ -227,10 +263,13 @@ export default function AdminNdrPage() {
               const form      = forms[o.id];
               const isRTO     = form?.action === "RTO";
               const highAttempts = o.ndrAttempts >= 3;
+              const age = ndrAge(o.ndrCreatedAt);
+              const ageStyle = age ? AGE_STYLE[age.level] : null;
+              const isEscalated = age?.level === "escalated";
 
               return (
                 <div key={o.id} className="rounded-2xl overflow-hidden"
-                  style={{ background: "var(--bg-card)", border: `1px solid ${highAttempts && !o.ndrActionTaken ? "#FCA5A5" : "var(--border)"}` }}>
+                  style={{ background: "var(--bg-card)", border: `1px solid ${isEscalated && !o.ndrActionTaken ? "#FCA5A5" : highAttempts && !o.ndrActionTaken ? "#FCA5A5" : "var(--border)"}` }}>
 
                   {/* Row header */}
                   <div className="flex items-center gap-3 px-4 py-3">
@@ -244,7 +283,7 @@ export default function AdminNdrPage() {
                       </button>
                     )}
 
-                    <div className="flex-1 grid grid-cols-2 md:grid-cols-7 gap-x-4 gap-y-0.5 text-xs items-center min-w-0">
+                    <div className="flex-1 grid grid-cols-2 md:grid-cols-8 gap-x-4 gap-y-0.5 text-xs items-center min-w-0">
                       {/* Order + seller */}
                       <div className="md:col-span-2">
                         <span className="font-semibold font-mono" style={{ color: "var(--accent)" }}>
@@ -286,6 +325,21 @@ export default function AdminNdrPage() {
                         )}
                       </div>
 
+                      {/* Age timer */}
+                      <div className="hidden md:block">
+                        {age && ageStyle ? (
+                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold w-fit"
+                            style={{ background: ageStyle.bg, color: ageStyle.color }}>
+                            {isEscalated && !o.ndrActionTaken
+                              ? <Flame className="w-3 h-3" />
+                              : <Clock className="w-3 h-3" />}
+                            {age.label}
+                          </span>
+                        ) : (
+                          <span className="text-xs" style={{ color: "var(--text-300)" }}>—</span>
+                        )}
+                      </div>
+
                       {/* Status / action badge */}
                       <div>
                         {action ? (
@@ -309,6 +363,13 @@ export default function AdminNdrPage() {
                   {/* Inline action form for pending orders */}
                   {isOpen && form && (
                     <div className="px-5 pb-5 border-t pt-4 space-y-3" style={{ borderColor: "var(--border)" }}>
+                      {isEscalated && (
+                        <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg border border-red-200"
+                          style={{ background: "#FEF2F2", color: "#DC2626" }}>
+                          <Flame className="w-3.5 h-3.5 flex-shrink-0" />
+                          Open for {age?.label} — courier may auto-RTO if seller doesn&apos;t act soon.
+                        </div>
+                      )}
                       {/* Action toggle */}
                       <div className="grid grid-cols-2 gap-2">
                         <button type="button" onClick={() => setForm(o.id, { action: "REATTEMPT" })}

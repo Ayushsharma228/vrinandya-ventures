@@ -9,7 +9,9 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = req.nextUrl;
   const sellerId = searchParams.get("sellerId") || undefined;
-  const tab      = searchParams.get("tab") || "pending"; // pending | actioned | all
+  const tab      = searchParams.get("tab") || "pending";
+
+  const escalationThreshold = new Date(Date.now() - 2 * 86400000);
 
   const base = {
     ndrStatus: { not: null as never },
@@ -21,18 +23,20 @@ export async function GET(req: NextRequest) {
     tab === "actioned" ? { ...base, ndrActionTaken: { not: null } } :
     base;
 
-  const [orders, counts] = await Promise.all([
+  const [orders, counts, escalatedCount] = await Promise.all([
     prisma.order.findMany({
       where,
       select: {
         id: true, externalOrderId: true, status: true,
-        customerName: true, totalAmount: true,
+        customerName: true, customerAddress: true, totalAmount: true,
         awbNumber: true, courier: true,
         ndrReason: true, ndrStatus: true, ndrAttempts: true,
-        ndrActionTaken: true, updatedAt: true, createdAt: true,
+        ndrActionTaken: true, ndrCreatedAt: true,
+        updatedAt: true, createdAt: true,
         seller: { select: { id: true, name: true, brandName: true, email: true } },
       },
-      orderBy: { updatedAt: "desc" },
+      // pending tab: oldest first (most urgent); other tabs: newest first
+      orderBy: tab === "pending" ? { ndrCreatedAt: "asc" } : { updatedAt: "desc" },
       take: 200,
     }),
     prisma.order.groupBy({
@@ -40,15 +44,23 @@ export async function GET(req: NextRequest) {
       where: { ndrStatus: { not: null }, ...(sellerId ? { sellerId } : {}) },
       _count: { id: true },
     }),
+    prisma.order.count({
+      where: {
+        ndrStatus: { not: null },
+        ndrActionTaken: null,
+        ndrCreatedAt: { lt: escalationThreshold },
+        ...(sellerId ? { sellerId } : {}),
+      },
+    }),
   ]);
 
-  const pendingCount  = counts.find(c => c.ndrActionTaken === null)?._count.id  ?? 0;
-  const actionedCount = counts.filter(c => c.ndrActionTaken !== null).reduce((s, c) => s + c._count.id, 0);
-  const rtoCount      = counts.find(c => c.ndrActionTaken === "RTO")?._count.id ?? 0;
+  const pendingCount   = counts.find(c => c.ndrActionTaken === null)?._count.id  ?? 0;
+  const actionedCount  = counts.filter(c => c.ndrActionTaken !== null).reduce((s, c) => s + c._count.id, 0);
+  const rtoCount       = counts.find(c => c.ndrActionTaken === "RTO")?._count.id ?? 0;
   const reattemptCount = counts.find(c => c.ndrActionTaken === "REATTEMPT")?._count.id ?? 0;
 
   return NextResponse.json({
     orders,
-    stats: { pendingCount, actionedCount, rtoCount, reattemptCount },
+    stats: { pendingCount, actionedCount, rtoCount, reattemptCount, escalatedCount },
   });
 }

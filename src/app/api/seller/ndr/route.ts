@@ -8,35 +8,47 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const orders = await prisma.order.findMany({
-    where: {
-      sellerId: session.user.id,
-      ndrStatus: { not: null },
-      ndrActionTaken: null, // not yet acted on
-    },
-    select: {
-      id: true, externalOrderId: true, customerName: true,
-      customerAddress: true, totalAmount: true, awbNumber: true,
-      trackingUrl: true, ndrReason: true, ndrStatus: true,
-      ndrAttempts: true, ndrActionTaken: true, createdAt: true,
-    },
-    orderBy: { updatedAt: "desc" },
-  });
+  const escalationThreshold = new Date(Date.now() - 2 * 86400000); // 2 days ago
 
-  const actioned = await prisma.order.findMany({
-    where: {
-      sellerId: session.user.id,
-      ndrStatus: { not: null },
-      ndrActionTaken: { not: null },
-    },
-    select: {
-      id: true, externalOrderId: true, customerName: true,
-      awbNumber: true, ndrReason: true, ndrActionTaken: true,
-      ndrAttempts: true, createdAt: true,
-    },
-    orderBy: { updatedAt: "desc" },
-    take: 20,
-  });
+  const [orders, actioned, escalatedCount] = await Promise.all([
+    prisma.order.findMany({
+      where: {
+        sellerId: session.user.id,
+        ndrStatus: { not: null },
+        ndrActionTaken: null,
+      },
+      select: {
+        id: true, externalOrderId: true, customerName: true,
+        customerAddress: true, totalAmount: true, awbNumber: true,
+        trackingUrl: true, ndrReason: true, ndrStatus: true,
+        ndrAttempts: true, ndrActionTaken: true, createdAt: true,
+        ndrCreatedAt: true,
+      },
+      orderBy: { ndrCreatedAt: "asc" }, // oldest (most urgent) first
+    }),
+    prisma.order.findMany({
+      where: {
+        sellerId: session.user.id,
+        ndrStatus: { not: null },
+        ndrActionTaken: { not: null },
+      },
+      select: {
+        id: true, externalOrderId: true, customerName: true,
+        awbNumber: true, ndrReason: true, ndrActionTaken: true,
+        ndrAttempts: true, createdAt: true, ndrCreatedAt: true,
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 20,
+    }),
+    prisma.order.count({
+      where: {
+        sellerId: session.user.id,
+        ndrStatus: { not: null },
+        ndrActionTaken: null,
+        ndrCreatedAt: { lt: escalationThreshold },
+      },
+    }),
+  ]);
 
-  return NextResponse.json({ pending: orders, actioned });
+  return NextResponse.json({ pending: orders, actioned, escalatedCount });
 }

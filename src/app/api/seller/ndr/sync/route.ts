@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       status: { notIn: ["DELIVERED", "CANCELLED", "RTO"] },
       ndrActionTaken: null,
     },
-    select: { id: true, awbNumber: true, ndrAttempts: true },
+    select: { id: true, awbNumber: true, ndrAttempts: true, ndrCreatedAt: true },
   });
 
   if (orders.length === 0) return NextResponse.json({ found: 0, debug: "No active AWB orders" });
@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
         ndrStatus: status,
         ndrReason: reason,
         ndrAttempts: { increment: 1 },
+        ndrCreatedAt: order.ndrCreatedAt ?? new Date(),
       },
     });
 
