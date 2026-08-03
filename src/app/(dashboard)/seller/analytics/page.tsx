@@ -589,7 +589,7 @@ export default function SellerAnalyticsPage() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                         <XAxis dataKey="date" tickFormatter={fmt} tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
                         <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickFormatter={(v) => `₹${Math.round(v / 1000)}k`} axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={{ fontSize: 12 }} formatter={(v) => [`₹${Number(v).toLocaleString("en-IN")}`, ""]} labelFormatter={fmt} />
+                        <Tooltip contentStyle={{ fontSize: 12 }} formatter={(v) => [`₹${Number(v).toLocaleString("en-IN")}`, ""]} labelFormatter={(d) => fmt(String(d))} />
                         <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
                         <Line dataKey="gmv" name="GMV" stroke="#3b82f6" dot={false} strokeWidth={1.5} />
                         <Line dataKey="netProfit" name="Net Profit" stroke="#16a34a" dot={false} strokeWidth={2} />

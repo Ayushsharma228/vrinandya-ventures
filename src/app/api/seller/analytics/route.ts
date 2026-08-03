@@ -32,8 +32,8 @@ export async function GET(req: NextRequest) {
     },
   } : {};
 
-  // Orders, wallet, store, ad spend — parallel
-  const [orders, walletTxns, store, adSpendRows] = await Promise.all([
+  // Orders, wallet, ad spend, store — parallel
+  const [orders, walletTxns, adSpendRows, store] = await Promise.all([
     prisma.order.findMany({
       where: { sellerId, ...dateWhere },
       select: {

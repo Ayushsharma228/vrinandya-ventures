@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   RefreshCw, Truck, Clock, XCircle, AlertTriangle, CheckCircle2,
   ChevronDown, ChevronUp, ExternalLink, Copy, CopyCheck,
-  AlertCircle, Flag, Package, MapPin, Send,
+  AlertCircle, Flag, Package, MapPin, Send, CalendarDays,
 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
@@ -90,6 +90,13 @@ export default function ManageDeliveryPage() {
   const [issueSending,  setIssueSending]  = useState(false);
   const [issueSuccess,  setIssueSuccess]  = useState<string | null>(null);
 
+  // Reschedule form state
+  const [reschedOrderId,  setReschedOrderId]  = useState<string | null>(null);
+  const [reschedDate,     setReschedDate]     = useState("");
+  const [reschedNote,     setReschedNote]     = useState("");
+  const [reschedSending,  setReschedSending]  = useState(false);
+  const [reschedSuccess,  setReschedSuccess]  = useState<string | null>(null);
+
   const fetchDeliveries = useCallback(async (showRefreshing = false) => {
     if (showRefreshing) setRefreshing(true); else setLoading(true);
     try {
@@ -130,6 +137,26 @@ export default function ManageDeliveryPage() {
       setTimeout(() => setIssueSuccess(null), 4000);
     }
     setIssueSending(false);
+  }
+
+  async function submitReschedule(orderId: string) {
+    if (!reschedDate) return;
+    setReschedSending(true);
+    const noteParts = [`Preferred date: ${reschedDate}`];
+    if (reschedNote.trim()) noteParts.push(reschedNote.trim());
+    const res = await fetch(`/api/seller/deliveries/${orderId}/issue`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ issueType: "Reschedule Request", note: noteParts.join(" — ") }),
+    });
+    if (res.ok) {
+      setReschedSuccess(orderId);
+      setReschedOrderId(null);
+      setReschedDate(""); setReschedNote("");
+      fetchDeliveries();
+      setTimeout(() => setReschedSuccess(null), 4000);
+    }
+    setReschedSending(false);
   }
 
   function copyAwb(awb: string, id: string) {
@@ -464,73 +491,148 @@ export default function ManageDeliveryPage() {
                                   )}
                                 </div>
 
-                                {/* RIGHT — Raise issue form */}
-                                <div className="space-y-4">
-                                  <p className="text-xs font-semibold uppercase tracking-wide"
-                                    style={{ color: "var(--text-400)" }}>Raise a Delivery Issue</p>
+                                {/* RIGHT — Actions column */}
+                                <div className="space-y-6">
 
-                                  {issueSuccess === d.id ? (
-                                    <div className="flex items-center gap-2 px-4 py-3 rounded-xl"
-                                      style={{ background: "#F0FDF4", border: "1px solid #BBF7D0" }}>
-                                      <CheckCircle2 className="w-4 h-4" style={{ color: "#16A34A" }} />
-                                      <p className="text-xs font-medium" style={{ color: "#15803D" }}>
-                                        Issue reported. Admin will be notified.
-                                      </p>
-                                    </div>
-                                  ) : issueOrderId === d.id ? (
-                                    <div className="space-y-3">
-                                      <select value={issueType} onChange={e => setIssueType(e.target.value)}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border outline-none"
-                                        style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }}>
-                                        <option value="">Select issue type...</option>
-                                        {ISSUE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                                      </select>
-                                      <textarea
-                                        value={issueNote}
-                                        onChange={e => setIssueNote(e.target.value)}
-                                        placeholder="Additional details (optional)"
-                                        rows={3}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border outline-none resize-none"
-                                        style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }}
-                                      />
-                                      <div className="flex gap-2">
-                                        <button onClick={() => { setIssueOrderId(null); setIssueType(""); setIssueNote(""); }}
-                                          className="flex-1 py-2 rounded-xl text-xs font-medium"
-                                          style={{ background: "var(--bg-muted)", color: "var(--text-400)" }}>
-                                          Cancel
-                                        </button>
-                                        <button onClick={() => submitIssue(d.id)}
-                                          disabled={!issueType || issueSending}
-                                          className="flex-1 py-2 rounded-xl text-xs font-semibold text-white disabled:opacity-50 flex items-center justify-center gap-1.5"
-                                          style={{ background: "#EF4444" }}>
-                                          {issueSending
-                                            ? "Submitting..."
-                                            : <><Send className="w-3.5 h-3.5" /> Submit Issue</>}
-                                        </button>
+                                  {/* Raise a Delivery Issue */}
+                                  <div className="space-y-3">
+                                    <p className="text-xs font-semibold uppercase tracking-wide"
+                                      style={{ color: "var(--text-400)" }}>Raise a Delivery Issue</p>
+
+                                    {issueSuccess === d.id ? (
+                                      <div className="flex items-center gap-2 px-4 py-3 rounded-xl"
+                                        style={{ background: "#F0FDF4", border: "1px solid #BBF7D0" }}>
+                                        <CheckCircle2 className="w-4 h-4" style={{ color: "#16A34A" }} />
+                                        <p className="text-xs font-medium" style={{ color: "#15803D" }}>
+                                          Issue reported. Admin will be notified.
+                                        </p>
                                       </div>
-                                    </div>
-                                  ) : (
-                                    <div className="space-y-3">
-                                      <div className="px-4 py-3 rounded-xl text-xs leading-relaxed"
-                                        style={{ background: "var(--bg-muted)", color: "var(--text-500)" }}>
-                                        Use this to report delivery problems — wrong address, failed attempt, damaged package, or delays. Admin will be notified immediately.
+                                    ) : issueOrderId === d.id ? (
+                                      <div className="space-y-3">
+                                        <select value={issueType} onChange={e => setIssueType(e.target.value)}
+                                          className="w-full px-3 py-2 text-xs rounded-xl border outline-none"
+                                          style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }}>
+                                          <option value="">Select issue type...</option>
+                                          {ISSUE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                        <textarea
+                                          value={issueNote}
+                                          onChange={e => setIssueNote(e.target.value)}
+                                          placeholder="Additional details (optional)"
+                                          rows={3}
+                                          className="w-full px-3 py-2 text-xs rounded-xl border outline-none resize-none"
+                                          style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }}
+                                        />
+                                        <div className="flex gap-2">
+                                          <button onClick={() => { setIssueOrderId(null); setIssueType(""); setIssueNote(""); }}
+                                            className="flex-1 py-2 rounded-xl text-xs font-medium"
+                                            style={{ background: "var(--bg-muted)", color: "var(--text-400)" }}>
+                                            Cancel
+                                          </button>
+                                          <button onClick={() => submitIssue(d.id)}
+                                            disabled={!issueType || issueSending}
+                                            className="flex-1 py-2 rounded-xl text-xs font-semibold text-white disabled:opacity-50 flex items-center justify-center gap-1.5"
+                                            style={{ background: "#EF4444" }}>
+                                            {issueSending
+                                              ? "Submitting..."
+                                              : <><Send className="w-3.5 h-3.5" /> Submit Issue</>}
+                                          </button>
+                                        </div>
                                       </div>
-                                      <button
-                                        onClick={() => { setIssueOrderId(d.id); setIssueType(""); setIssueNote(""); }}
-                                        className="w-full py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
-                                        style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
-                                        <AlertTriangle className="w-3.5 h-3.5" />
-                                        Raise Delivery Issue
-                                      </button>
-                                      {awb && d.trackingUrl && (
-                                        <a href={d.trackingUrl} target="_blank" rel="noopener noreferrer"
+                                    ) : (
+                                      <div className="space-y-2">
+                                        <div className="px-4 py-3 rounded-xl text-xs leading-relaxed"
+                                          style={{ background: "var(--bg-muted)", color: "var(--text-500)" }}>
+                                          Report problems — wrong address, failed attempt, damaged package, or delays. Admin will be notified immediately.
+                                        </div>
+                                        <button
+                                          onClick={() => { setIssueOrderId(d.id); setIssueType(""); setIssueNote(""); setReschedOrderId(null); }}
                                           className="w-full py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
-                                          style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}>
-                                          <ExternalLink className="w-3.5 h-3.5" />
-                                          Open Live Tracking
-                                        </a>
-                                      )}
-                                    </div>
+                                          style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
+                                          <AlertTriangle className="w-3.5 h-3.5" />
+                                          Raise Delivery Issue
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Reschedule Delivery */}
+                                  <div className="space-y-3">
+                                    <p className="text-xs font-semibold uppercase tracking-wide"
+                                      style={{ color: "var(--text-400)" }}>Reschedule Delivery</p>
+
+                                    {reschedSuccess === d.id ? (
+                                      <div className="flex items-center gap-2 px-4 py-3 rounded-xl"
+                                        style={{ background: "#F0FDF4", border: "1px solid #BBF7D0" }}>
+                                        <CheckCircle2 className="w-4 h-4" style={{ color: "#16A34A" }} />
+                                        <p className="text-xs font-medium" style={{ color: "#15803D" }}>
+                                          Reschedule request sent. Admin will coordinate with courier.
+                                        </p>
+                                      </div>
+                                    ) : reschedOrderId === d.id ? (
+                                      <div className="space-y-3">
+                                        <div>
+                                          <label className="block text-[10px] font-medium mb-1" style={{ color: "var(--text-400)" }}>
+                                            Preferred delivery date
+                                          </label>
+                                          <input
+                                            type="date"
+                                            value={reschedDate}
+                                            min={new Date().toISOString().split("T")[0]}
+                                            onChange={e => setReschedDate(e.target.value)}
+                                            className="w-full px-3 py-2 text-xs rounded-xl border outline-none"
+                                            style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }}
+                                          />
+                                        </div>
+                                        <textarea
+                                          value={reschedNote}
+                                          onChange={e => setReschedNote(e.target.value)}
+                                          placeholder="Instructions for courier (e.g. call before delivery, leave with neighbour)"
+                                          rows={3}
+                                          className="w-full px-3 py-2 text-xs rounded-xl border outline-none resize-none"
+                                          style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }}
+                                        />
+                                        <div className="flex gap-2">
+                                          <button onClick={() => { setReschedOrderId(null); setReschedDate(""); setReschedNote(""); }}
+                                            className="flex-1 py-2 rounded-xl text-xs font-medium"
+                                            style={{ background: "var(--bg-muted)", color: "var(--text-400)" }}>
+                                            Cancel
+                                          </button>
+                                          <button onClick={() => submitReschedule(d.id)}
+                                            disabled={!reschedDate || reschedSending}
+                                            className="flex-1 py-2 rounded-xl text-xs font-semibold text-white disabled:opacity-50 flex items-center justify-center gap-1.5"
+                                            style={{ background: "#7C3AED" }}>
+                                            {reschedSending
+                                              ? "Sending..."
+                                              : <><CalendarDays className="w-3.5 h-3.5" /> Request Reschedule</>}
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-2">
+                                        <div className="px-4 py-3 rounded-xl text-xs leading-relaxed"
+                                          style={{ background: "var(--bg-muted)", color: "var(--text-500)" }}>
+                                          Ask admin to reschedule this delivery to a different date or with special courier instructions.
+                                        </div>
+                                        <button
+                                          onClick={() => { setReschedOrderId(d.id); setReschedDate(""); setReschedNote(""); setIssueOrderId(null); }}
+                                          className="w-full py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
+                                          style={{ background: "#F5F3FF", color: "#7C3AED", border: "1px solid #DDD6FE" }}>
+                                          <CalendarDays className="w-3.5 h-3.5" />
+                                          Request Reschedule
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Live tracking link */}
+                                  {awb && d.trackingUrl && (
+                                    <a href={d.trackingUrl} target="_blank" rel="noopener noreferrer"
+                                      className="w-full py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
+                                      style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}>
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                      Open Live Tracking
+                                    </a>
                                   )}
                                 </div>
                               </div>
