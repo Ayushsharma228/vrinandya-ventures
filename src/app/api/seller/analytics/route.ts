@@ -32,8 +32,8 @@ export async function GET(req: NextRequest) {
     },
   } : {};
 
-  // Orders, wallet, store — parallel
-  const [orders, walletTxns, store] = await Promise.all([
+  // Orders, wallet, store, ad spend — parallel
+  const [orders, walletTxns, store, adSpendRows] = await Promise.all([
     prisma.order.findMany({
       where: { sellerId, ...dateWhere },
       select: {
@@ -54,6 +54,10 @@ export async function GET(req: NextRequest) {
     prisma.walletTransaction.findMany({
       where: { sellerId },
       select: { type: true, amount: true, bankTxId: true, createdAt: true },
+    }),
+    prisma.adSpend.findMany({
+      where: { sellerId, ...(gteDate || lteDate ? { date: { ...(gteDate ? { gte: gteDate } : {}), ...(lteDate ? { lte: lteDate } : {}) } } : {}) },
+      select: { amount: true, date: true },
     }),
     prisma.shopifyStore.findFirst({
       where: { sellerId },
@@ -134,18 +138,36 @@ export async function GET(req: NextRequest) {
     .filter((t) => t.type === "CREDIT" && t.bankTxId !== null)
     .reduce((acc, t) => acc + t.amount, 0);
 
-  // Daily earnings trend from orders
-  const earningsTrendMap = new Map<string, { gmv: number; platformCharges: number; count: number }>();
+  // Ad spend totals
+  const totalAdSpend = adSpendRows.reduce((s, r) => s + r.amount, 0);
+  const adSpendByDay = new Map<string, number>();
+  for (const r of adSpendRows) {
+    const day = r.date.toISOString().slice(0, 10);
+    adSpendByDay.set(day, (adSpendByDay.get(day) ?? 0) + r.amount);
+  }
+
+  // Daily earnings trend from orders — now includes product cost + ad spend for profit line
+  const earningsTrendMap = new Map<string, { gmv: number; platformCharges: number; productCost: number; adSpend: number; count: number }>();
   for (const o of orders) {
     const day = o.createdAt.toISOString().slice(0, 10);
-    const cur = earningsTrendMap.get(day) ?? { gmv: 0, platformCharges: 0, count: 0 };
-    cur.gmv            += o.totalAmount;
+    const cur = earningsTrendMap.get(day) ?? { gmv: 0, platformCharges: 0, productCost: 0, adSpend: 0, count: 0 };
+    cur.gmv             += o.totalAmount;
     cur.platformCharges += o.packingCharge ?? 0;
+    cur.productCost     += o.productCost ?? 0;
     cur.count++;
     earningsTrendMap.set(day, cur);
   }
+  // Merge ad spend into same day buckets
+  for (const [day, spend] of adSpendByDay) {
+    const cur = earningsTrendMap.get(day) ?? { gmv: 0, platformCharges: 0, productCost: 0, adSpend: 0, count: 0 };
+    cur.adSpend = spend;
+    earningsTrendMap.set(day, cur);
+  }
   const earningsTrend = Array.from(earningsTrendMap.entries())
-    .map(([date, v]) => ({ date, ...v }))
+    .map(([date, v]) => ({
+      date, ...v,
+      netProfit: v.gmv - v.productCost - v.platformCharges - v.adSpend,
+    }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
   // Wallet balance (paid txns only)
@@ -180,6 +202,11 @@ export async function GET(req: NextRequest) {
       totalShipping,
       totalEarned,
       totalRtoCharge,
+      totalAdSpend,
+      netProfit: totalGMV - totalProductCost - totalFees - totalShipping - totalRtoCharge - totalAdSpend,
+      margin: totalGMV > 0
+        ? Math.round(((totalGMV - totalProductCost - totalFees - totalShipping - totalRtoCharge - totalAdSpend) / totalGMV) * 100)
+        : 0,
       settledCount: orders.filter((o) => o.status === "DELIVERED").length,
       earningsTrend,
     },

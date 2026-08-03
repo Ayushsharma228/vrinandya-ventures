@@ -30,8 +30,11 @@ interface AnalyticsData {
     totalShipping: number;
     totalEarned: number;
     totalRtoCharge: number;
+    totalAdSpend: number;
+    netProfit: number;
+    margin: number;
     settledCount: number;
-    earningsTrend: { date: string; gmv: number; platformCharges: number; count: number }[];
+    earningsTrend: { date: string; gmv: number; platformCharges: number; productCost: number; adSpend: number; netProfit: number; count: number }[];
   };
   wallet: { balance: number; upcoming: number };
 }
@@ -505,6 +508,95 @@ export default function SellerAnalyticsPage() {
                     })}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* Profitability / Margin View */}
+          {data?.earnings && (
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <BadgeIndianRupee className="w-4 h-4 text-green-500" />
+                  <h2 className="font-semibold text-gray-900">Profitability Breakdown</h2>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                    data.earnings.margin >= 30 ? "bg-green-50 text-green-700"
+                    : data.earnings.margin >= 10 ? "bg-yellow-50 text-yellow-700"
+                    : "bg-red-50 text-red-700"
+                  }`}>
+                    {data.earnings.margin}% margin
+                  </span>
+                  <span className={`text-sm font-bold ${data.earnings.netProfit >= 0 ? "text-green-600" : "text-red-500"}`}>
+                    Net: {inr(data.earnings.netProfit)}
+                  </span>
+                </div>
+              </div>
+              <div className="p-5 space-y-4">
+                {/* Waterfall bars */}
+                {(() => {
+                  const gmv = data.earnings.totalGMV || 1;
+                  const rows = [
+                    { label: "Gross Revenue (GMV)",   value: data.earnings.totalGMV,        color: "#16A34A", sign: "+" as const },
+                    { label: "Product Cost",           value: data.earnings.totalProductCost, color: "#EF4444", sign: "-" as const },
+                    { label: "Platform Fees",          value: data.earnings.totalFees,        color: "#EF4444", sign: "-" as const },
+                    { label: "Shipping Charges",       value: data.earnings.totalShipping,    color: "#EF4444", sign: "-" as const },
+                    { label: "RTO Charges",            value: data.earnings.totalRtoCharge,   color: "#EF4444", sign: "-" as const },
+                    { label: "Ad Spend (Meta)",        value: data.earnings.totalAdSpend,     color: "#7C3AED", sign: "-" as const },
+                  ];
+                  return (
+                    <div className="space-y-2">
+                      {rows.map((r) => (
+                        <div key={r.label} className="flex items-center gap-3">
+                          <div className="w-36 text-xs text-gray-500 flex-shrink-0 text-right">{r.label}</div>
+                          <div className="flex-1 h-6 rounded overflow-hidden bg-gray-100 relative">
+                            <div className="h-full rounded transition-all" style={{
+                              width: `${Math.min(100, (r.value / gmv) * 100)}%`,
+                              background: r.color,
+                              opacity: 0.85,
+                            }} />
+                          </div>
+                          <div className="w-24 text-xs font-semibold flex-shrink-0" style={{ color: r.color }}>
+                            {r.sign}{inr(r.value)}
+                          </div>
+                        </div>
+                      ))}
+                      {/* Net profit row */}
+                      <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+                        <div className="w-36 text-xs font-bold text-gray-700 flex-shrink-0 text-right">Net Profit</div>
+                        <div className="flex-1 h-7 rounded overflow-hidden bg-gray-100 relative">
+                          <div className="h-full rounded" style={{
+                            width: `${Math.max(0, Math.min(100, (data.earnings.netProfit / gmv) * 100))}%`,
+                            background: data.earnings.netProfit >= 0 ? "#16A34A" : "#EF4444",
+                          }} />
+                        </div>
+                        <div className="w-24 text-sm font-bold flex-shrink-0"
+                          style={{ color: data.earnings.netProfit >= 0 ? "#16A34A" : "#EF4444" }}>
+                          {inr(data.earnings.netProfit)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Profit trend chart */}
+                {data.earnings.earningsTrend.length > 1 && (
+                  <div className="mt-4">
+                    <p className="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wide">Daily Profit Trend</p>
+                    <ResponsiveContainer width="100%" height={180}>
+                      <LineChart data={data.earnings.earningsTrend}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                        <XAxis dataKey="date" tickFormatter={fmt} tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickFormatter={(v) => `₹${Math.round(v / 1000)}k`} axisLine={false} tickLine={false} />
+                        <Tooltip contentStyle={{ fontSize: 12 }} formatter={(v) => [`₹${Number(v).toLocaleString("en-IN")}`, ""]} labelFormatter={fmt} />
+                        <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+                        <Line dataKey="gmv" name="GMV" stroke="#3b82f6" dot={false} strokeWidth={1.5} />
+                        <Line dataKey="netProfit" name="Net Profit" stroke="#16a34a" dot={false} strokeWidth={2} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
               </div>
             </div>
           )}
