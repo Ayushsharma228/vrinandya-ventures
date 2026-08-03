@@ -4,15 +4,26 @@ import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import {
   ShoppingBag, Globe, Package, Loader2, Check, Tag,
-  X, Info, SlidersHorizontal, AlertCircle, Layers,
-  Calculator, RotateCcw, ChevronDown, ChevronUp, TrendingUp,
-  IndianRupee, Weight, Barcode,
+  X, SlidersHorizontal, AlertCircle, Layers,
+  Calculator, RotateCcw, ChevronDown, ChevronUp,
+  IndianRupee, Weight, Barcode, BarChart2, TrendingDown,
+  List, LayoutGrid, ArrowUpDown,
 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 interface Variant {
   id: string; name: string; sku: string | null; price: number;
   stock: number; attributes: Record<string, string> | null; images: string[];
+}
+
+interface Perf {
+  totalOrders: number;
+  totalRevenue: number;
+  deliveredCount: number;
+  rtoCount: number;
+  deliveryRate: number;
+  rtoRate: number;
+  health: "GOOD" | "WATCH" | "PAUSE" | "NO_DATA";
 }
 
 interface Product {
@@ -32,6 +43,7 @@ interface Product {
   variants: Variant[];
   supplier: { name: string };
   pushed: boolean;
+  perf: Perf | null;
 }
 
 const MARKETPLACES = ["AMAZON", "EBAY", "ETSY", "WALMART"] as const;
@@ -47,6 +59,13 @@ function margin(sell: number, cost: number | null) {
   if (!cost || cost <= 0) return null;
   return Math.round(((sell - cost) / sell) * 100);
 }
+
+const HEALTH_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
+  GOOD:    { label: "Top Seller", bg: "#DCFCE7", color: "#16A34A" },
+  WATCH:   { label: "Watch",      bg: "#FEF9C3", color: "#92400E" },
+  PAUSE:   { label: "High RTO",   bg: "#FEE2E2", color: "#B91C1C" },
+  NO_DATA: { label: "No data",    bg: "var(--bg-muted)", color: "var(--text-muted)" },
+};
 
 // ─── Profit Calculator ────────────────────────────────────────────────────────
 
@@ -73,7 +92,6 @@ function ProfitCalculator({
   const [ordersOpen,     setOrdersOpen]     = useState(false);
   const [spendsOpen,     setSpendsOpen]     = useState(false);
 
-  // parsed numbers
   const sp  = parseFloat(sellingPrice)   || 0;
   const eo  = parseFloat(expectedOrders) || 0;
   const cr  = parseFloat(confirmRate)    || 0;
@@ -82,7 +100,6 @@ function ProfitCalculator({
   const rtc = parseFloat(rtoCharge)      || 0;
   const mc  = parseFloat(miscCharges)    || 0;
 
-  // ── Derived ──────────────────────────────────────────────────────────────
   const confirmedOrders = eo * (cr / 100);
   const deliveredOrders = confirmedOrders * (dr / 100);
   const rtoOrders       = confirmedOrders * (1 - dr / 100);
@@ -147,7 +164,6 @@ function ProfitCalculator({
       <div className="relative w-full sm:max-w-3xl max-h-[96vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl flex flex-col"
         style={{ background: "var(--bg-card)", border: "1px solid var(--border)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
 
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 flex-shrink-0"
           style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2.5">
@@ -161,7 +177,6 @@ function ProfitCalculator({
           </button>
         </div>
 
-        {/* Product info bar */}
         <div className="px-5 py-3 flex items-center gap-4 flex-shrink-0 flex-wrap"
           style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-muted)" }}>
           {product.images[0] && (
@@ -195,7 +210,6 @@ function ProfitCalculator({
               </div>
             )}
           </div>
-          {/* Push button in header */}
           {!pushDone && !product.pushed ? (
             <button onClick={() => onPush(product.id)} disabled={pushing === product.id}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60 flex-shrink-0"
@@ -212,10 +226,8 @@ function ProfitCalculator({
           )}
         </div>
 
-        {/* Body */}
         <div className="flex flex-col md:flex-row gap-5 p-5 flex-1">
 
-          {/* ── Left: inputs ─────────────────────────────────────────────── */}
           <div className="md:w-64 flex-shrink-0 space-y-3">
             <div>
               <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>
@@ -276,10 +288,8 @@ function ProfitCalculator({
             </div>
           </div>
 
-          {/* ── Right: results ───────────────────────────────────────────── */}
           <div className="flex-1 space-y-3">
 
-            {/* Total Earnings */}
             <div className="rounded-2xl p-4" style={{ background: totalEarnings >= 0 ? "rgba(22,163,74,0.06)" : "rgba(239,68,68,0.06)", border: `1px solid ${totalEarnings >= 0 ? "rgba(22,163,74,0.2)" : "rgba(239,68,68,0.2)"}` }}>
               <div className="flex items-start justify-between mb-3">
                 <div>
@@ -316,7 +326,6 @@ function ProfitCalculator({
               </div>
             </div>
 
-            {/* Net Profit */}
             <div className="rounded-2xl p-4" style={{ background: netProfit > 0 ? "rgba(22,163,74,0.06)" : "rgba(239,68,68,0.06)", border: `1px solid ${netProfit > 0 ? "rgba(22,163,74,0.2)" : "rgba(239,68,68,0.2)"}` }}>
               <div className="flex items-start justify-between">
                 <div>
@@ -332,7 +341,6 @@ function ProfitCalculator({
               </div>
             </div>
 
-            {/* ROI */}
             <div className="rounded-2xl p-4" style={{ background: roi > 0 ? "rgba(245,158,11,0.06)" : "rgba(239,68,68,0.06)", border: `1px solid ${roi > 0 ? "rgba(245,158,11,0.2)" : "rgba(239,68,68,0.2)"}` }}>
               <div className="flex items-center justify-between">
                 <div>
@@ -343,7 +351,6 @@ function ProfitCalculator({
               </div>
             </div>
 
-            {/* Orders Breakdown */}
             <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
               <button onClick={() => setOrdersOpen(!ordersOpen)}
                 className="w-full flex items-center justify-between px-4 py-3"
@@ -376,7 +383,6 @@ function ProfitCalculator({
               )}
             </div>
 
-            {/* Spends Breakdown */}
             <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
               <button onClick={() => setSpendsOpen(!spendsOpen)}
                 className="w-full flex items-center justify-between px-4 py-3"
@@ -541,6 +547,50 @@ function ProductDetail({
               </div>
             )}
 
+            {/* Sales Performance */}
+            {product.perf && product.perf.totalOrders > 0 && (
+              <div className="mb-4 rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+                <div className="px-3 py-2 flex items-center gap-2" style={{ background: "var(--bg-muted)", borderBottom: "1px solid var(--border)" }}>
+                  <BarChart2 className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
+                  <span className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>Sales Performance</span>
+                  <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full font-semibold"
+                    style={{ background: HEALTH_CONFIG[product.perf.health].bg, color: HEALTH_CONFIG[product.perf.health].color }}>
+                    {HEALTH_CONFIG[product.perf.health].label}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-px" style={{ background: "var(--border)" }}>
+                  {[
+                    { label: "Total Orders", value: String(product.perf.totalOrders), color: "var(--text-primary)" },
+                    { label: "Revenue", value: `₹${fmt(product.perf.totalRevenue)}`, color: "var(--text-primary)" },
+                    { label: "Delivery Rate", value: `${product.perf.deliveryRate}%`,
+                      color: product.perf.deliveryRate >= 80 ? "#16A34A" : product.perf.deliveryRate >= 60 ? "#D97706" : "#EF4444" },
+                    { label: "RTO Rate", value: `${product.perf.rtoRate}%`,
+                      color: product.perf.rtoRate > 30 ? "#EF4444" : product.perf.rtoRate > 15 ? "#D97706" : "#16A34A" },
+                  ].map((row) => (
+                    <div key={row.label} className="px-3 py-2" style={{ background: "var(--bg-card)" }}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{row.label}</p>
+                      <p className="text-sm font-bold" style={{ color: row.color }}>{row.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {product.perf?.health === "PAUSE" && (
+              <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl mb-3 text-xs"
+                style={{ background: "#FEF2F2", color: "#B91C1C", border: "1px solid #FECACA" }}>
+                <TrendingDown className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>RTO rate is {product.perf.rtoRate}% — consider pausing ads or reviewing product quality before pushing more.</span>
+              </div>
+            )}
+            {product.perf?.health === "WATCH" && (
+              <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl mb-3 text-xs"
+                style={{ background: "#FFFBEB", color: "#92400E", border: "1px solid #FCD34D" }}>
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>RTO rate is {product.perf.rtoRate}% — above average, monitor this product closely.</span>
+              </div>
+            )}
+
             {pushError && (
               <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl mb-3 text-xs"
                 style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
@@ -548,7 +598,6 @@ function ProductDetail({
               </div>
             )}
 
-            {/* Profit calculator CTA */}
             <button onClick={() => { onClose(); onOpenCalc(product); }}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold mb-2"
               style={{ background: "rgba(67,97,238,0.08)", color: "var(--accent)", border: "1px solid rgba(67,97,238,0.2)" }}>
@@ -590,6 +639,8 @@ export default function SellerCatalogPage() {
   const [loading,      setLoading]      = useState(true);
   const [search,       setSearch]       = useState("");
   const [category,     setCategory]     = useState("");
+  const [sortBy,       setSortBy]       = useState("newest");
+  const [viewMode,     setViewMode]     = useState<"grid" | "list">("grid");
   const [pushing,      setPushing]      = useState<string | null>(null);
   const [pushErrors,   setPushErrors]   = useState<Record<string, string>>({});
   const [freshPushed,  setFreshPushed]  = useState<Set<string>>(new Set());
@@ -624,6 +675,18 @@ export default function SellerCatalogPage() {
       (p.category?.split(">").pop()?.trim() ?? p.category) === category;
     return matchSearch && matchCat;
   }), [products, search, category]);
+
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    if (sortBy === "best-selling") {
+      arr.sort((a, b) => (b.perf?.totalOrders ?? 0) - (a.perf?.totalOrders ?? 0));
+    } else if (sortBy === "high-rto") {
+      arr.sort((a, b) => (b.perf?.rtoRate ?? 0) - (a.perf?.rtoRate ?? 0));
+    } else if (sortBy === "best-delivery") {
+      arr.sort((a, b) => (b.perf?.deliveryRate ?? 0) - (a.perf?.deliveryRate ?? 0));
+    }
+    return arr;
+  }, [filtered, sortBy]);
 
   async function handlePushShopify(productId: string) {
     setPushing(productId);
@@ -667,8 +730,8 @@ export default function SellerCatalogPage() {
         searchPlaceholder="Search by name or SKU…"
         onSearchChange={setSearch}
         filters={
-          categories.length > 0 ? (
-            <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            {categories.length > 0 && (
               <div className="relative">
                 <select value={category} onChange={(e) => setCategory(e.target.value)}
                   className="pl-8 pr-3 py-2 text-sm rounded-xl outline-none appearance-none"
@@ -679,15 +742,41 @@ export default function SellerCatalogPage() {
                 <SlidersHorizontal className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
                   style={{ color: "var(--text-muted)" }} />
               </div>
-              {category && (
-                <button onClick={() => setCategory("")}
-                  className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-medium"
-                  style={{ background: "rgba(67,97,238,0.1)", color: "var(--accent)", border: "1px solid rgba(67,97,238,0.2)" }}>
-                  {category} <X className="w-3 h-3" />
-                </button>
-              )}
+            )}
+            {category && (
+              <button onClick={() => setCategory("")}
+                className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-medium"
+                style={{ background: "rgba(67,97,238,0.1)", color: "var(--accent)", border: "1px solid rgba(67,97,238,0.2)" }}>
+                {category} <X className="w-3 h-3" />
+              </button>
+            )}
+            {/* Sort */}
+            <div className="relative">
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
+                className="pl-7 pr-3 py-2 text-sm rounded-xl outline-none appearance-none"
+                style={{ background: "var(--bg-muted)", border: "1px solid var(--border)", color: "var(--text-primary)" }}>
+                <option value="newest">Newest</option>
+                <option value="best-selling">Best Selling</option>
+                <option value="high-rto">Worst RTO</option>
+                <option value="best-delivery">Best Delivery</option>
+              </select>
+              <ArrowUpDown className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: "var(--text-muted)" }} />
             </div>
-          ) : undefined
+            {/* View toggle */}
+            <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+              <button onClick={() => setViewMode("grid")}
+                className="px-3 py-2 flex items-center"
+                style={{ background: viewMode === "grid" ? "var(--accent)" : "var(--bg-muted)" }}>
+                <LayoutGrid className="w-3.5 h-3.5" style={{ color: viewMode === "grid" ? "#fff" : "var(--text-muted)" }} />
+              </button>
+              <button onClick={() => setViewMode("list")}
+                className="px-3 py-2 flex items-center"
+                style={{ background: viewMode === "list" ? "var(--accent)" : "var(--bg-muted)", borderLeft: "1px solid var(--border)" }}>
+                <List className="w-3.5 h-3.5" style={{ color: viewMode === "list" ? "#fff" : "var(--text-muted)" }} />
+              </button>
+            </div>
+          </div>
         }
       />
 
@@ -705,7 +794,7 @@ export default function SellerCatalogPage() {
               </div>
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : sorted.length === 0 ? (
           <div className="card py-20 flex flex-col items-center gap-3 text-center">
             <Package className="w-14 h-14" style={{ color: "var(--border)" }} />
             <p className="font-semibold" style={{ color: "var(--text-600)" }}>
@@ -718,14 +807,150 @@ export default function SellerCatalogPage() {
               }
             </p>
           </div>
+        ) : viewMode === "list" ? (
+
+          /* ── List view ─────────────────────────────────────────────────────── */
+          <div className="card overflow-hidden" style={{ overflowX: "auto" }}>
+            <table className="w-full text-sm" style={{ borderCollapse: "collapse", minWidth: 760 }}>
+              <thead>
+                <tr style={{ background: "var(--bg-muted)", borderBottom: "1px solid var(--border)" }}>
+                  {["Product", "Price", "Orders", "Revenue", "Delivery%", "RTO%", "Health", "Action"].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide"
+                      style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((product, idx) => {
+                  const pushed       = isPushed(product);
+                  const isProcessing = pushing === product.id;
+                  const sell         = product.suggestedPrice ?? product.price;
+                  const m            = margin(sell, product.costPrice);
+                  const p            = product.perf;
+
+                  return (
+                    <tr key={product.id}
+                      style={{ borderBottom: idx < sorted.length - 1 ? "1px solid var(--border)" : "none",
+                               background: "var(--bg-card)" }}
+                      className="hover:bg-opacity-80 transition-colors">
+
+                      {/* Product */}
+                      <td className="px-4 py-3">
+                        <button className="flex items-center gap-3 text-left" onClick={() => setDetailProduct(product)}>
+                          <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0"
+                            style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+                            {product.images[0]
+                              ? <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                              : <div className="w-full h-full flex items-center justify-center">
+                                  <Package className="w-5 h-5" style={{ color: "var(--border)" }} />
+                                </div>
+                            }
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold line-clamp-2 leading-snug" style={{ color: "var(--text-primary)" }}>{product.name}</p>
+                            {product.sku && <p className="text-[10px] font-mono mt-0.5" style={{ color: "var(--text-muted)" }}>{product.sku}</p>}
+                          </div>
+                        </button>
+                      </td>
+
+                      {/* Price */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>₹{fmt(sell)}</p>
+                        {m !== null && (
+                          <p className="text-[10px] font-semibold" style={{ color: m > 20 ? "#16A34A" : "#D97706" }}>{m}% margin</p>
+                        )}
+                      </td>
+
+                      {/* Orders */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                          {p ? p.totalOrders : "—"}
+                        </p>
+                      </td>
+
+                      {/* Revenue */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                          {p && p.totalRevenue > 0 ? `₹${fmt(p.totalRevenue)}` : "—"}
+                        </p>
+                      </td>
+
+                      {/* Delivery% */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {p && p.totalOrders > 0 ? (
+                          <span className="text-sm font-bold"
+                            style={{ color: p.deliveryRate >= 80 ? "#16A34A" : p.deliveryRate >= 60 ? "#D97706" : "#EF4444" }}>
+                            {p.deliveryRate}%
+                          </span>
+                        ) : <span style={{ color: "var(--text-muted)" }}>—</span>}
+                      </td>
+
+                      {/* RTO% */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {p && p.totalOrders > 0 ? (
+                          <span className="text-sm font-bold"
+                            style={{ color: p.rtoRate > 30 ? "#EF4444" : p.rtoRate > 15 ? "#D97706" : "#16A34A" }}>
+                            {p.rtoRate}%
+                          </span>
+                        ) : <span style={{ color: "var(--text-muted)" }}>—</span>}
+                      </td>
+
+                      {/* Health */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {p && p.totalOrders > 0 ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: HEALTH_CONFIG[p.health].bg, color: HEALTH_CONFIG[p.health].color }}>
+                            {HEALTH_CONFIG[p.health].label}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                            style={{ background: "var(--bg-muted)", color: "var(--text-muted)" }}>
+                            No data
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Action */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isMarketplace ? (
+                          <button
+                            onClick={() => { setMarketplaceModal(product.id); setSelectedMarketplace(""); }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+                            style={{ background: "#7C3AED" }}>
+                            <Globe className="w-3 h-3" /> List
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handlePushShopify(product.id)}
+                            disabled={isProcessing || pushed}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-60"
+                            style={{ background: pushed ? "#16A34A" : "var(--accent)" }}>
+                            {isProcessing
+                              ? <><Loader2 className="w-3 h-3 animate-spin" /> Pushing</>
+                              : pushed
+                              ? <><Check className="w-3 h-3" /> Pushed</>
+                              : <><ShoppingBag className="w-3 h-3" /> Push</>}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
         ) : (
+
+          /* ── Grid view ─────────────────────────────────────────────────────── */
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {filtered.map((product) => {
+            {sorted.map((product) => {
               const pushed       = isPushed(product);
               const isProcessing = pushing === product.id;
               const sell         = product.suggestedPrice ?? product.price;
               const m            = margin(sell, product.costPrice);
               const err          = pushErrors[product.id];
+              const p            = product.perf;
 
               return (
                 <div key={product.id} className="card overflow-hidden flex flex-col group hover:shadow-md transition-shadow cursor-pointer"
@@ -758,6 +983,13 @@ export default function SellerCatalogPage() {
                         {product.category.split(">").pop()?.trim() ?? product.category}
                       </div>
                     )}
+                    {/* Health badge — only when there is actual sales data */}
+                    {p && p.totalOrders > 0 && (
+                      <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                        style={{ background: HEALTH_CONFIG[p.health].bg, color: HEALTH_CONFIG[p.health].color }}>
+                        {HEALTH_CONFIG[p.health].label}
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-3 flex flex-col flex-1" onClick={(e) => e.stopPropagation()}>
@@ -776,6 +1008,26 @@ export default function SellerCatalogPage() {
                       )}
                     </div>
 
+                    {/* Performance mini-row */}
+                    {p && p.totalOrders > 0 && (
+                      <div className="flex items-center gap-1 mb-2 flex-wrap">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold"
+                          style={{ background: "rgba(67,97,238,0.08)", color: "var(--accent)" }}>
+                          {p.totalOrders} sold
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold"
+                          style={{ background: p.deliveryRate >= 80 ? "rgba(22,163,74,0.08)" : "rgba(245,158,11,0.08)",
+                                   color: p.deliveryRate >= 80 ? "#16A34A" : "#D97706" }}>
+                          {p.deliveryRate}% del
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold"
+                          style={{ background: p.rtoRate > 30 ? "rgba(239,68,68,0.08)" : "rgba(107,114,128,0.08)",
+                                   color: p.rtoRate > 30 ? "#EF4444" : "var(--text-muted)" }}>
+                          {p.rtoRate}% RTO
+                        </span>
+                      </div>
+                    )}
+
                     {err && (
                       <p className="text-[10px] flex items-center gap-1 mb-1.5" style={{ color: "#DC2626" }}>
                         <AlertCircle className="w-3 h-3 flex-shrink-0" />
@@ -783,7 +1035,6 @@ export default function SellerCatalogPage() {
                       </p>
                     )}
 
-                    {/* Profit calc button */}
                     <button onClick={(e) => { e.stopPropagation(); setCalcProduct(product); }}
                       className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium mb-2 w-full"
                       style={{ background: "rgba(67,97,238,0.08)", color: "var(--accent)", border: "1px solid rgba(67,97,238,0.15)" }}>
