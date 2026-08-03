@@ -12,7 +12,7 @@ interface Order {
   customerName: string | null; customerEmail: string | null;
   customerAddress: { phone?: string; address?: string; city?: string; state?: string; pincode?: string } | null;
   totalAmount: number; awbNumber: string | null; createdAt: string; items: OrderItem[];
-  supplierStatus: string | null;
+  supplierStatus: string | null; customerOrderCount: number;
 }
 
 const SUPPLIER_LABEL: Record<string, string> = {
@@ -340,7 +340,15 @@ export default function SellerOrdersPage() {
                         </Link>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="font-medium text-xs" style={{ color: "var(--text-900)" }}>{order.customerName || "—"}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="font-medium text-xs" style={{ color: "var(--text-900)" }}>{order.customerName || "—"}</p>
+                          {order.customerOrderCount > 1 && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                              style={{ background: "#EDE9FE", color: "#7C3AED" }}>
+                              ×{order.customerOrderCount}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs" style={{ color: "var(--text-400)" }}>{addr?.phone || order.customerEmail || "—"}</p>
                       </td>
                       <td className="px-4 py-3 max-w-xs">

@@ -66,7 +66,23 @@ export async function GET(req: NextRequest) {
     }));
     const topProduct = Object.entries(productCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
 
-    return NextResponse.json({ orders, stats: { totalOrders: orders.length, totalRevenue, totalItems, topProduct } });
+    // Repeat customer data — count all-time orders per email for this seller
+    const emailCounts = await prisma.order.groupBy({
+      by: ["customerEmail"],
+      where: { sellerId: session.user.id, customerEmail: { not: null } },
+      _count: { id: true },
+    });
+    const emailToCount: Record<string, number> = {};
+    emailCounts.forEach((r) => {
+      if (r.customerEmail) emailToCount[r.customerEmail] = r._count.id;
+    });
+
+    const ordersWithRepeat = orders.map((o) => ({
+      ...o,
+      customerOrderCount: o.customerEmail ? (emailToCount[o.customerEmail] ?? 1) : 1,
+    }));
+
+    return NextResponse.json({ orders: ordersWithRepeat, stats: { totalOrders: orders.length, totalRevenue, totalItems, topProduct } });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });

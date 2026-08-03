@@ -2,14 +2,19 @@
 
 import { useState, useEffect, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft, Package, MapPin, Phone, User, Receipt,
   Clock, Tag, ChevronRight, RefreshCw, ExternalLink, Truck, Loader2,
-  MessageSquare, Flag, Factory, Send, AlertTriangle,
+  MessageSquare, Flag, Factory, Send, AlertTriangle, History,
 } from "lucide-react";
 
 interface OrderItem { id: string; name: string; quantity: number; price: number; }
 interface Timeline  { id: string; event: string; details: string | null; actorRole: string; createdAt: string; }
+interface CustomerHistoryOrder {
+  id: string; externalOrderId: string; status: string; totalAmount: number; createdAt: string;
+  items: { name: string; quantity: number }[];
+}
 interface Settlement {
   id: string; status: string;
   sellingPrice: number; platformFee: number; gstOnFees: number;
@@ -103,9 +108,11 @@ export default function SellerOrderDetailPage({ params }: { params: Promise<{ id
   const { id } = use(params);
   const router  = useRouter();
 
-  const [order, setOrder]           = useState<OrderDetail | null>(null);
-  const [settlement, setSettlement] = useState<Settlement | null>(null);
-  const [loading, setLoading]       = useState(true);
+  const [order, setOrder]                       = useState<OrderDetail | null>(null);
+  const [settlement, setSettlement]             = useState<Settlement | null>(null);
+  const [customerHistory, setCustomerHistory]   = useState<CustomerHistoryOrder[]>([]);
+  const [customerOrderCount, setCustomerOrderCount] = useState(1);
+  const [loading, setLoading]                   = useState(true);
   const [awbInput, setAwbInput]     = useState("");
   const [courierInput, setCourierInput] = useState("");
   const [trackingInput, setTrackingInput] = useState("");
@@ -128,6 +135,8 @@ export default function SellerOrderDetailPage({ params }: { params: Promise<{ id
       const d = await r.json();
       setOrder(d.order);
       setSettlement(d.settlement ?? null);
+      setCustomerHistory(d.customerHistory ?? []);
+      setCustomerOrderCount(d.customerOrderCount ?? 1);
       setAwbInput(d.order.awbNumber ?? "");
       setCourierInput(d.order.courier ?? "");
       setTrackingInput(d.order.trackingUrl ?? "");
@@ -443,6 +452,53 @@ export default function SellerOrderDetailPage({ params }: { params: Promise<{ id
                   </div>
                 </div>
               )}
+            </div>
+          </Section>
+
+          {/* Customer Order History */}
+          <Section title="Customer History" icon={History}>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs" style={{ color: "var(--text-400)" }}>
+                  {customerOrderCount === 1 ? "First order from this customer" : (
+                    <span>
+                      <span className="font-bold" style={{ color: "#7C3AED" }}>{customerOrderCount} orders</span> from this customer
+                    </span>
+                  )}
+                </p>
+                {customerOrderCount > 1 && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: "#EDE9FE", color: "#7C3AED" }}>
+                    Repeat Customer
+                  </span>
+                )}
+              </div>
+              {customerHistory.length === 0 ? (
+                <p className="text-xs py-2" style={{ color: "var(--text-300)" }}>No previous orders.</p>
+              ) : customerHistory.map((h) => {
+                const hBadge = STATUS_COLOR[h.status] ?? STATUS_COLOR.NEW;
+                return (
+                  <Link key={h.id} href={`/seller/orders/${h.id}`}
+                    className="flex items-center justify-between py-2 rounded-lg px-2 -mx-2 transition-colors"
+                    style={{ borderBottom: "1px solid var(--border)" }}>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold font-mono" style={{ color: "var(--text-900)" }}>
+                        #{h.externalOrderId}
+                      </p>
+                      <p className="text-[10px] truncate" style={{ color: "var(--text-400)" }}>
+                        {h.items[0]?.name ?? "—"}{h.items[0] && ` ×${h.items[0].quantity}`}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-2">
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                        style={{ background: hBadge.bg, color: hBadge.color }}>{h.status}</span>
+                      <span className="text-[10px]" style={{ color: "var(--text-300)" }}>
+                        {new Date(h.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </Section>
 

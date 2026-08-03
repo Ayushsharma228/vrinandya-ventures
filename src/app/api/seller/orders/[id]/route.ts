@@ -28,16 +28,34 @@ export async function GET(
   if (!order || order.seller.id !== sellerId)
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
-  const settlement = await prisma.settlement.findUnique({
-    where: { orderId: id },
-    select: {
-      id: true, status: true,
-      sellingPrice: true, platformFee: true, gstOnFees: true,
-      netPayable: true, shippingCharge: true, packingCharge: true,
-      codFee: true, rtoCharge: true, adSpend: true,
-      createdAt: true,
-    },
-  });
+  const [settlement, customerHistory] = await Promise.all([
+    prisma.settlement.findUnique({
+      where: { orderId: id },
+      select: {
+        id: true, status: true,
+        sellingPrice: true, platformFee: true, gstOnFees: true,
+        netPayable: true, shippingCharge: true, packingCharge: true,
+        codFee: true, rtoCharge: true, adSpend: true,
+        createdAt: true,
+      },
+    }),
+    order.customerEmail
+      ? prisma.order.findMany({
+          where: { sellerId, customerEmail: order.customerEmail, id: { not: id } },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          select: {
+            id: true, externalOrderId: true, status: true,
+            totalAmount: true, createdAt: true,
+            items: { select: { name: true, quantity: true }, take: 1 },
+          },
+        })
+      : Promise.resolve([]),
+  ]);
 
-  return NextResponse.json({ order, settlement });
+  const customerOrderCount = order.customerEmail
+    ? await prisma.order.count({ where: { sellerId, customerEmail: order.customerEmail } })
+    : 1;
+
+  return NextResponse.json({ order, settlement, customerHistory, customerOrderCount });
 }
