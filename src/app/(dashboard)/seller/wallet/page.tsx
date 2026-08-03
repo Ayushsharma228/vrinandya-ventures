@@ -129,9 +129,12 @@ export default function SellerWalletPage() {
                 icon: TrendingUp, color: "#00C67A", bg: "rgba(0,198,122,0.12)",
               },
               {
-                label: "Wallet Balance", value: loading ? "—" : `₹${fmt(available)}`,
-                sub: "Available to withdraw",
-                icon: Wallet, color: "#F59E0B", bg: "rgba(245,158,11,0.1)",
+                label: "Wallet Balance",
+                value: loading ? "—" : `${available < 0 ? "−" : ""}₹${fmt(available)}`,
+                sub: available < 0 ? "In deficit — deductions exceed credits" : "Available to withdraw",
+                icon: Wallet,
+                color: available < 0 ? "#EF4444" : "#F59E0B",
+                bg: available < 0 ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)",
               },
               {
                 label: "Upcoming Payouts", value: loading ? "—" : `₹${fmt(data?.upcomingAmount ?? 0)}`,

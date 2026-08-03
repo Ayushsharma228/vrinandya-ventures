@@ -32,13 +32,16 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
-  const upcoming = transactions.filter((t) => t.remittanceDate !== null && t.bankTxId === null);
-  const paid     = transactions.filter((t) => t.bankTxId !== null || t.remittanceDate === null);
+  // "upcoming" = scheduled (has a date) but not yet confirmed with bankTxId
+  const upcoming = transactions.filter((t) => t.bankTxId === null && t.type === "CREDIT");
+  // "paid" list for frontend display (confirmed transfers only)
+  const paid     = transactions.filter((t) => t.bankTxId !== null);
 
-  const totalCredit     = paid.filter((t) => t.type === "CREDIT").reduce((s, t) => s + t.amount, 0);
+  // Balance must only count confirmed transfers (bankTxId set) — not pending/scheduled credits
+  const totalCredit     = transactions.filter((t) => t.type === "CREDIT" && t.bankTxId !== null).reduce((s, t) => s + t.amount, 0);
   const totalDeductions = transactions.filter((t) => t.type === "DEBIT").reduce((s, t) => s + t.amount, 0);
   const balance         = totalCredit - totalDeductions;
-  const upcomingAmount  = upcoming.filter((t) => t.type === "CREDIT").reduce((s, t) => s + t.amount, 0);
+  const upcomingAmount  = upcoming.reduce((s, t) => s + t.amount, 0);
 
   const grossRevenue = settleAgg._sum.sellingPrice ?? 0;
   const platformFee  = settleAgg._sum.platformFee  ?? 0;
