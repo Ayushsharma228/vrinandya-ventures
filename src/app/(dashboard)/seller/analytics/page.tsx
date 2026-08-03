@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { RefreshCw, ShoppingCart, Truck, AlertTriangle, XCircle, TrendingUp, Calendar, Wallet, BadgeIndianRupee, ChevronDown, ChevronUp, Megaphone } from "lucide-react";
+import { RefreshCw, ShoppingCart, Truck, AlertTriangle, XCircle, TrendingUp, Calendar, Wallet, BadgeIndianRupee, ChevronDown, ChevronUp, Megaphone, MapPin } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell,
@@ -37,6 +37,7 @@ interface AnalyticsData {
     earningsTrend: { date: string; gmv: number; platformCharges: number; productCost: number; adSpend: number; netProfit: number; count: number }[];
   };
   wallet: { balance: number; upcoming: number };
+  rtoByState: { state: string; total: number; rto: number; rtoPct: number }[];
 }
 
 const PIE_COLORS = ["#3b5bdb", "#40c057", "#fd7e14", "#ae3ec9", "#f03e3e"];
@@ -705,6 +706,56 @@ export default function SellerAnalyticsPage() {
               </tbody>
             </table></div>
           </div>
+
+          {/* RTO by State */}
+          {(data?.rtoByState?.length ?? 0) > 0 && (
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+                <MapPin className="w-4 h-4 text-red-400 flex-shrink-0" />
+                <div>
+                  <h2 className="font-semibold text-gray-900">RTO by State</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">Ranked by RTO volume · states with 2+ orders shown</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 bg-gray-50/50">
+                      {["State", "Total Orders", "RTOs", "RTO Rate"].map((h) => (
+                        <th key={h} className={`px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide ${h === "State" ? "text-left" : "text-right"}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {data!.rtoByState.map((row, i) => {
+                      const rateColor = row.rtoPct >= 50 ? "#ef4444" : row.rtoPct >= 30 ? "#f59e0b" : "#22c55e";
+                      const rateBg    = row.rtoPct >= 50 ? "#fef2f2" : row.rtoPct >= 30 ? "#fff7ed" : "#f0fdf4";
+                      return (
+                        <tr key={i} className="hover:bg-gray-50/60">
+                          <td className="px-5 py-3 font-medium text-gray-800">{row.state}</td>
+                          <td className="px-5 py-3 text-right text-gray-500">{row.total}</td>
+                          <td className="px-5 py-3 text-right font-semibold" style={{ color: row.rto > 0 ? "#ef4444" : "#9ca3af" }}>
+                            {row.rto}
+                          </td>
+                          <td className="px-5 py-3">
+                            <div className="flex items-center justify-end gap-3">
+                              <div className="w-24 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                                <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(row.rtoPct, 100)}%`, background: rateColor }} />
+                              </div>
+                              <span className="text-xs font-bold px-2 py-0.5 rounded-full w-12 text-center"
+                                style={{ color: rateColor, background: rateBg }}>
+                                {row.rtoPct}%
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

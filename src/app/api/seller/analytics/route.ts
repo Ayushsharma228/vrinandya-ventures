@@ -47,6 +47,7 @@ export async function GET(req: NextRequest) {
         shippingCharge: true,
         rtoCharge: true,
         createdAt: true,
+        customerAddress: true,
         items: { select: { name: true, sku: true, quantity: true } },
       },
       orderBy: { createdAt: "asc" },
@@ -119,6 +120,31 @@ export async function GET(req: NextRequest) {
     name: p.name,
     value: p.orders,
   }));
+
+  // RTO by state — customerAddress is JSON { state?, city?, zip? }
+  type AddrJson = { state?: string; province?: string; city?: string; zip?: string } | null;
+  const stateMap = new Map<string, { total: number; rto: number }>();
+  for (const o of orders) {
+    if (o.status === "CANCELLED") continue;
+    const addr = o.customerAddress as AddrJson;
+    const state = addr?.state || addr?.province || null;
+    if (!state) continue;
+    const key = state.trim();
+    const cur = stateMap.get(key) ?? { total: 0, rto: 0 };
+    cur.total++;
+    if (o.status === "RTO") cur.rto++;
+    stateMap.set(key, cur);
+  }
+  const rtoByState = Array.from(stateMap.entries())
+    .filter(([, v]) => v.total >= 2)           // drop noise (single-order states)
+    .map(([state, v]) => ({
+      state,
+      total: v.total,
+      rto: v.rto,
+      rtoPct: Math.round((v.rto / v.total) * 100),
+    }))
+    .sort((a, b) => b.rto - a.rto)
+    .slice(0, 15);
 
   // Revenue stats
   const totalRevenue = orders.reduce((s, o) => s + o.totalAmount, 0);
@@ -194,6 +220,7 @@ export async function GET(req: NextRequest) {
     trend,
     topProducts,
     productDistribution,
+    rtoByState,
     store,
     earnings: {
       totalGMV,
