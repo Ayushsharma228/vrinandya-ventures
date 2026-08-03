@@ -115,7 +115,7 @@ export default function SellerWalletPage() {
         title="Wallet & Payouts"
         subtitle="Your earnings, payouts, and transaction history"
         cards={
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
               {
                 label: "Total Remittance",
@@ -136,12 +136,6 @@ export default function SellerWalletPage() {
                 icon: Wallet,
                 color: available < 0 ? "#EF4444" : "#F59E0B",
                 bg: available < 0 ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)",
-              },
-              {
-                label: "Upcoming Payouts",
-                value: loading ? "—" : `₹${fmt(data?.upcomingAmount ?? 0)}`,
-                sub: `${upcoming.length} pending remittance${upcoming.length !== 1 ? "s" : ""}`,
-                icon: Clock, color: "#7C3AED", bg: "rgba(124,58,237,0.1)",
               },
             ].map(({ label, value, sub, icon: Icon, color, bg }) => (
               <div key={label} className="rounded-2xl px-5 py-4"
