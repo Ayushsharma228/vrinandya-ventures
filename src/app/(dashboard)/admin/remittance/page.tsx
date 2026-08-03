@@ -210,7 +210,8 @@ export default function AdminRemittancePage() {
   }
 
   async function handleSubmit() {
-    if (!sellerId || selectedOrders.length === 0 || !remittanceDate) return alert("Set payment date");
+    if (!sellerId || selectedOrders.length === 0) return;
+    if (alreadyPaid && !remittanceDate) return alert("Set the paid-on date");
     if (alreadyPaid && !paidBankTxId.trim()) return alert("Enter bank/UPI transaction ID");
     setSubmitting(true);
     const payload = {
@@ -449,7 +450,11 @@ export default function AdminRemittancePage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-gray-50/60 border-b border-gray-100">
-                        <th className="px-3 py-3 w-8"></th>
+                        <th className="px-3 py-3 w-8 text-center">
+                          <button onClick={toggleAll} title={allSelected ? "Deselect all" : "Select all"}>
+                            {allSelected ? <CheckSquare className="w-4 h-4 text-blue-500" /> : <Square className="w-4 h-4 text-gray-400" />}
+                          </button>
+                        </th>
                         <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500">Order #</th>
                         <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500">Type</th>
                         <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500">Customer</th>
@@ -512,13 +517,13 @@ export default function AdminRemittancePage() {
                     <span className="text-xs text-green-600 ml-auto">For February or older payments</span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">
-                        {alreadyPaid ? "Paid on Date *" : "Expected Payment Date *"}
-                      </label>
-                      <input type="date" value={remittanceDate} onChange={(e) => setRemittanceDate(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                    </div>
+                  <div className={alreadyPaid ? "grid grid-cols-2 gap-3" : ""}>
+                    {alreadyPaid && (
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">Paid on Date *</label>
+                        <input type="date" value={remittanceDate} onChange={(e) => setRemittanceDate(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      </div>
+                    )}
                     <div>
                       <label className="text-xs text-gray-500 mb-1 block">Note (optional)</label>
                       <input type="text" placeholder="e.g. February remittance" value={note} onChange={(e) => setNote(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
@@ -535,7 +540,7 @@ export default function AdminRemittancePage() {
                   )}
                 </div>
 
-                <button onClick={handleSubmit} disabled={submitting || selectedOrders.length === 0 || !remittanceDate || (alreadyPaid && !paidBankTxId.trim())}
+                <button onClick={handleSubmit} disabled={submitting || selectedOrders.length === 0 || (alreadyPaid && (!remittanceDate || !paidBankTxId.trim()))}
                   className={`flex items-center gap-2 px-6 py-2.5 text-white text-sm font-semibold rounded-lg disabled:opacity-50 ${alreadyPaid ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}`}>
                   {alreadyPaid ? <BadgeCheck className="w-4 h-4" /> : <Send className="w-4 h-4" />}
                   {submitting ? "Saving..." : alreadyPaid ? `Mark as Paid — ${fmt(totalNet)}` : `Schedule Remittance — ${fmt(totalNet)}`}
