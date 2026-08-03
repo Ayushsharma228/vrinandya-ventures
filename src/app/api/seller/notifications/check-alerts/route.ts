@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   if (prefs.alertLowBalanceEnabled) {
     checked.push("balance");
     const txns = await prisma.walletTransaction.findMany({
-      where: { userId: sellerId },
+      where: { sellerId },
       select: { type: true, amount: true },
     });
 

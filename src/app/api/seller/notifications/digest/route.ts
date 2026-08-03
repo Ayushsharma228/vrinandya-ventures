@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       select: { status: true, totalAmount: true },
     }),
     prisma.walletTransaction.findMany({
-      where: { userId: sellerId },
+      where: { sellerId },
       select: { type: true, amount: true },
     }),
     prisma.notification.count({
