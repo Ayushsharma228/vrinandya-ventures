@@ -28,7 +28,10 @@ export async function GET(
   if (!order || order.seller.id !== sellerId)
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
-  const [settlement, customerHistory] = await Promise.all([
+  // Identify customer by email (preferred) or phone (fallback)
+  const orderPhone = (order.customerAddress as Record<string, string> | null)?.phone?.replace(/\s+/g, "") ?? null;
+
+  const [settlement, allCustomerOrders] = await Promise.all([
     prisma.settlement.findUnique({
       where: { orderId: id },
       select: {
@@ -43,19 +46,35 @@ export async function GET(
       ? prisma.order.findMany({
           where: { sellerId, customerEmail: order.customerEmail, id: { not: id } },
           orderBy: { createdAt: "desc" },
-          take: 5,
           select: {
             id: true, externalOrderId: true, status: true,
-            totalAmount: true, createdAt: true,
+            totalAmount: true, createdAt: true, customerAddress: true,
             items: { select: { name: true, quantity: true }, take: 1 },
           },
         })
-      : Promise.resolve([]),
+      : orderPhone
+        ? prisma.order.findMany({
+            where: { sellerId, customerEmail: null, id: { not: id } },
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true, externalOrderId: true, status: true,
+              totalAmount: true, createdAt: true, customerAddress: true,
+              items: { select: { name: true, quantity: true }, take: 1 },
+            },
+          })
+        : Promise.resolve([]),
   ]);
 
-  const customerOrderCount = order.customerEmail
-    ? await prisma.order.count({ where: { sellerId, customerEmail: order.customerEmail } })
-    : 1;
+  // Filter by phone if we used phone-based lookup, then cap at 5
+  const customerHistory = (order.customerEmail
+    ? allCustomerOrders
+    : allCustomerOrders.filter((o) => {
+        const p = (o.customerAddress as Record<string, string> | null)?.phone?.replace(/\s+/g, "");
+        return p === orderPhone;
+      })
+  ).slice(0, 5);
+
+  const customerOrderCount = customerHistory.length + 1;
 
   return NextResponse.json({ order, settlement, customerHistory, customerOrderCount });
 }

@@ -66,21 +66,28 @@ export async function GET(req: NextRequest) {
     }));
     const topProduct = Object.entries(productCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
 
-    // Repeat customer data — count all-time orders per email for this seller
-    const emailCounts = await prisma.order.groupBy({
-      by: ["customerEmail"],
-      where: { sellerId: session.user.id, customerEmail: { not: null } },
-      _count: { id: true },
-    });
-    const emailToCount: Record<string, number> = {};
-    emailCounts.forEach((r) => {
-      if (r.customerEmail) emailToCount[r.customerEmail] = r._count.id;
+    // Repeat customer data — count all-time orders per customer (email preferred, phone fallback)
+    const allSellerOrders = await prisma.order.findMany({
+      where: { sellerId: session.user.id },
+      select: { id: true, customerEmail: true, customerAddress: true },
     });
 
-    const ordersWithRepeat = orders.map((o) => ({
-      ...o,
-      customerOrderCount: o.customerEmail ? (emailToCount[o.customerEmail] ?? 1) : 1,
-    }));
+    function customerKey(email: string | null, addr: unknown): string | null {
+      if (email) return `email:${email.toLowerCase()}`;
+      const phone = (addr as Record<string, string> | null)?.phone;
+      return phone ? `phone:${phone.replace(/\s+/g, "")}` : null;
+    }
+
+    const keyCount: Record<string, number> = {};
+    allSellerOrders.forEach((o) => {
+      const k = customerKey(o.customerEmail, o.customerAddress);
+      if (k) keyCount[k] = (keyCount[k] ?? 0) + 1;
+    });
+
+    const ordersWithRepeat = orders.map((o) => {
+      const k = customerKey(o.customerEmail, o.customerAddress);
+      return { ...o, customerOrderCount: k ? (keyCount[k] ?? 1) : 1 };
+    });
 
     return NextResponse.json({ orders: ordersWithRepeat, stats: { totalOrders: orders.length, totalRevenue, totalItems, topProduct } });
   } catch (error) {
