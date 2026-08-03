@@ -4,6 +4,20 @@ import { prisma } from "@/lib/prisma";
 import { OrderStatus, Prisma } from "@prisma/client";
 import { decrypt } from "@/lib/encrypt";
 
+function extractUtm(landingSite: string | null | undefined) {
+  if (!landingSite) return { utmSource: null, utmMedium: null, utmCampaign: null };
+  try {
+    const url = new URL(landingSite.startsWith("http") ? landingSite : `https://x.com${landingSite}`);
+    return {
+      utmSource:   url.searchParams.get("utm_source"),
+      utmMedium:   url.searchParams.get("utm_medium"),
+      utmCampaign: url.searchParams.get("utm_campaign"),
+    };
+  } catch {
+    return { utmSource: null, utmMedium: null, utmCampaign: null };
+  }
+}
+
 function mapShopifyStatus(financial: string, fulfillment: string | null): OrderStatus {
   if (financial === "refunded" || financial === "voided") return OrderStatus.CANCELLED;
   if (fulfillment === "fulfilled") return OrderStatus.DELIVERED;
@@ -73,7 +87,7 @@ export async function POST(req: NextRequest) {
   };
 
   const toCreate: OrderCreateInput[] = [];
-  const toUpdate: { id: string; status: OrderStatus; customerName: string | null; customerEmail: string | null; customerAddress: Prisma.InputJsonValue | undefined; totalAmount: number; rawData: Prisma.InputJsonValue }[] = [];
+  const toUpdate: { id: string; status: OrderStatus; customerName: string | null; customerEmail: string | null; customerAddress: Prisma.InputJsonValue | undefined; totalAmount: number; rawData: Prisma.InputJsonValue; utmSource: string | null; utmMedium: string | null; utmCampaign: string | null }[] = [];
 
   for (const so of shopifyOrders) {
     const externalId = so.name ?? String(so.id);
@@ -91,6 +105,7 @@ export async function POST(req: NextRequest) {
       ? `${so.customer.first_name ?? ""} ${so.customer.last_name ?? ""}`.trim() || null
       : null;
 
+    const utm = extractUtm(so.landing_site);
     const existing = existingMap.get(externalId);
     if (existing) {
       // If order has AWB or is in a manually-set status, don't overwrite status from Shopify
@@ -104,6 +119,7 @@ export async function POST(req: NextRequest) {
         totalAmount: parseFloat(so.total_price),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         rawData: so as any,
+        ...utm,
       });
     } else {
       toCreate.push({
@@ -118,6 +134,7 @@ export async function POST(req: NextRequest) {
         currency: so.currency,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         rawData: so as any,
+        ...utm,
         // Use the actual Shopify order date so filters work correctly
         ...(so.created_at ? { createdAt: new Date(so.created_at) } : {}),
       });
@@ -142,6 +159,9 @@ export async function POST(req: NextRequest) {
             customerAddress: u.customerAddress,
             totalAmount: u.totalAmount,
             rawData: u.rawData,
+            utmSource: u.utmSource,
+            utmMedium: u.utmMedium,
+            utmCampaign: u.utmCampaign,
           },
         })
       )

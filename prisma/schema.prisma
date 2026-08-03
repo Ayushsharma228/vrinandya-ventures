@@ -491,13 +491,15 @@ enum SupplierPaymentStatus {
 }
 
 model AdSpend {
-  id        String   @id @default(cuid())
-  sellerId  String
-  seller    User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  date      DateTime
-  amount    Float
-  note      String?
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  sellerId     String
+  seller       User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  date         DateTime
+  amount       Float
+  note         String?
+  campaignId   String?
+  campaignName String?
+  createdAt    DateTime @default(now())
 
   @@map("ad_spends")
 }
@@ -622,6 +624,9 @@ model Order {
   trackingUrl     String?
   courier         String?
   rawData         Json?
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
   productCost     Float?
   shippingCharge  Float?
   packingCharge   Float?

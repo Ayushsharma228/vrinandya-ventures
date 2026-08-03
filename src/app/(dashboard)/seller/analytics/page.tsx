@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { RefreshCw, ShoppingCart, Truck, AlertTriangle, XCircle, TrendingUp, Calendar, Wallet, BadgeIndianRupee } from "lucide-react";
+import { RefreshCw, ShoppingCart, Truck, AlertTriangle, XCircle, TrendingUp, Calendar, Wallet, BadgeIndianRupee, ChevronDown, ChevronUp, Megaphone } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell,
@@ -59,7 +59,20 @@ export default function SellerAnalyticsPage() {
   const today = toISODate(new Date());
   const d30    = toISODate(new Date(Date.now() - 29 * 86400000));
 
+  interface AttributionCampaign {
+    campaignId: string | null; campaignName: string;
+    totalSpend: number; orderCount: number; revenue: number;
+    rtoCount: number; roas: number | null; cpa: number | null;
+    products: { name: string; quantity: number; revenue: number }[];
+  }
+  interface AttributionData {
+    campaigns: AttributionCampaign[];
+    summary: { totalSpend: number; totalRevenue: number; totalOrders: number; overallRoas: number | null };
+  }
+
   const [data, setData] = useState<AnalyticsData | null>(null);
+  const [attribution, setAttribution] = useState<AttributionData | null>(null);
+  const [expandedCampaign, setExpandedCampaign] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [from, setFrom] = useState(d30);
@@ -72,9 +85,14 @@ export default function SellerAnalyticsPage() {
     const params = new URLSearchParams();
     if (fromDate) params.set("from", fromDate);
     if (toDate)   params.set("to",   toDate);
-    const res = await fetch(`/api/seller/analytics?${params}`);
+    const [res, attrRes] = await Promise.all([
+      fetch(`/api/seller/analytics?${params}`),
+      fetch(`/api/seller/ad-spend/attribution?${params}`),
+    ]);
     const json = await res.json();
+    const attrJson = await attrRes.json();
     setData(json);
+    setAttribution(attrJson.campaigns ? attrJson : null);
     setLoading(false); setRefreshing(false);
   }, []);
 
@@ -490,6 +508,81 @@ export default function SellerAnalyticsPage() {
               </div>
             </div>
           )}
+
+          {/* Campaign Attribution */}
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Megaphone className="w-4 h-4 text-purple-500" />
+                <h2 className="font-semibold text-gray-900">Campaign Attribution</h2>
+              </div>
+              {attribution?.summary && (
+                <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <span>Spend: <strong className="text-gray-800">{inr(attribution.summary.totalSpend)}</strong></span>
+                  <span>Revenue: <strong className="text-green-600">{inr(attribution.summary.totalRevenue)}</strong></span>
+                  {attribution.summary.overallRoas !== null && (
+                    <span>ROAS: <strong className="text-purple-600">{attribution.summary.overallRoas}×</strong></span>
+                  )}
+                </div>
+              )}
+            </div>
+            {(!attribution || attribution.campaigns.length === 0) ? (
+              <div className="py-12 text-center text-sm text-gray-400">
+                <Megaphone className="w-8 h-8 mx-auto mb-2 text-gray-200" />
+                No campaign data — connect Meta Ads and sync, or ensure orders have UTM parameters from your ads.
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-50">
+                {/* Header row */}
+                <div className="grid grid-cols-7 px-5 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400 bg-gray-50/50">
+                  {["Campaign", "Spend", "Orders", "Revenue", "ROAS", "CPA", ""].map((h) => (
+                    <span key={h}>{h}</span>
+                  ))}
+                </div>
+                {attribution.campaigns.map((c) => {
+                  const key = c.campaignId ?? c.campaignName;
+                  const isExpanded = expandedCampaign === key;
+                  const roasColor = c.roas === null ? "text-gray-400" : c.roas >= 3 ? "text-green-600" : c.roas >= 1 ? "text-yellow-600" : "text-red-500";
+                  return (
+                    <div key={key}>
+                      <div className="grid grid-cols-7 px-5 py-3 items-center hover:bg-gray-50 cursor-pointer transition-colors"
+                        onClick={() => setExpandedCampaign(isExpanded ? null : key)}>
+                        <span className="text-sm font-medium text-gray-900 truncate pr-2">{c.campaignName}</span>
+                        <span className="text-sm text-gray-700">{inr(c.totalSpend)}</span>
+                        <span className="text-sm text-gray-700">{c.orderCount}</span>
+                        <span className="text-sm font-semibold text-green-600">{inr(c.revenue)}</span>
+                        <span className={`text-sm font-bold ${roasColor}`}>
+                          {c.roas !== null ? `${c.roas}×` : "—"}
+                        </span>
+                        <span className="text-sm text-gray-600">{c.cpa !== null ? inr(c.cpa) : "—"}</span>
+                        <span className="flex justify-end">
+                          {c.products.length > 0 && (
+                            isExpanded
+                              ? <ChevronUp className="w-4 h-4 text-gray-400" />
+                              : <ChevronDown className="w-4 h-4 text-gray-400" />
+                          )}
+                        </span>
+                      </div>
+                      {isExpanded && c.products.length > 0 && (
+                        <div className="bg-purple-50/40 px-8 py-3 space-y-2 border-t border-purple-100">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-purple-400 mb-1">Products driven by this campaign</p>
+                          {c.products.map((p) => (
+                            <div key={p.name} className="flex items-center justify-between text-sm">
+                              <span className="text-gray-700 truncate max-w-[40%]">{p.name}</span>
+                              <div className="flex items-center gap-6 text-xs text-gray-500">
+                                <span>{p.quantity} units</span>
+                                <span className="font-semibold text-green-600">{inr(p.revenue)}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Top Products */}
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
