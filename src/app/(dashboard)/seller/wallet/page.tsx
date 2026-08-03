@@ -1,48 +1,70 @@
-﻿"use client";
+"use client";
 
-import { useState, useEffect } from "react";
-import { Wallet, TrendingUp, TrendingDown, Clock, CheckCircle2, ArrowUpRight, ArrowDownRight, BanknoteIcon, XCircle } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import {
+  Wallet, TrendingUp, TrendingDown, Clock, CheckCircle2,
+  ArrowUpRight, ArrowDownRight, BanknoteIcon, XCircle,
+  Copy, CopyCheck, Download, AlertCircle, Info,
+} from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
 interface Transaction {
   id: string; type: string; amount: number; note: string | null;
   remittanceDate: string | null; bankTxId: string | null; createdAt: string;
 }
+interface BankDetails { bankHolder: string | null; bankAccount: string | null; bankIfsc: string | null; }
+interface TaxSummary {
+  fyLabel: string; grossRevenue: number; platformFee: number;
+  gstOnFees: number; tdsEstimate: number; netPayable: number;
+}
 interface WalletData {
   balance: number; totalCredit: number; totalDebit: number; totalDeductions: number;
   upcomingAmount: number; upcoming: Transaction[]; paid: Transaction[];
   transactions: Transaction[];
+  bankDetails: BankDetails;
+  taxSummary: TaxSummary;
 }
 interface WithdrawalRequest {
   id: string; amount: number; status: string; adminNote: string | null;
   bankAccount: string; createdAt: string; processedAt: string | null;
 }
-const WD_BADGE: Record<string, { color: string }> = {
-  PENDING:  { color: "#F59E0B" },
-  APPROVED: { color: "#16A34A" },
-  REJECTED: { color: "#EF4444" },
+
+const WD_BADGE: Record<string, { color: string; bg: string }> = {
+  PENDING:  { color: "#D97706", bg: "#FFF7ED" },
+  APPROVED: { color: "#16A34A", bg: "#F0FDF4" },
+  REJECTED: { color: "#DC2626", bg: "#FEF2F2" },
 };
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.abs(n));
 }
+function fmtD(d: string) {
+  return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+function maskAccount(acc: string | null) {
+  if (!acc) return "—";
+  return "••••" + acc.slice(-4);
+}
 
 const TABS = ["All", "Upcoming", "Paid", "Deductions"];
 
 export default function SellerWalletPage() {
-  const [data,       setData]       = useState<WalletData | null>(null);
-  const [loading,    setLoading]    = useState(true);
-  const [tab,        setTab]        = useState("All");
+  const [data,        setData]        = useState<WalletData | null>(null);
+  const [loading,     setLoading]     = useState(true);
+  const [tab,         setTab]         = useState("All");
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
-  const [wdAmount,   setWdAmount]   = useState("");
-  const [wdLoading,  setWdLoading]  = useState(false);
-  const [wdError,    setWdError]    = useState("");
-  const [wdSuccess,  setWdSuccess]  = useState(false);
+  const [wdAmount,    setWdAmount]    = useState("");
+  const [wdLoading,   setWdLoading]   = useState(false);
+  const [wdError,     setWdError]     = useState("");
+  const [wdSuccess,   setWdSuccess]   = useState(false);
+  const [copiedId,    setCopiedId]    = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     fetch("/api/seller/wallet").then(r => r.json()).then(d => { setData(d); setLoading(false); });
     fetch("/api/seller/wallet/withdraw").then(r => r.json()).then(d => setWithdrawals(d.requests ?? []));
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   async function submitWithdrawal(e: React.FormEvent) {
     e.preventDefault();
@@ -54,227 +76,376 @@ export default function SellerWalletPage() {
       body: JSON.stringify({ amount: amt }),
     });
     const json = await res.json();
-    if (!res.ok) { setWdError(json.error ?? "Failed"); }
-    else {
-      setWdSuccess(true); setWdAmount("");
-      setWithdrawals(prev => [json.request, ...prev]);
-    }
+    if (!res.ok) setWdError(json.error ?? "Failed");
+    else { setWdSuccess(true); setWdAmount(""); setWithdrawals(prev => [json.request, ...prev]); load(); }
     setWdLoading(false);
   }
 
-  const allTx = data?.transactions ?? [];
-  const upcoming = data?.upcoming ?? [];
-  const paid = (data?.paid ?? []).filter(t => t.remittanceDate !== null);
-  const deductions = allTx.filter(t => t.type === "DEBIT");
+  function copyRef(text: string, id: string) {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }
 
-  const displayed =
-    tab === "All"       ? allTx :
-    tab === "Upcoming"  ? upcoming :
-    tab === "Paid"      ? paid :
-    deductions;
+  function exportCSV() {
+    const rows = (data?.transactions ?? []).map(t => [
+      t.id, t.type, t.amount, t.note ?? "",
+      t.remittanceDate ? fmtD(t.remittanceDate) : "",
+      t.bankTxId ?? "",
+      fmtD(t.createdAt),
+    ]);
+    const csv = [
+      ["ID", "Type", "Amount", "Note", "Remittance Date", "Bank Ref No.", "Created"].join(","),
+      ...rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")),
+    ].join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    a.download = "wallet-transactions.csv";
+    a.click();
+  }
+
+  const allTx      = data?.transactions ?? [];
+  const upcoming   = data?.upcoming ?? [];
+  const paid       = (data?.paid ?? []).filter(t => t.bankTxId !== null);
+  const deductions = allTx.filter(t => t.type === "DEBIT");
+  const displayed  = tab === "All" ? allTx : tab === "Upcoming" ? upcoming : tab === "Paid" ? paid : deductions;
+
+  const available = data?.balance ?? 0;
+  const tax       = data?.taxSummary;
+  const bank      = data?.bankDetails;
+  const hasPending = withdrawals.some(w => w.status === "PENDING");
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
       <PageHero
         title="Wallet & Payouts"
-        subtitle="Your earnings and remittance history"
+        subtitle="Your earnings, payouts, and tax summary"
         cards={
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Paid Till Now */}
-            <div className="rounded-2xl px-6 py-5" style={{ background: "rgba(0,198,122,0.12)", border: "1px solid rgba(0,198,122,0.2)" }}>
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
-                  Paid Till Now
-                </p>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(0,198,122,0.2)" }}>
-                  <Wallet style={{ color: "var(--green-500)", width: 18, height: 18 }} />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              {
+                label: "Paid Till Now", value: loading ? "—" : `₹${fmt(data?.totalCredit ?? 0)}`,
+                sub: `${paid.length} payment${paid.length !== 1 ? "s" : ""}`,
+                icon: TrendingUp, color: "#00C67A", bg: "rgba(0,198,122,0.12)",
+              },
+              {
+                label: "Wallet Balance", value: loading ? "—" : `₹${fmt(available)}`,
+                sub: "Available to withdraw",
+                icon: Wallet, color: "#F59E0B", bg: "rgba(245,158,11,0.1)",
+              },
+              {
+                label: "Upcoming Payouts", value: loading ? "—" : `₹${fmt(data?.upcomingAmount ?? 0)}`,
+                sub: `${upcoming.length} pending remittance${upcoming.length !== 1 ? "s" : ""}`,
+                icon: Clock, color: "#7C3AED", bg: "rgba(124,58,237,0.1)",
+              },
+              {
+                label: "Total Deductions", value: loading ? "—" : `₹${fmt(data?.totalDeductions ?? 0)}`,
+                sub: "RTO & adjustments",
+                icon: TrendingDown, color: "#EF4444", bg: "rgba(239,68,68,0.1)",
+              },
+            ].map(({ label, value, sub, icon: Icon, color, bg }) => (
+              <div key={label} className="rounded-2xl px-5 py-4"
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: bg }}>
+                    <Icon className="w-4 h-4" style={{ color }} />
+                  </div>
                 </div>
+                <p className="text-xl font-bold leading-tight" style={{ color: "var(--text-primary)" }}>{value}</p>
+                <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{sub}</p>
               </div>
-              <p className="text-3xl font-bold mb-1" style={{ color: "var(--text-primary)" }}>
-                {loading ? "—" : `₹${fmt(data?.totalCredit ?? 0)}`}
-              </p>
-              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Total paid to your account</p>
-              <div className="mt-4 pt-4 flex items-center gap-2" style={{ borderTop: "1px solid var(--border)" }}>
-                <TrendingUp style={{ color: "var(--green-500)", width: 14, height: 14 }} />
-                <span className="text-xs" style={{ color: "var(--green-500)" }}>
-                  {paid.length} payment{paid.length !== 1 ? "s" : ""} completed
-                </span>
-              </div>
-            </div>
-
-            {/* Wallet Balance */}
-            <div className="rounded-2xl px-6 py-5" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)" }}>
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
-                  Wallet Balance
-                </p>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(245,158,11,0.15)" }}>
-                  <Wallet style={{ color: "#F59E0B", width: 18, height: 18 }} />
-                </div>
-              </div>
-              <p className="text-3xl font-bold mb-1" style={{ color: "var(--text-primary)" }}>
-                {loading ? "—" : `₹${fmt(data?.balance ?? 0)}`}
-              </p>
-              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-                Your current payout balance
-              </p>
-            </div>
-
-            {/* Deductions */}
-            <div className="rounded-2xl px-6 py-5" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
-                  Total Deductions
-                </p>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(239,68,68,0.15)" }}>
-                  <TrendingDown style={{ color: "#EF4444", width: 18, height: 18 }} />
-                </div>
-              </div>
-              <p className="text-3xl font-bold mb-1" style={{ color: "var(--text-primary)" }}>
-                {loading ? "—" : `₹${fmt(data?.totalDeductions ?? data?.totalDebit ?? 0)}`}
-              </p>
-              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>RTO charges & adjustments</p>
-            </div>
+            ))}
           </div>
         }
       />
 
-      <div className="px-4 md:px-8 py-6 space-y-6">
-        {/* Request Payout */}
-        <div className="card p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <BanknoteIcon className="w-5 h-5" style={{ color: "#16A34A" }} />
-            <h2 className="text-sm font-bold" style={{ color: "var(--text-900)" }}>Request Payout</h2>
-          </div>
-          <form onSubmit={submitWithdrawal} className="flex items-center gap-3 flex-wrap">
-            <div className="relative flex-1 min-w-[180px]">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold"
-                style={{ color: "var(--text-400)" }}>₹</span>
-              <input
-                type="number" min="1" step="1" value={wdAmount}
-                onChange={e => { setWdAmount(e.target.value); setWdError(""); setWdSuccess(false); }}
-                placeholder="Enter amount"
-                className="w-full pl-7 pr-4 py-2.5 rounded-xl text-sm border outline-none"
-                style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }}
-              />
-            </div>
-            <button type="submit" disabled={wdLoading}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
-              style={{ background: "#16A34A" }}>
-              {wdLoading ? "Submitting…" : "Request Payout"}
-            </button>
-          </form>
-          {wdError   && <p className="text-xs mt-2" style={{ color: "#EF4444" }}>{wdError}</p>}
-          {wdSuccess && <p className="text-xs mt-2" style={{ color: "#16A34A" }}>Payout request submitted! Admin will process it shortly.</p>}
-          <p className="text-xs mt-3" style={{ color: "var(--text-400)" }}>
-            Payouts are transferred to your registered bank account. Only settled (paid) wallet balance is eligible.
-          </p>
-        </div>
+      <div className="px-4 md:px-8 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Withdrawal history */}
-        {withdrawals.length > 0 && (
-          <div className="card overflow-hidden">
-            <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
-              <h2 className="text-sm font-bold" style={{ color: "var(--text-900)" }}>Payout Request History</h2>
-            </div>
-            <div className="divide-y" style={{ borderColor: "var(--border)" }}>
-              {withdrawals.map(wd => {
-                const badge = WD_BADGE[wd.status] ?? WD_BADGE.PENDING;
-                return (
-                  <div key={wd.id} className="px-5 py-3.5 flex items-center gap-4">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "rgba(0,198,122,0.1)" }}>
-                      {wd.status === "APPROVED"
-                        ? <CheckCircle2 className="w-4 h-4" style={{ color: "#16A34A" }} />
-                        : wd.status === "REJECTED"
-                        ? <XCircle className="w-4 h-4" style={{ color: "#EF4444" }} />
-                        : <Clock className="w-4 h-4" style={{ color: "#F59E0B" }} />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium" style={{ color: "var(--text-900)" }}>
-                        Withdrawal Request — ₹{fmt(wd.amount)}
-                      </p>
-                      <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>
-                        {new Date(wd.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                        {wd.adminNote ? ` · ${wd.adminNote}` : ""}
-                      </p>
-                    </div>
-                    <span className="text-xs font-bold" style={{ color: badge.color }}>{wd.status}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+          {/* LEFT — transaction log */}
+          <div className="lg:col-span-2 space-y-5">
 
-        {/* Transaction history */}
-        <div className="card overflow-hidden">
-          <div className="px-5 py-3 flex items-center gap-1" style={{ borderBottom: "1px solid var(--border)" }}>
-            {TABS.map((t) => (
-              <button key={t} onClick={() => setTab(t)}
-                className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
-                style={tab === t
-                  ? { background: "var(--bg-sidebar)", color: "var(--text-primary)" }
-                  : { color: "var(--text-400)" }}>
-                {t}
-              </button>
-            ))}
-          </div>
-
-          {loading ? (
-            <div className="p-8 text-center text-sm" style={{ color: "var(--text-400)" }}>Loading...</div>
-          ) : displayed.length === 0 ? (
-            <div className="py-16 flex flex-col items-center gap-2">
-              <Wallet style={{ color: "var(--border)", width: 40, height: 40 }} />
-              <p className="text-sm" style={{ color: "var(--text-400)" }}>No transactions yet</p>
-            </div>
-          ) : (
-            <div className="divide-y" style={{ borderColor: "var(--border)" }}>
-              {displayed.map((tx) => {
-                const isCredit = tx.type === "CREDIT";
-                const isPaid = tx.bankTxId !== null;
-                return (
-                  <div key={tx.id} className="px-5 py-3.5 flex items-center gap-4 hover:bg-gray-50/50">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: isCredit ? "#F0FDF4" : "#FEF2F2" }}>
-                      {isCredit
-                        ? <ArrowDownRight style={{ color: "#16A34A", width: 16, height: 16 }} />
-                        : <ArrowUpRight style={{ color: "#EF4444", width: 16, height: 16 }} />
-                      }
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: "var(--text-900)" }}>
-                        {tx.note || (isCredit ? "Remittance Credit" : "Deduction")}
-                      </p>
-                      <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>
-                        {tx.remittanceDate
-                          ? (isPaid ? "Paid on: " : "Expected: ") +
-                            new Date(tx.remittanceDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
-                          : new Date(tx.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
-                        }
-                      </p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold" style={{ color: isCredit ? "#16A34A" : "#EF4444" }}>
-                        {isCredit ? "+" : "−"}₹{fmt(tx.amount)}
-                      </p>
-                      <div className="flex items-center justify-end gap-1 mt-0.5">
-                        {(() => {
-                          if (isPaid) return <><CheckCircle2 style={{ color: "#16A34A", width: 12, height: 12 }} /><span className="text-xs" style={{ color: "#16A34A" }}>{isCredit ? "Paid" : "Settled"}</span></>;
-                          if (!isCredit) {
-                            const isOverdue = tx.remittanceDate && new Date(tx.remittanceDate) < new Date();
-                            return <><TrendingDown style={{ color: "#EF4444", width: 12, height: 12 }} /><span className="text-xs" style={{ color: "#EF4444" }}>{isOverdue ? "Overdue" : "Deduction"}</span></>;
-                          }
-                          const isOverdue = tx.remittanceDate && new Date(tx.remittanceDate) < new Date();
-                          return <><Clock style={{ color: isOverdue ? "#EF4444" : "#F59E0B", width: 12, height: 12 }} /><span className="text-xs" style={{ color: isOverdue ? "#EF4444" : "#F59E0B" }}>{isOverdue ? "Overdue" : "Upcoming"}</span></>;
-                        })()}
+            {/* Withdrawal history */}
+            {withdrawals.length > 0 && (
+              <div className="card overflow-hidden">
+                <div className="px-5 py-3 flex items-center justify-between"
+                  style={{ borderBottom: "1px solid var(--border)" }}>
+                  <h2 className="text-sm font-bold" style={{ color: "var(--text-900)" }}>Payout Request History</h2>
+                </div>
+                <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+                  {withdrawals.map(wd => {
+                    const badge = WD_BADGE[wd.status] ?? WD_BADGE.PENDING;
+                    return (
+                      <div key={wd.id} className="px-5 py-3.5 flex items-center gap-4">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                          style={{ background: badge.bg }}>
+                          {wd.status === "APPROVED"
+                            ? <CheckCircle2 className="w-4 h-4" style={{ color: "#16A34A" }} />
+                            : wd.status === "REJECTED"
+                            ? <XCircle className="w-4 h-4" style={{ color: "#DC2626" }} />
+                            : <Clock className="w-4 h-4" style={{ color: "#D97706" }} />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium" style={{ color: "var(--text-900)" }}>
+                            ₹{fmt(wd.amount)}
+                          </p>
+                          <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>
+                            {fmtD(wd.createdAt)}
+                            {wd.bankAccount && ` · To: ••••${wd.bankAccount.slice(-4)}`}
+                            {wd.adminNote && ` · ${wd.adminNote}`}
+                          </p>
+                        </div>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                          style={{ background: badge.bg, color: badge.color }}>
+                          {wd.status}
+                        </span>
                       </div>
-                    </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Transaction log */}
+            <div className="card overflow-hidden">
+              <div className="px-5 py-3 flex items-center justify-between"
+                style={{ borderBottom: "1px solid var(--border)" }}>
+                <div className="flex items-center gap-1">
+                  {TABS.map(t => (
+                    <button key={t} onClick={() => setTab(t)}
+                      className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
+                      style={tab === t
+                        ? { background: "var(--bg-sidebar)", color: "var(--text-primary)" }
+                        : { color: "var(--text-400)" }}>
+                      {t}
+                      {t === "Upcoming" && upcoming.length > 0 && (
+                        <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px]"
+                          style={{ background: "#EDE9FE", color: "#7C3AED" }}>
+                          {upcoming.length}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <button onClick={exportCSV}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
+                  style={{ background: "var(--bg-muted)", color: "var(--text-400)", border: "1px solid var(--border)" }}>
+                  <Download className="w-3.5 h-3.5" /> Export CSV
+                </button>
+              </div>
+
+              {/* Deductions summary bar */}
+              {tab === "Deductions" && deductions.length > 0 && (
+                <div className="px-5 py-3 flex items-center gap-3"
+                  style={{ background: "#FEF2F2", borderBottom: "1px solid #FECACA" }}>
+                  <TrendingDown className="w-4 h-4 flex-shrink-0" style={{ color: "#DC2626" }} />
+                  <div>
+                    <span className="text-xs font-semibold" style={{ color: "#DC2626" }}>
+                      Total deducted: ₹{fmt(deductions.reduce((s, t) => s + t.amount, 0))}
+                    </span>
+                    <span className="text-xs ml-2" style={{ color: "#EF4444" }}>
+                      across {deductions.length} transaction{deductions.length !== 1 ? "s" : ""}
+                    </span>
                   </div>
-                );
-              })}
+                </div>
+              )}
+
+              {loading ? (
+                <div className="p-8 text-center text-sm" style={{ color: "var(--text-400)" }}>Loading…</div>
+              ) : displayed.length === 0 ? (
+                <div className="py-16 flex flex-col items-center gap-2">
+                  <Wallet className="w-10 h-10" style={{ color: "var(--border)" }} />
+                  <p className="text-sm" style={{ color: "var(--text-400)" }}>No transactions in this category</p>
+                </div>
+              ) : (
+                <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+                  {displayed.map(tx => {
+                    const isCredit = tx.type === "CREDIT";
+                    const isPaid   = tx.bankTxId !== null;
+                    return (
+                      <div key={tx.id} className="px-5 py-3.5 hover:bg-gray-50/50">
+                        <div className="flex items-start gap-4">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                            style={{ background: isCredit ? "#F0FDF4" : "#FEF2F2" }}>
+                            {isCredit
+                              ? <ArrowDownRight className="w-4 h-4" style={{ color: "#16A34A" }} />
+                              : <ArrowUpRight className="w-4 h-4" style={{ color: "#EF4444" }} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium" style={{ color: "var(--text-900)" }}>
+                              {tx.note || (isCredit ? "Remittance Credit" : "Deduction")}
+                            </p>
+                            <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>
+                              {tx.remittanceDate
+                                ? (isPaid ? "Paid: " : "Expected: ") + fmtD(tx.remittanceDate)
+                                : fmtD(tx.createdAt)}
+                            </p>
+                            {/* Bank reference number — shown for paid credits */}
+                            {isPaid && tx.bankTxId && (
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded"
+                                  style={{ background: "var(--bg-muted)", color: "var(--text-500)", border: "1px solid var(--border)" }}>
+                                  Ref: {tx.bankTxId}
+                                </span>
+                                <button onClick={() => copyRef(tx.bankTxId!, tx.id)}
+                                  className="flex items-center gap-0.5 text-[10px]"
+                                  style={{ color: copiedId === tx.id ? "#16A34A" : "var(--text-300)" }}>
+                                  {copiedId === tx.id
+                                    ? <><CopyCheck className="w-3 h-3" /> Copied</>
+                                    : <><Copy className="w-3 h-3" /> Copy</>}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-sm font-bold" style={{ color: isCredit ? "#16A34A" : "#EF4444" }}>
+                              {isCredit ? "+" : "−"}₹{fmt(tx.amount)}
+                            </p>
+                            <div className="flex items-center justify-end gap-1 mt-0.5">
+                              {isPaid
+                                ? <><CheckCircle2 className="w-3 h-3" style={{ color: "#16A34A" }} /><span className="text-xs" style={{ color: "#16A34A" }}>Paid</span></>
+                                : tx.remittanceDate
+                                  ? <><Clock className="w-3 h-3" style={{ color: "#7C3AED" }} /><span className="text-xs" style={{ color: "#7C3AED" }}>Upcoming</span></>
+                                  : !isCredit
+                                  ? <><TrendingDown className="w-3 h-3" style={{ color: "#EF4444" }} /><span className="text-xs" style={{ color: "#EF4444" }}>Deducted</span></>
+                                  : null}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* RIGHT — withdraw + tax */}
+          <div className="space-y-5">
+
+            {/* Withdrawal form */}
+            <div className="card p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <BanknoteIcon className="w-5 h-5" style={{ color: "#16A34A" }} />
+                <h2 className="text-sm font-bold" style={{ color: "var(--text-900)" }}>Request Payout</h2>
+              </div>
+
+              {/* Available balance */}
+              <div className="rounded-xl px-4 py-3" style={{ background: "rgba(0,198,122,0.08)", border: "1px solid rgba(0,198,122,0.2)" }}>
+                <p className="text-xs" style={{ color: "var(--text-400)" }}>Available to withdraw</p>
+                <p className="text-2xl font-bold mt-0.5" style={{ color: "#00C67A" }}>
+                  {loading ? "—" : `₹${fmt(available)}`}
+                </p>
+              </div>
+
+              {/* Bank account */}
+              {bank?.bankAccount ? (
+                <div className="rounded-xl px-4 py-3 space-y-1"
+                  style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-300)" }}>
+                    Payout destination
+                  </p>
+                  <p className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>
+                    {bank.bankHolder ?? "—"}
+                  </p>
+                  <p className="text-xs font-mono" style={{ color: "var(--text-400)" }}>
+                    {maskAccount(bank.bankAccount)} · {bank.bankIfsc ?? "—"}
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-xl px-4 py-3 flex items-start gap-2"
+                  style={{ background: "#FFFBEB", border: "1px solid #FDE68A" }}>
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#D97706" }} />
+                  <p className="text-xs" style={{ color: "#92400E" }}>
+                    No bank account set. Go to Profile → Bank Details to add your account before requesting a payout.
+                  </p>
+                </div>
+              )}
+
+              {/* Pending blocker */}
+              {hasPending && (
+                <div className="rounded-xl px-4 py-3 flex items-start gap-2"
+                  style={{ background: "#FFFBEB", border: "1px solid #FDE68A" }}>
+                  <Clock className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#D97706" }} />
+                  <p className="text-xs" style={{ color: "#92400E" }}>
+                    A withdrawal request is already pending. Wait for it to be processed before submitting another.
+                  </p>
+                </div>
+              )}
+
+              <form onSubmit={submitWithdrawal} className="space-y-2">
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold"
+                    style={{ color: "var(--text-400)" }}>₹</span>
+                  <input
+                    type="number" min="1" step="1" value={wdAmount}
+                    onChange={e => { setWdAmount(e.target.value); setWdError(""); setWdSuccess(false); }}
+                    placeholder="Enter amount"
+                    disabled={hasPending || !bank?.bankAccount}
+                    className="w-full pl-7 pr-24 py-2.5 rounded-xl text-sm border outline-none disabled:opacity-50"
+                    style={{ background: "var(--bg-muted)", color: "var(--text-900)", borderColor: "var(--border)" }}
+                  />
+                  <button type="button"
+                    onClick={() => setWdAmount(String(Math.floor(available)))}
+                    disabled={available <= 0 || hasPending || !bank?.bankAccount}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg text-xs font-semibold disabled:opacity-40"
+                    style={{ background: "rgba(0,198,122,0.12)", color: "#00C67A" }}>
+                    Max
+                  </button>
+                </div>
+                <button type="submit"
+                  disabled={wdLoading || hasPending || !bank?.bankAccount || available <= 0}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50">
+                  <span style={{ background: "#16A34A" }}
+                    className="flex items-center justify-center gap-2 w-full h-full rounded-xl px-4 py-2.5">
+                    {wdLoading ? "Submitting…" : "Request Payout"}
+                  </span>
+                </button>
+              </form>
+              {wdError   && <p className="text-xs" style={{ color: "#EF4444" }}>{wdError}</p>}
+              {wdSuccess && <p className="text-xs" style={{ color: "#16A34A" }}>Request submitted! Admin will process within 2–3 business days.</p>}
+            </div>
+
+            {/* Tax Summary */}
+            {tax && (
+              <div className="card overflow-hidden">
+                <div className="px-5 py-3 flex items-center justify-between"
+                  style={{ borderBottom: "1px solid var(--border)" }}>
+                  <div>
+                    <h2 className="text-sm font-bold" style={{ color: "var(--text-900)" }}>Tax Summary</h2>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>{tax.fyLabel}</p>
+                  </div>
+                </div>
+                <div className="p-5 space-y-0">
+                  {[
+                    { label: "Gross Revenue", value: tax.grossRevenue, color: "#00C67A", sign: "" },
+                    { label: "Platform Fee", value: tax.platformFee, color: "#EF4444", sign: "−" },
+                    { label: "GST on Platform Fee", value: tax.gstOnFees, color: "#EF4444", sign: "−" },
+                    { label: "TDS Est. (Sec. 194O @ 1%)", value: tax.tdsEstimate, color: "#D97706", sign: "−" },
+                    { label: "Net Payable (Settled)", value: tax.netPayable, color: "#7C3AED", sign: "" },
+                  ].map(({ label, value, color, sign }) => (
+                    <div key={label} className="flex items-center justify-between py-2"
+                      style={{ borderBottom: "1px solid var(--border)" }}>
+                      <span className="text-xs" style={{ color: "var(--text-400)" }}>{label}</span>
+                      <span className="text-xs font-semibold tabular-nums" style={{ color }}>
+                        {sign}₹{fmt(value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="px-5 pb-4">
+                  <div className="flex items-start gap-2 mt-2 px-3 py-2 rounded-lg"
+                    style={{ background: "var(--bg-muted)" }}>
+                    <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: "var(--text-300)" }} />
+                    <p className="text-[10px] leading-relaxed" style={{ color: "var(--text-400)" }}>
+                      TDS applies under Sec. 194O when annual gross exceeds ₹5 lakh. Reconcile with Form 26AS before filing. Figures are estimates.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -10,43 +10,43 @@ export async function GET(req: NextRequest) {
 
   const sellerId = session.user.id;
 
-  const transactions = await prisma.walletTransaction.findMany({
-    where: { sellerId },
-    orderBy: { createdAt: "desc" },
-  });
+  // Indian fiscal year: April 1 → March 31
+  const now = new Date();
+  const fyStart = now.getMonth() >= 3
+    ? new Date(now.getFullYear(), 3, 1)
+    : new Date(now.getFullYear() - 1, 3, 1);
+  const fyLabel = `FY ${fyStart.getFullYear()}-${(fyStart.getFullYear() + 1).toString().slice(2)}`;
 
-  // Upcoming = has remittanceDate but no bankTxId yet (not yet paid)
+  const [transactions, seller, settleAgg] = await Promise.all([
+    prisma.walletTransaction.findMany({
+      where: { sellerId },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.user.findUnique({
+      where: { id: sellerId },
+      select: { bankHolder: true, bankAccount: true, bankIfsc: true },
+    }),
+    prisma.settlement.aggregate({
+      where: { sellerId, createdAt: { gte: fyStart } },
+      _sum: { sellingPrice: true, platformFee: true, gstOnFees: true, netPayable: true },
+    }),
+  ]);
+
   const upcoming = transactions.filter((t) => t.remittanceDate !== null && t.bankTxId === null);
+  const paid     = transactions.filter((t) => t.bankTxId !== null || t.remittanceDate === null);
 
-  // Paid = has bankTxId, OR old manual entry (no remittanceDate either — pre-existing)
-  const paid = transactions.filter((t) => t.bankTxId !== null || t.remittanceDate === null);
-
-  // Settled: credits received minus deductions on settled transactions
   const totalCredit     = paid.filter((t) => t.type === "CREDIT").reduce((s, t) => s + t.amount, 0);
-  // Deductions = ALL DEBIT transactions across all states (not just settled bucket)
   const totalDeductions = transactions.filter((t) => t.type === "DEBIT").reduce((s, t) => s + t.amount, 0);
   const balance         = totalCredit - totalDeductions;
   const upcomingAmount  = upcoming.filter((t) => t.type === "CREDIT").reduce((s, t) => s + t.amount, 0);
 
-  // Remitted orders for breakdown tab
-  const remittedOrders = await prisma.order.findMany({
-    where: { sellerId, remittedAt: { not: null } },
-    select: {
-      id: true,
-      externalOrderId: true,
-      status: true,
-      courier: true,
-      customerName: true,
-      totalAmount: true,
-      productCost: true,
-      shippingCharge: true,
-      packingCharge: true,
-      rtoCharge: true,
-      remittedAt: true,
-      remittanceTxId: true,
-    },
-    orderBy: { remittedAt: "desc" },
-  });
+  const grossRevenue = settleAgg._sum.sellingPrice ?? 0;
+  const platformFee  = settleAgg._sum.platformFee  ?? 0;
+  const gstOnFees    = settleAgg._sum.gstOnFees    ?? 0;
+  const netPayable   = settleAgg._sum.netPayable   ?? 0;
+
+  // Section 194O TDS: 1% on gross marketplace sales (applies above ₹5L threshold)
+  const tdsEstimate  = grossRevenue >= 500_000 ? grossRevenue * 0.01 : 0;
 
   return NextResponse.json({
     balance,
@@ -56,7 +56,19 @@ export async function GET(req: NextRequest) {
     upcomingAmount,
     upcoming,
     paid,
-    transactions, // full list for any other use
-    remittedOrders,
+    transactions,
+    bankDetails: {
+      bankHolder:  seller?.bankHolder  ?? null,
+      bankAccount: seller?.bankAccount ?? null,
+      bankIfsc:    seller?.bankIfsc    ?? null,
+    },
+    taxSummary: {
+      fyLabel,
+      grossRevenue,
+      platformFee,
+      gstOnFees,
+      tdsEstimate,
+      netPayable,
+    },
   });
 }
