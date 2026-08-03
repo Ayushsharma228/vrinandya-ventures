@@ -14,7 +14,7 @@ interface Transaction {
 }
 interface BankDetails { bankHolder: string | null; bankAccount: string | null; bankIfsc: string | null; }
 interface WalletData {
-  balance: number; totalCredit: number; totalDebit: number; totalDeductions: number;
+  balance: number; totalRemittance: number; totalDeductions: number;
   upcomingAmount: number; upcoming: Transaction[]; paid: Transaction[];
   transactions: Transaction[];
   bankDetails: BankDetails;
@@ -118,27 +118,30 @@ export default function SellerWalletPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               {
-                label: "Paid Till Now", value: loading ? "—" : `₹${fmt(data?.totalCredit ?? 0)}`,
-                sub: `${paid.length} payment${paid.length !== 1 ? "s" : ""}`,
+                label: "Total Remittance",
+                value: loading ? "—" : `₹${fmt(data?.totalRemittance ?? 0)}`,
+                sub: `${(data?.paid.length ?? 0) + (data?.upcoming.length ?? 0)} remittance entries`,
                 icon: TrendingUp, color: "#00C67A", bg: "rgba(0,198,122,0.12)",
+              },
+              {
+                label: "Total Deductions",
+                value: loading ? "—" : `₹${fmt(data?.totalDeductions ?? 0)}`,
+                sub: "RTO & adjustments",
+                icon: TrendingDown, color: "#EF4444", bg: "rgba(239,68,68,0.1)",
               },
               {
                 label: "Wallet Balance",
                 value: loading ? "—" : `${available < 0 ? "−" : ""}₹${fmt(available)}`,
-                sub: available < 0 ? "In deficit — deductions exceed credits" : "Available to withdraw",
+                sub: available < 0 ? "In deficit" : "Remittance minus deductions",
                 icon: Wallet,
                 color: available < 0 ? "#EF4444" : "#F59E0B",
                 bg: available < 0 ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)",
               },
               {
-                label: "Upcoming Payouts", value: loading ? "—" : `₹${fmt(data?.upcomingAmount ?? 0)}`,
+                label: "Upcoming Payouts",
+                value: loading ? "—" : `₹${fmt(data?.upcomingAmount ?? 0)}`,
                 sub: `${upcoming.length} pending remittance${upcoming.length !== 1 ? "s" : ""}`,
                 icon: Clock, color: "#7C3AED", bg: "rgba(124,58,237,0.1)",
-              },
-              {
-                label: "Total Deductions", value: loading ? "—" : `₹${fmt(data?.totalDeductions ?? 0)}`,
-                sub: "RTO & adjustments",
-                icon: TrendingDown, color: "#EF4444", bg: "rgba(239,68,68,0.1)",
               },
             ].map(({ label, value, sub, icon: Icon, color, bg }) => (
               <div key={label} className="rounded-2xl px-5 py-4"

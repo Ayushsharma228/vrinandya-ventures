@@ -10,14 +10,7 @@ export async function GET(req: NextRequest) {
 
   const sellerId = session.user.id;
 
-  // Indian fiscal year: April 1 → March 31
-  const now = new Date();
-  const fyStart = now.getMonth() >= 3
-    ? new Date(now.getFullYear(), 3, 1)
-    : new Date(now.getFullYear() - 1, 3, 1);
-  const fyLabel = `FY ${fyStart.getFullYear()}-${(fyStart.getFullYear() + 1).toString().slice(2)}`;
-
-  const [transactions, seller, settleAgg] = await Promise.all([
+  const [transactions, seller] = await Promise.all([
     prisma.walletTransaction.findMany({
       where: { sellerId },
       orderBy: { createdAt: "desc" },
@@ -26,35 +19,25 @@ export async function GET(req: NextRequest) {
       where: { id: sellerId },
       select: { bankHolder: true, bankAccount: true, bankIfsc: true },
     }),
-    prisma.settlement.aggregate({
-      where: { sellerId, createdAt: { gte: fyStart } },
-      _sum: { sellingPrice: true, platformFee: true, gstOnFees: true, netPayable: true },
-    }),
   ]);
 
-  // "upcoming" = scheduled (has a date) but not yet confirmed with bankTxId
-  const upcoming = transactions.filter((t) => t.bankTxId === null && t.type === "CREDIT");
-  // "paid" list for frontend display (confirmed transfers only)
-  const paid     = transactions.filter((t) => t.bankTxId !== null);
+  // Total remittance = ALL credit entries (confirmed + upcoming)
+  const totalRemittance = transactions.filter(t => t.type === "CREDIT").reduce((s, t) => s + t.amount, 0);
+  // Total deductions = ALL debit entries
+  const totalDeductions = transactions.filter(t => t.type === "DEBIT").reduce((s, t) => s + t.amount, 0);
+  // Net balance = remittance - deductions
+  const balance = totalRemittance - totalDeductions;
 
-  // Balance must only count confirmed transfers (bankTxId set) — not pending/scheduled credits
-  const totalCredit     = transactions.filter((t) => t.type === "CREDIT" && t.bankTxId !== null).reduce((s, t) => s + t.amount, 0);
-  const totalDeductions = transactions.filter((t) => t.type === "DEBIT").reduce((s, t) => s + t.amount, 0);
-  const balance         = totalCredit - totalDeductions;
-  const upcomingAmount  = upcoming.reduce((s, t) => s + t.amount, 0);
+  // Upcoming = credits not yet confirmed (no bankTxId)
+  const upcoming = transactions.filter(t => t.bankTxId === null && t.type === "CREDIT");
+  const upcomingAmount = upcoming.reduce((s, t) => s + t.amount, 0);
 
-  const grossRevenue = settleAgg._sum.sellingPrice ?? 0;
-  const platformFee  = settleAgg._sum.platformFee  ?? 0;
-  const gstOnFees    = settleAgg._sum.gstOnFees    ?? 0;
-  const netPayable   = settleAgg._sum.netPayable   ?? 0;
-
-  // Section 194O TDS: 1% on gross marketplace sales (applies above ₹5L threshold)
-  const tdsEstimate  = grossRevenue >= 500_000 ? grossRevenue * 0.01 : 0;
+  // Paid list for transaction log display
+  const paid = transactions.filter(t => t.bankTxId !== null);
 
   return NextResponse.json({
     balance,
-    totalCredit,
-    totalDebit: totalDeductions,
+    totalRemittance,
     totalDeductions,
     upcomingAmount,
     upcoming,
@@ -64,14 +47,6 @@ export async function GET(req: NextRequest) {
       bankHolder:  seller?.bankHolder  ?? null,
       bankAccount: seller?.bankAccount ?? null,
       bankIfsc:    seller?.bankIfsc    ?? null,
-    },
-    taxSummary: {
-      fyLabel,
-      grossRevenue,
-      platformFee,
-      gstOnFees,
-      tdsEstimate,
-      netPayable,
     },
   });
 }
