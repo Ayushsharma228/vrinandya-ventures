@@ -261,3 +261,37 @@ export async function emailNdrActionedByAdmin(opts: {
     `),
   );
 }
+
+export async function emailDigest(opts: {
+  to: string; name: string; period: string;
+  totalOrders: number; delivered: number; rto: number;
+  revenue: number; balance: number; unreadNotifs: number;
+}): Promise<void> {
+  const rtoRate = opts.totalOrders > 0 ? Math.round((opts.rto / opts.totalOrders) * 100) : 0;
+  const deliveryRate = opts.totalOrders > 0 ? Math.round((opts.delivered / opts.totalOrders) * 100) : 0;
+  await send(
+    opts.to,
+    `Your ${opts.period} Summary — Vrinandya Ventures`,
+    base(`
+      ${h2(`${opts.period} Business Summary`)}
+      ${p(`Hi ${opts.name}, here's how your business performed ${opts.period === "Daily" ? "yesterday" : "this week"}.`)}
+      ${badge(opts.period.toUpperCase(), "#4361EE")}
+      ${kv([
+        ["Orders Received",  String(opts.totalOrders)],
+        ["Delivered",        `${opts.delivered} (${deliveryRate}%)`],
+        ["RTO / Return",     `${opts.rto} (${rtoRate}%)`],
+        ["Revenue",          `₹${opts.revenue.toFixed(2)}`],
+        ["Wallet Balance",   `₹${opts.balance.toFixed(2)}`],
+        ["Unread Alerts",    String(opts.unreadNotifs)],
+      ])}
+      ${hr()}
+      ${opts.rto > 0 && rtoRate > 20
+        ? `<div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px 16px;margin-bottom:16px">
+            <p style="margin:0;font-size:13px;color:#B91C1C;font-weight:600">⚠ High RTO rate (${rtoRate}%) — review your top-RTO products.</p>
+           </div>`
+        : ""
+      }
+      ${p(`Visit your ${link("Seller Dashboard", "/seller")} to take action.`)}
+    `),
+  );
+}

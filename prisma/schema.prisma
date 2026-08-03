@@ -183,6 +183,9 @@ model User {
   // Data visibility — orders before this date are hidden from seller dashboard
   dataStartDate        DateTime?
 
+  // Notification preferences & alert rules (JSON blob)
+  notificationPrefs    Json?
+
   // Meta Ads integration
   metaAccessToken      String?
   metaAdAccountId      String?
