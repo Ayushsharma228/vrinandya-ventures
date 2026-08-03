@@ -56,9 +56,17 @@ export async function GET(req: NextRequest) {
       supplierTrackingNo: true,
       supplierCourier: true,
       createdAt: true,
+      updatedAt: true,
+      totalAmount: true,
+      expectedDeliveryDate: true,
       customerName: true,
       customerEmail: true,
       customerAddress: true,
+      timeline: {
+        where: { event: "DELIVERY_ISSUE" },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, event: true, details: true, createdAt: true },
+      },
     },
   });
 
