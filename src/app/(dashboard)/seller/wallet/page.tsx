@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Wallet, TrendingUp, TrendingDown, Clock, CheckCircle2,
   ArrowUpRight, ArrowDownRight, BanknoteIcon, XCircle,
-  Copy, CopyCheck, Download, AlertCircle, Info,
+  Copy, CopyCheck, Download, AlertCircle,
 } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 
@@ -13,16 +13,11 @@ interface Transaction {
   remittanceDate: string | null; bankTxId: string | null; createdAt: string;
 }
 interface BankDetails { bankHolder: string | null; bankAccount: string | null; bankIfsc: string | null; }
-interface TaxSummary {
-  fyLabel: string; grossRevenue: number; platformFee: number;
-  gstOnFees: number; tdsEstimate: number; netPayable: number;
-}
 interface WalletData {
   balance: number; totalCredit: number; totalDebit: number; totalDeductions: number;
   upcomingAmount: number; upcoming: Transaction[]; paid: Transaction[];
   transactions: Transaction[];
   bankDetails: BankDetails;
-  taxSummary: TaxSummary;
 }
 interface WithdrawalRequest {
   id: string; amount: number; status: string; adminNote: string | null;
@@ -111,7 +106,6 @@ export default function SellerWalletPage() {
   const displayed  = tab === "All" ? allTx : tab === "Upcoming" ? upcoming : tab === "Paid" ? paid : deductions;
 
   const available = data?.balance ?? 0;
-  const tax       = data?.taxSummary;
   const bank      = data?.bankDetails;
   const hasPending = withdrawals.some(w => w.status === "PENDING");
 
@@ -119,7 +113,7 @@ export default function SellerWalletPage() {
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
       <PageHero
         title="Wallet & Payouts"
-        subtitle="Your earnings, payouts, and tax summary"
+        subtitle="Your earnings, payouts, and transaction history"
         cards={
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
@@ -410,44 +404,6 @@ export default function SellerWalletPage() {
               {wdSuccess && <p className="text-xs" style={{ color: "#16A34A" }}>Request submitted! Admin will process within 2–3 business days.</p>}
             </div>
 
-            {/* Tax Summary */}
-            {tax && (
-              <div className="card overflow-hidden">
-                <div className="px-5 py-3 flex items-center justify-between"
-                  style={{ borderBottom: "1px solid var(--border)" }}>
-                  <div>
-                    <h2 className="text-sm font-bold" style={{ color: "var(--text-900)" }}>Tax Summary</h2>
-                    <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>{tax.fyLabel}</p>
-                  </div>
-                </div>
-                <div className="p-5 space-y-0">
-                  {[
-                    { label: "Gross Revenue", value: tax.grossRevenue, color: "#00C67A", sign: "" },
-                    { label: "Platform Fee", value: tax.platformFee, color: "#EF4444", sign: "−" },
-                    { label: "GST on Platform Fee", value: tax.gstOnFees, color: "#EF4444", sign: "−" },
-                    { label: "TDS Est. (Sec. 194O @ 1%)", value: tax.tdsEstimate, color: "#D97706", sign: "−" },
-                    { label: "Net Payable (Settled)", value: tax.netPayable, color: "#7C3AED", sign: "" },
-                  ].map(({ label, value, color, sign }) => (
-                    <div key={label} className="flex items-center justify-between py-2"
-                      style={{ borderBottom: "1px solid var(--border)" }}>
-                      <span className="text-xs" style={{ color: "var(--text-400)" }}>{label}</span>
-                      <span className="text-xs font-semibold tabular-nums" style={{ color }}>
-                        {sign}₹{fmt(value)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="px-5 pb-4">
-                  <div className="flex items-start gap-2 mt-2 px-3 py-2 rounded-lg"
-                    style={{ background: "var(--bg-muted)" }}>
-                    <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: "var(--text-300)" }} />
-                    <p className="text-[10px] leading-relaxed" style={{ color: "var(--text-400)" }}>
-                      TDS applies under Sec. 194O when annual gross exceeds ₹5 lakh. Reconcile with Form 26AS before filing. Figures are estimates.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

@@ -205,6 +205,36 @@ export async function GET(req: NextRequest) {
     .filter(t => t.bankTxId === null && t.type === "CREDIT")
     .reduce((acc, t) => acc + t.amount, 0);
 
+  // Previous period — same duration immediately before current window
+  let prevPeriod: {
+    totalOrders: number; deliveryRate: number; rtoRate: number; totalRevenue: number; netProfit: number;
+  } | null = null;
+
+  if (gteDate && lteDate) {
+    const duration  = lteDate.getTime() - gteDate.getTime();
+    const prevLte   = new Date(gteDate.getTime() - 1);
+    const prevGte   = new Date(prevLte.getTime() - duration);
+    const prevOrders = await prisma.order.findMany({
+      where: { sellerId, createdAt: { gte: prevGte, lte: prevLte } },
+      select: { status: true, totalAmount: true, packingCharge: true, productCost: true, shippingCharge: true, rtoCharge: true },
+    });
+    const pt  = prevOrders.length;
+    const pd  = prevOrders.filter(o => o.status === "DELIVERED").length;
+    const pr  = prevOrders.filter(o => o.status === "RTO").length;
+    const pgmv = prevOrders.reduce((s, o) => s + o.totalAmount, 0);
+    const ppc  = prevOrders.reduce((s, o) => s + (o.productCost  ?? 0), 0);
+    const pfe  = prevOrders.reduce((s, o) => s + (o.packingCharge ?? 0), 0);
+    const psh  = prevOrders.reduce((s, o) => s + (o.shippingCharge ?? 0), 0);
+    const prtc = prevOrders.filter(o => o.status === "RTO").reduce((s, o) => s + (o.rtoCharge ?? 0), 0);
+    prevPeriod = {
+      totalOrders:  pt,
+      deliveryRate: pt > 0 ? Math.round(pd / pt * 100) : 0,
+      rtoRate:      pt > 0 ? Math.round(pr / pt * 100) : 0,
+      totalRevenue: pgmv,
+      netProfit:    pgmv - ppc - pfe - psh - prtc,
+    };
+  }
+
   return NextResponse.json({
     totalOrders: total,
     deliveryRate: pct(delivered.length),
@@ -238,5 +268,6 @@ export async function GET(req: NextRequest) {
       earningsTrend,
     },
     wallet: { balance: walletBalance, upcoming: upcomingAmount },
+    prevPeriod,
   });
 }

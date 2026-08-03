@@ -38,6 +38,7 @@ interface AnalyticsData {
   };
   wallet: { balance: number; upcoming: number };
   rtoByState: { state: string; total: number; rto: number; rtoPct: number }[];
+  prevPeriod: { totalOrders: number; deliveryRate: number; rtoRate: number; totalRevenue: number; netProfit: number } | null;
 }
 
 const PIE_COLORS = ["#3b5bdb", "#40c057", "#fd7e14", "#ae3ec9", "#f03e3e"];
@@ -47,6 +48,10 @@ function fmt(d: string) {
 }
 function inr(n: number) {
   return "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+}
+function deltaPct(curr: number, prev: number): number | null {
+  if (prev === 0) return null;
+  return Math.round(((curr - prev) / Math.abs(prev)) * 100);
 }
 
 function toISODate(d: Date) { return d.toISOString().split("T")[0]; }
@@ -214,23 +219,27 @@ export default function SellerAnalyticsPage() {
             <StatCard
               label="Total Orders"
               value={data?.totalOrders ?? 0}
-              sub="All time"
+              sub="vs prev period"
               subColor="text-blue-500"
               icon={<ShoppingCart className="w-6 h-6 text-gray-300" />}
               bg="bg-white"
+              delta={data?.prevPeriod ? deltaPct(data.totalOrders, data.prevPeriod.totalOrders) : null}
+              deltaGoodDir="up"
             />
             <StatCard
               label="Delivery Rate"
               value={`${data?.deliveryRate ?? 0}%`}
-              sub={`${data?.deliveredCount ?? 0} Delivered`}
+              sub={`${data?.deliveredCount ?? 0} delivered`}
               subColor="text-green-500"
               icon={<Truck className="w-6 h-6 text-green-300" />}
               bg="bg-white"
+              delta={data?.prevPeriod ? deltaPct(data.deliveryRate, data.prevPeriod.deliveryRate) : null}
+              deltaGoodDir="up"
             />
             <StatCard
               label="In Transit Rate"
               value={`${data?.inTransitRate ?? 0}%`}
-              sub={`${data?.inTransitCount ?? 0} In Transit`}
+              sub={`${data?.inTransitCount ?? 0} in transit`}
               subColor="text-blue-500"
               icon={<Truck className="w-6 h-6 text-blue-300" />}
               bg="bg-white"
@@ -242,11 +251,13 @@ export default function SellerAnalyticsPage() {
               subColor="text-orange-500"
               icon={<AlertTriangle className="w-6 h-6 text-orange-300" />}
               bg="bg-white"
+              delta={data?.prevPeriod ? deltaPct(data.rtoRate, data.prevPeriod.rtoRate) : null}
+              deltaGoodDir="down"
             />
             <StatCard
               label="Cancelled Rate"
               value={`${data?.cancelledRate ?? 0}%`}
-              sub={`${data?.cancelledCount ?? 0} Cancelled`}
+              sub={`${data?.cancelledCount ?? 0} cancelled`}
               subColor="text-red-500"
               icon={<XCircle className="w-6 h-6 text-red-300" />}
               bg="bg-white"
@@ -762,10 +773,15 @@ export default function SellerAnalyticsPage() {
   );
 }
 
-function StatCard({ label, value, sub, subColor, icon, bg }: {
+function StatCard({ label, value, sub, subColor, icon, bg, delta, deltaGoodDir = "up" }: {
   label: string; value: string | number; sub: string; subColor: string;
   icon: React.ReactNode; bg: string;
+  delta?: number | null;        // percentage change vs prev period
+  deltaGoodDir?: "up" | "down"; // "down" means lower is better (e.g. RTO rate)
 }) {
+  const isGood = delta !== null && delta !== undefined
+    ? (deltaGoodDir === "up" ? delta >= 0 : delta <= 0)
+    : null;
   return (
     <div className={`${bg} border border-gray-200 rounded-xl p-4`}>
       <div className="flex items-center justify-between mb-2">
@@ -773,7 +789,14 @@ function StatCard({ label, value, sub, subColor, icon, bg }: {
         {icon}
       </div>
       <p className="text-2xl font-bold text-gray-900">{value}</p>
-      <p className={`text-xs mt-1 ${subColor}`}>{sub}</p>
+      <div className="flex items-center justify-between mt-1">
+        <p className={`text-xs ${subColor}`}>{sub}</p>
+        {delta !== null && delta !== undefined && (
+          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isGood ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}>
+            {delta >= 0 ? "+" : ""}{delta}%
+          </span>
+        )}
+      </div>
     </div>
   );
 }
