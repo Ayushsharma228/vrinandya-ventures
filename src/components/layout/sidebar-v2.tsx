@@ -10,7 +10,7 @@ import {
   Wallet, BadgeIndianRupee, User, Megaphone, AlertTriangle, UserCheck,
   Menu, X, ClipboardList, BarChart2, Boxes, Receipt, TrendingUp,
   Settings2, ShieldCheck, BanknoteIcon, MonitorDot, Zap, Layers,
-  Bot, Activity, MessageCircle,
+  Bot, Activity, MessageCircle, HelpCircle,
 } from "lucide-react";
 
 interface NavItem {
@@ -47,6 +47,7 @@ const adminNav: NavItem[] = [
   { label: "KYC",               href: "/admin/kyc",               icon: ShieldCheck },
   { label: "Config",            href: "/admin/config",            icon: Settings2 },
   { label: "Users",             href: "/admin/users",             icon: Users },
+  { label: "Support",           href: "/admin/support",           icon: HelpCircle },
   { label: "Notifications",     href: "/admin/notifications",     icon: Bell },
 ];
 
@@ -63,6 +64,7 @@ const sellerNav: NavItem[] = [
   { label: "Shopify Store",  href: "/seller/shopify",          icon: Store,           section: "SETTINGS" },
   { label: "Amazon",         href: "/seller/amazon",           icon: ShoppingCart },
   { label: "Activation",     href: "/seller/activation",       icon: Activity },
+  { label: "Support",        href: "/seller/support",          icon: HelpCircle },
   { label: "Notifications",  href: "/seller/notifications",    icon: Bell },
   { label: "Profile",        href: "/seller/profile",          icon: User },
 ];
