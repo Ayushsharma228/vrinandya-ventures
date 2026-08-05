@@ -99,11 +99,8 @@ export function SellerHeader({ userName, userEmail }: {
           <span className="hidden sm:block font-bold text-base" style={{ color: "#1e1b4b" }}>AXQEN</span>
         </Link>
 
-        {/* ── Blue pill nav (center) ── */}
-        <nav
-          className="hidden md:flex items-center gap-0.5 px-1.5 py-1.5 rounded-2xl"
-          style={{ background: "#4361EE" }}
-        >
+        {/* ── Nav — active item gets blue pill, rest plain text ── */}
+        <nav className="hidden md:flex items-center gap-1">
           {sellerNav.map((group) => {
             const active = isGroupActive(group);
             const isOpen = openGroup === group.label;
@@ -115,11 +112,11 @@ export function SellerHeader({ userName, userEmail }: {
                   href={group.href!}
                   className="px-4 py-1.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap"
                   style={{
-                    background: active ? "white" : "transparent",
-                    color: active ? "#4361EE" : "rgba(255,255,255,0.75)",
+                    background: active ? "#4361EE" : "transparent",
+                    color: active ? "white" : "#6B7280",
                   }}
-                  onMouseEnter={e => { if (!active) { e.currentTarget.style.color = "white"; e.currentTarget.style.background = "rgba(255,255,255,0.12)"; } }}
-                  onMouseLeave={e => { if (!active) { e.currentTarget.style.color = "rgba(255,255,255,0.75)"; e.currentTarget.style.background = "transparent"; } }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.color = "#1e1b4b"; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.color = "#6B7280"; }}
                 >
                   {group.label}
                 </Link>
@@ -131,12 +128,12 @@ export function SellerHeader({ userName, userEmail }: {
                 <button
                   className="flex items-center gap-1 px-4 py-1.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap"
                   style={{
-                    background: active ? "white" : isOpen ? "rgba(255,255,255,0.12)" : "transparent",
-                    color: active ? "#4361EE" : "rgba(255,255,255,0.75)",
+                    background: active ? "#4361EE" : "transparent",
+                    color: active ? "white" : "#6B7280",
                   }}
                   onClick={() => setOpenGroup(isOpen ? null : group.label)}
-                  onMouseEnter={e => { if (!active && !isOpen) { e.currentTarget.style.color = "white"; e.currentTarget.style.background = "rgba(255,255,255,0.12)"; } }}
-                  onMouseLeave={e => { if (!active && !isOpen) { e.currentTarget.style.color = "rgba(255,255,255,0.75)"; e.currentTarget.style.background = "transparent"; } }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.color = "#1e1b4b"; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.color = "#6B7280"; }}
                 >
                   {group.label}
                   <ChevronDown
