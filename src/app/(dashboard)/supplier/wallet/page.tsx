@@ -145,7 +145,7 @@ export default function SupplierWalletPage() {
           ) : (
             <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
-                <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
+                <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-muted)" }}>
                   {["Order ID", "Source", "Items", "Order Value", "Status", "Date"].map((h) => (
                     <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-400)" }}>{h}</th>
                   ))}

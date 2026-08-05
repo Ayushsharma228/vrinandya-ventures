@@ -113,7 +113,7 @@ export default function SupplierInventoryPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
+                  <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-muted)" }}>
                     {["Product", "SKU", "Available", "Reserved", "Incoming", "Low Stock Alert", "Updated", ""].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
                         style={{ color: "var(--text-400)" }}>{h}</th>
@@ -193,8 +193,8 @@ export default function SupplierInventoryPage() {
                               </button>
                               <button onClick={() => setEditingId(null)}
                                 className="p-1.5 rounded-lg"
-                                style={{ background: "#F3F4F6" }}>
-                                <X className="w-3.5 h-3.5 text-gray-500" />
+                                style={{ background: "var(--bg-muted)" }}>
+                                <X className="w-3.5 h-3.5" style={{ color: "var(--text-500)" }} />
                               </button>
                             </div>
                           ) : (

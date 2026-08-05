@@ -25,7 +25,7 @@ function ScoreBar({ value, max = 100 }: { value: number; max?: number }) {
   const pct = Math.min(100, (value / max) * 100);
   const color = pct >= 80 ? "#16A34A" : pct >= 60 ? "#F59E0B" : "#EF4444";
   return (
-    <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
+    <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "var(--bg-muted)" }}>
       <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
     </div>
   );

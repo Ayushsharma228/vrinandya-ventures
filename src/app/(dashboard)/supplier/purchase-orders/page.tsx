@@ -118,7 +118,7 @@ export default function SupplierPurchaseOrdersPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
+                  <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-muted)" }}>
                     {["PO Number", "Order", "Customer", "Items", "Value", "Dispatch By", "Status", ""].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
                         style={{ color: "var(--text-400)" }}>{h}</th>
@@ -183,27 +183,31 @@ export default function SupplierPurchaseOrdersPage() {
       {/* PO Detail Modal */}
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 flex items-center justify-between border-b">
+          <div className="rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            style={{ background: "var(--bg-card)" }}>
+            <div className="px-6 py-4 flex items-center justify-between"
+              style={{ borderBottom: "1px solid var(--border)" }}>
               <div>
-                <h3 className="font-semibold text-gray-900">{selected.poNumber}</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Order #{selected.order.externalOrderId}</p>
+                <h3 className="font-semibold" style={{ color: "var(--text-900)" }}>{selected.poNumber}</h3>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>Order #{selected.order.externalOrderId}</p>
               </div>
-              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+              <button onClick={() => setSelected(null)} className="text-2xl leading-none"
+                style={{ color: "var(--text-400)" }}>×</button>
             </div>
             <div className="px-6 py-4 space-y-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Items</p>
+                <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: "var(--text-400)" }}>Items</p>
                 <div className="space-y-2">
                   {selected.items.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
+                    <div key={item.id} className="flex items-center justify-between py-2 px-3 rounded-lg"
+                      style={{ background: "var(--bg-muted)" }}>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{item.name}</p>
-                        {item.sku && <p className="text-xs text-gray-400 font-mono">SKU: {item.sku}</p>}
+                        <p className="text-sm font-medium" style={{ color: "var(--text-900)" }}>{item.name}</p>
+                        {item.sku && <p className="text-xs font-mono" style={{ color: "var(--text-400)" }}>SKU: {item.sku}</p>}
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-semibold text-gray-900">₹{item.unitCost.toLocaleString()}</p>
-                        <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
+                        <p className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>₹{item.unitCost.toLocaleString()}</p>
+                        <p className="text-xs" style={{ color: "var(--text-400)" }}>Qty: {item.quantity}</p>
                       </div>
                     </div>
                   ))}
@@ -214,17 +218,17 @@ export default function SupplierPurchaseOrdersPage() {
                   { label: "Dispatch By", value: selected.expectedDispatchDate },
                   { label: "Deliver By",  value: selected.expectedDeliveryDate },
                 ].map(({ label, value }) => (
-                  <div key={label} className="p-3 rounded-lg bg-gray-50">
-                    <p className="text-xs text-gray-400">{label}</p>
-                    <p className="text-sm font-medium text-gray-900 mt-0.5">
+                  <div key={label} className="p-3 rounded-lg" style={{ background: "var(--bg-muted)" }}>
+                    <p className="text-xs" style={{ color: "var(--text-400)" }}>{label}</p>
+                    <p className="text-sm font-medium mt-0.5" style={{ color: "var(--text-900)" }}>
                       {value ? new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}
                     </p>
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between items-center pt-2 border-t">
-                <p className="text-sm text-gray-500">Order Value</p>
-                <p className="text-lg font-bold text-gray-900">₹{selected.order.totalAmount.toLocaleString()}</p>
+              <div className="flex justify-between items-center pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+                <p className="text-sm" style={{ color: "var(--text-500)" }}>Order Value</p>
+                <p className="text-lg font-bold" style={{ color: "var(--text-900)" }}>₹{selected.order.totalAmount.toLocaleString()}</p>
               </div>
             </div>
           </div>

@@ -130,7 +130,7 @@ export default function SupplierSettlementsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
+                  <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-muted)" }}>
                     {["Date", "Type", "Amount", "Reference", "Note", "Settled On"].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
                         style={{ color: "var(--text-400)" }}>{h}</th>
@@ -209,7 +209,7 @@ export default function SupplierSettlementsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
+                      <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-muted)" }}>
                         {["Date","Order","Customer","Amount","Status","Due","Paid On","Reference"].map(h => (
                           <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
                             style={{ color: "var(--text-400)" }}>{h}</th>

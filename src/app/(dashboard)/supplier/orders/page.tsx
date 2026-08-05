@@ -304,7 +304,7 @@ export default function SupplierOrdersPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ borderBottom: "1px solid var(--border)", background: "#FAFAFA" }}>
+                  <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-muted)" }}>
                     <th className="px-4 py-3 w-10">
                       <input type="checkbox"
                         checked={checkedIds.size === filteredOrders.length && filteredOrders.length > 0}
@@ -419,15 +419,18 @@ export default function SupplierOrdersPage() {
       {/* Order Detail Modal */}
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 flex items-center justify-between border-b">
-              <h3 className="font-semibold text-gray-900">Order #{selected.externalOrderId}</h3>
-              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+          <div className="rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            style={{ background: "var(--bg-card)" }}>
+            <div className="px-6 py-4 flex items-center justify-between"
+              style={{ borderBottom: "1px solid var(--border)" }}>
+              <h3 className="font-semibold" style={{ color: "var(--text-900)" }}>Order #{selected.externalOrderId}</h3>
+              <button onClick={() => setSelected(null)} className="text-2xl leading-none"
+                style={{ color: "var(--text-400)" }}>×</button>
             </div>
             <div className="px-6 py-4 space-y-4">
-              <div className="p-4 rounded-xl" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Delivery Address</p>
-                <p className="text-sm font-semibold text-gray-900">{selected.customerName ?? "—"}</p>
+              <div className="p-4 rounded-xl" style={{ background: "var(--bg-muted)", border: "1px solid var(--border)" }}>
+                <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--text-400)" }}>Delivery Address</p>
+                <p className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>{selected.customerName ?? "—"}</p>
                 {selected.customerAddress && (() => {
                   const addr = selected.customerAddress as Record<string, string>;
                   const line = [
@@ -439,7 +442,7 @@ export default function SupplierOrdersPage() {
                   const phone = addr.phone;
                   return (
                     <>
-                      {line && <p className="text-sm text-gray-700 mt-1">{line}</p>}
+                      {line && <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>{line}</p>}
                       {phone && (
                         <div className="flex items-center gap-1.5 mt-2">
                           <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
@@ -456,17 +459,18 @@ export default function SupplierOrdersPage() {
                 )}
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Items to Fulfill</p>
+                <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: "var(--text-400)" }}>Items to Fulfill</p>
                 <div className="space-y-2">
                   {selected.items.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
+                    <div key={item.id} className="flex items-center justify-between py-2 px-3 rounded-lg"
+                      style={{ background: "var(--bg-muted)" }}>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{item.name}</p>
-                        {item.sku && <p className="text-xs text-gray-400 font-mono">SKU: {item.sku}</p>}
+                        <p className="text-sm font-medium" style={{ color: "var(--text-900)" }}>{item.name}</p>
+                        {item.sku && <p className="text-xs font-mono" style={{ color: "var(--text-400)" }}>SKU: {item.sku}</p>}
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-semibold text-gray-900">₹{item.price.toLocaleString()}</p>
-                        <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
+                        <p className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>₹{item.price.toLocaleString()}</p>
+                        <p className="text-xs" style={{ color: "var(--text-400)" }}>Qty: {item.quantity}</p>
                       </div>
                     </div>
                   ))}
@@ -477,17 +481,17 @@ export default function SupplierOrdersPage() {
                   { label: "Expected Dispatch", value: selected.expectedDispatchDate },
                   { label: "Expected Delivery", value: selected.expectedDeliveryDate },
                 ].map(({ label, value }) => (
-                  <div key={label} className="p-3 rounded-lg bg-gray-50">
-                    <p className="text-xs text-gray-400">{label}</p>
-                    <p className="text-sm font-medium text-gray-900 mt-0.5">
+                  <div key={label} className="p-3 rounded-lg" style={{ background: "var(--bg-muted)" }}>
+                    <p className="text-xs" style={{ color: "var(--text-400)" }}>{label}</p>
+                    <p className="text-sm font-medium mt-0.5" style={{ color: "var(--text-900)" }}>
                       {value ? new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}
                     </p>
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between items-center pt-2 border-t">
-                <p className="text-sm text-gray-500">Total Order Value</p>
-                <p className="text-lg font-bold text-gray-900">₹{selected.totalAmount.toLocaleString()}</p>
+              <div className="flex justify-between items-center pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+                <p className="text-sm" style={{ color: "var(--text-500)" }}>Total Order Value</p>
+                <p className="text-lg font-bold" style={{ color: "var(--text-900)" }}>₹{selected.totalAmount.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -497,15 +501,17 @@ export default function SupplierOrdersPage() {
       {/* Reject Modal */}
       {showReject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6">
-            <h3 className="font-semibold text-gray-900 mb-1">Reject Order</h3>
-            <p className="text-sm text-gray-500 mb-4">Provide a reason — the admin will be notified immediately.</p>
+          <div className="rounded-2xl w-full max-w-md p-6" style={{ background: "var(--bg-card)" }}>
+            <h3 className="font-semibold mb-1" style={{ color: "var(--text-900)" }}>Reject Order</h3>
+            <p className="text-sm mb-4" style={{ color: "var(--text-500)" }}>Provide a reason — the admin will be notified immediately.</p>
             <textarea value={rejectNote} onChange={(e) => setRejectNote(e.target.value)}
-              className="w-full border rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-300"
+              className="w-full rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-300"
+              style={{ border: "1px solid var(--border)", background: "var(--bg-page)", color: "var(--text-900)" }}
               rows={3} placeholder="e.g. Out of stock, unable to source..." />
             <div className="flex gap-2 mt-4">
               <button onClick={() => { setShowReject(null); setRejectNote(""); }}
-                className="flex-1 px-4 py-2 rounded-xl text-sm font-medium border text-gray-600">Cancel</button>
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-medium"
+                style={{ border: "1px solid var(--border)", color: "var(--text-600)", background: "transparent" }}>Cancel</button>
               <button onClick={() => runAction(showReject, "REJECT", { note: rejectNote })}
                 disabled={!rejectNote.trim() || actioning === showReject}
                 className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white"
@@ -520,11 +526,12 @@ export default function SupplierOrdersPage() {
       {/* Dispatch Modal */}
       {showDispatch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="px-6 py-4 flex items-center justify-between border-b">
-              <h3 className="font-semibold text-gray-900">Mark as Dispatched</h3>
+          <div className="rounded-2xl w-full max-w-md shadow-2xl" style={{ background: "var(--bg-card)" }}>
+            <div className="px-6 py-4 flex items-center justify-between"
+              style={{ borderBottom: "1px solid var(--border)" }}>
+              <h3 className="font-semibold" style={{ color: "var(--text-900)" }}>Mark as Dispatched</h3>
               <button onClick={() => { setShowDispatch(null); setShippingProviders([]); setAutoDispatchError(""); }}
-                className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+                className="text-2xl leading-none" style={{ color: "var(--text-400)" }}>×</button>
             </div>
             <div className="px-6 py-5 space-y-5">
               {autoDispatchError && (
@@ -535,7 +542,7 @@ export default function SupplierOrdersPage() {
               )}
 
               {loadingProviders ? (
-                <div className="py-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-gray-300" /></div>
+                <div className="py-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--text-300)" }} /></div>
               ) : shippingProviders.length > 0 ? (
                 <>
                   {/* Auto section */}
@@ -559,13 +566,13 @@ export default function SupplierOrdersPage() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="flex-1 border-t border-gray-200" />
-                    <span className="text-xs font-medium text-gray-400">OR enter manually</span>
-                    <div className="flex-1 border-t border-gray-200" />
+                    <div className="flex-1 border-t" style={{ borderColor: "var(--border)" }} />
+                    <span className="text-xs font-medium" style={{ color: "var(--text-400)" }}>OR enter manually</span>
+                    <div className="flex-1 border-t" style={{ borderColor: "var(--border)" }} />
                   </div>
                 </>
               ) : (
-                <p className="text-xs text-gray-400 text-center">
+                <p className="text-xs text-center" style={{ color: "var(--text-400)" }}>
                   No shipping provider connected.{" "}
                   <a href="/supplier/profile" className="underline text-green-600">Add one in Profile → Shipping</a> to enable auto-dispatch.
                 </p>
@@ -573,26 +580,29 @@ export default function SupplierOrdersPage() {
 
               {/* Manual section */}
               <div className="space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Manual Entry</p>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-400)" }}>Manual Entry</p>
                 <div>
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">Tracking Number</label>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-600)" }}>Tracking Number</label>
                   <input value={dispatchData.trackingNo}
                     onChange={(e) => setDispatchData((d) => ({ ...d, trackingNo: e.target.value }))}
-                    className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+                    className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+                    style={{ border: "1px solid var(--border)", background: "var(--bg-page)", color: "var(--text-900)" }}
                     placeholder="e.g. DTDC1234567890" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">Courier Partner</label>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-600)" }}>Courier Partner</label>
                   <input value={dispatchData.courier}
                     onChange={(e) => setDispatchData((d) => ({ ...d, courier: e.target.value }))}
-                    className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+                    className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+                    style={{ border: "1px solid var(--border)", background: "var(--bg-page)", color: "var(--text-900)" }}
                     placeholder="e.g. Delhivery, DTDC, Bluedart..." />
                 </div>
               </div>
 
               <div className="flex gap-2">
                 <button onClick={() => { setShowDispatch(null); setShippingProviders([]); setDispatchData({ trackingNo: "", courier: "" }); setAutoDispatchError(""); }}
-                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium border text-gray-600">Cancel</button>
+                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium"
+                  style={{ border: "1px solid var(--border)", color: "var(--text-600)", background: "transparent" }}>Cancel</button>
                 <button onClick={() => runAction(showDispatch, "DISPATCH", dispatchData)}
                   disabled={actioning === showDispatch || (!dispatchData.trackingNo && !dispatchData.courier)}
                   className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
