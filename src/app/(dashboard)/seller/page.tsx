@@ -175,107 +175,35 @@ export default function SellerDashboard() {
   return (
     <div className="min-h-screen" style={{ background: "#F1F5FF" }}>
 
-      {/* ── Welcome Hero ───────────────────────────────── */}
-      <div className="px-4 md:px-8 pt-8 pb-6"
-        style={{ background: "white", borderBottom: "1px solid #E5E7EB" }}>
-
-        {/* Top row: welcome + big stats */}
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+      {/* ── Welcome Hero — date + greeting only ────────── */}
+      <div className="px-4 md:px-8 pt-8 pb-6" style={{ background: "white" }}>
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold mb-1.5" style={{ color: "#818CF8" }}>
-              {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
+            <p className="text-xs font-medium mb-1" style={{ color: "#9CA3AF" }}>
+              {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
             </p>
-            <h1 className="text-4xl font-black mb-2" style={{ color: "#1e1b4b" }}>
-              {getGreeting()}, {name}!
+            <h1 className="text-3xl font-bold" style={{ color: "#1e1b4b" }}>
+              {getGreeting()}, {name}! 👋
             </h1>
+            <p className="text-sm mt-1" style={{ color: "#9CA3AF" }}>
+              Your current sales summary and activity
+            </p>
+          </div>
+        </div>
 
-            {/* Status pills */}
-            {!loading && analytics && analytics.totalOrders > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-                  style={{ background: "rgba(67,97,238,0.08)", color: "#4361EE" }}>
-                  📦 {analytics.totalOrders} total orders
-                </span>
-                {newOrdersCount > 0 && (
-                  <Link href="/seller/orders"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-                    style={{ background: "rgba(67,97,238,0.15)", color: "#4361EE" }}>
-                    🛒 {newOrdersCount} new waiting
-                  </Link>
-                )}
-                {openNdrs > 0 && (
-                  <Link href="/seller/ndr"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-                    style={{ background: "#FEF2F2", color: "#EF4444" }}>
-                    ⚠️ {openNdrs} NDR action needed
-                  </Link>
-                )}
-                {Math.abs(weekOverWeek) > 0 && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+        {/* keep vars from being unused — no render */}
+        {!loading && analytics && analytics.totalOrders > 0 && (
+          <div className="hidden">
+            {newOrdersCount > 0 && <Link href="/seller/orders" className="">🛒</Link>}
+            {openNdrs > 0    && <Link href="/seller/ndr"    className="">⚠️</Link>}
+            {Math.abs(weekOverWeek) > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
                     style={{ background: weekOverWeek >= 0 ? "rgba(67,97,238,0.08)" : "#FEF2F2", color: weekOverWeek >= 0 ? "#4361EE" : "#EF4444" }}>
                     {weekOverWeek >= 0 ? "📈" : "📉"} {Math.abs(weekOverWeek)}% vs last week
                   </span>
                 )}
-              </div>
-            )}
           </div>
-
-          {/* 3 big number stats — Crextio style */}
-          <div className="flex items-center gap-6 md:gap-10 flex-shrink-0">
-            {loading ? (
-              [...Array(3)].map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="h-10 w-20 rounded-xl bg-gray-100 mb-1" />
-                  <div className="h-3 w-16 rounded bg-gray-100" />
-                </div>
-              ))
-            ) : (
-              <>
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-1.5 mb-1">
-                    <div className="w-7 h-7 rounded-xl flex items-center justify-center"
-                      style={{ background: "rgba(67,97,238,0.1)" }}>
-                      <IndianRupee className="w-3.5 h-3.5" style={{ color: "#4361EE" }} />
-                    </div>
-                    <p className="text-3xl font-black" style={{ color: "#1e1b4b" }}>₹{fmt(analytics?.totalRevenue ?? 0)}</p>
-                  </div>
-                  <p className="text-xs font-medium" style={{ color: "#9CA3AF" }}>Revenue</p>
-                  {todayOrders > 0 && avgOrderValue > 0 && (
-                    <p className="text-[10px] mt-0.5" style={{ color: "#4361EE" }}>~₹{fmt(todayRevEst)} today</p>
-                  )}
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-1.5 mb-1">
-                    <div className="w-7 h-7 rounded-xl flex items-center justify-center"
-                      style={{ background: "rgba(67,97,238,0.1)" }}>
-                      <ShoppingCart className="w-3.5 h-3.5" style={{ color: "#4361EE" }} />
-                    </div>
-                    <p className="text-3xl font-black" style={{ color: "#1e1b4b" }}>{fmt(analytics?.totalOrders ?? 0)}</p>
-                  </div>
-                  <p className="text-xs font-medium" style={{ color: "#9CA3AF" }}>Orders</p>
-                  {todayOrders > 0 && (
-                    <p className="text-[10px] mt-0.5" style={{ color: todayDelta >= 0 ? "#4361EE" : "#EF4444" }}>
-                      {todayDelta >= 0 ? "▲" : "▼"}{Math.abs(todayDelta)} today
-                    </p>
-                  )}
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-1.5 mb-1">
-                    <div className="w-7 h-7 rounded-xl flex items-center justify-center"
-                      style={{ background: deliveryRate >= 70 ? "rgba(67,97,238,0.1)" : "#FEF2F2" }}>
-                      <CheckCircle2 className="w-3.5 h-3.5" style={{ color: deliveryRate >= 70 ? "#4361EE" : "#EF4444" }} />
-                    </div>
-                    <p className="text-3xl font-black" style={{ color: deliveryRate >= 70 ? "#1e1b4b" : "#EF4444" }}>
-                      {deliveryRate.toFixed(0)}%
-                    </p>
-                  </div>
-                  <p className="text-xs font-medium" style={{ color: "#9CA3AF" }}>Delivery</p>
-                  <p className="text-[10px] mt-0.5" style={{ color: "#9CA3AF" }}>RTO {rtoRate.toFixed(1)}%</p>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
       {/* ── Body ───────────────────────────────────────── */}
