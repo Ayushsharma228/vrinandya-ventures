@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
@@ -34,7 +34,7 @@ interface Analytics {
   };
 }
 
-interface Wallet {
+interface WalletData {
   balance: number;
   totalRemittance: number;
   totalDeductions: number;
@@ -52,13 +52,13 @@ function fmt(n: number) {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  NEW:        { label: "New",        color: "#3B82F6", bg: "#EFF6FF" },
+  NEW:        { label: "New",        color: "#4361EE", bg: "rgba(67,97,238,0.1)" },
   PROCESSING: { label: "Processing", color: "#F59E0B", bg: "#FFF7ED" },
   SHIPPED:    { label: "Shipped",    color: "#7C3AED", bg: "#F5F3FF" },
   IN_TRANSIT: { label: "In Transit", color: "#025864", bg: "#ECFDF5" },
   DELIVERED:  { label: "Delivered",  color: "#16A34A", bg: "#F0FDF4" },
   RTO:        { label: "RTO",        color: "#EF4444", bg: "#FEF2F2" },
-  CANCELLED:  { label: "Cancelled",  color: "#6B7280", bg: "#F9FAFB" },
+  CANCELLED:  { label: "Cancelled",  color: "#6B7280", bg: "rgba(107,114,128,0.1)" },
 };
 
 function Sparkline({ values, color }: { values: number[]; color: string }) {
@@ -82,8 +82,9 @@ function Sparkline({ values, color }: { values: number[]; color: string }) {
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-gray-100 rounded-xl shadow-lg p-3 text-xs">
-      <p className="font-semibold text-gray-600 mb-1">{label}</p>
+    <div className="rounded-xl shadow-lg p-3 text-xs"
+      style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+      <p className="font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>{label}</p>
       {payload.map((p: { name: string; value: number; color: string }, i: number) => (
         <p key={i} style={{ color: p.color }} className="font-medium">
           {p.name}: {p.value}
@@ -96,7 +97,7 @@ function CustomTooltip({ active, payload, label }: any) {
 export default function SellerDashboard() {
   const { data: session } = useSession();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
-  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [wallet, setWallet] = useState<WalletData | null>(null);
   const [recentOrders, setRecentOrders] = useState<{ id: string; externalOrderId: string; customerName: string; totalAmount: number; status: string; createdAt: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [chartDays, setChartDays] = useState(14);
@@ -150,24 +151,21 @@ export default function SellerDashboard() {
   const deliveryRate = analytics?.deliveryRate ?? 0;
   const rtoRate      = analytics?.rtoRate ?? 0;
 
-  // Today vs yesterday from trend
-  const todayData      = analytics?.trend?.at(-1);
-  const yesterdayData  = analytics?.trend?.at(-2);
-  const todayOrders    = todayData?.total ?? 0;
+  const todayData       = analytics?.trend?.at(-1);
+  const yesterdayData   = analytics?.trend?.at(-2);
+  const todayOrders     = todayData?.total ?? 0;
   const yesterdayOrders = yesterdayData?.total ?? 0;
-  const todayDelta     = todayOrders - yesterdayOrders;
-  const avgOrderValue  = analytics ? analytics.totalRevenue / Math.max(analytics.totalOrders, 1) : 0;
-  const todayRevEst    = Math.round(todayOrders * avgOrderValue);
+  const todayDelta      = todayOrders - yesterdayOrders;
+  const avgOrderValue   = analytics ? analytics.totalRevenue / Math.max(analytics.totalOrders, 1) : 0;
+  const todayRevEst     = Math.round(todayOrders * avgOrderValue);
 
-  // Week-over-week
-  const last7  = analytics?.trend?.slice(-7)   ?? [];
+  const last7  = analytics?.trend?.slice(-7)    ?? [];
   const prior7 = analytics?.trend?.slice(-14, -7) ?? [];
   const last7Total  = last7.reduce((s, d) => s + d.total, 0);
   const prior7Total = prior7.reduce((s, d) => s + d.total, 0);
   const weekOverWeek = prior7Total > 0
     ? Math.round(((last7Total - prior7Total) / prior7Total) * 100) : 0;
 
-  // Best day
   const bestDay = analytics?.trend?.reduce<typeof analytics.trend[0] | null>(
     (best, d) => (d.total > (best?.total ?? 0) ? d : best), null
   );
@@ -175,8 +173,7 @@ export default function SellerDashboard() {
     ? new Date(bestDay.date).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })
     : null;
 
-  // Sparkline series (last 7 data points)
-  const orderSparkline   = analytics?.trend?.slice(-7).map(d => d.total) ?? [];
+  const orderSparkline    = analytics?.trend?.slice(-7).map(d => d.total) ?? [];
   const deliverySparkline = analytics?.trend?.slice(-7).map(d =>
     d.total > 0 ? (d.delivered / d.total) * 100 : 0) ?? [];
   const rtoSparkline = analytics?.trend?.slice(-7).map(d =>
@@ -187,8 +184,8 @@ export default function SellerDashboard() {
       label: "Total Orders",
       value: fmt(analytics?.totalOrders ?? 0),
       icon: ShoppingCart,
-      iconBg: "#EFF6FF",
-      iconColor: "#3B82F6",
+      iconBg: "rgba(67,97,238,0.15)",
+      iconColor: "#4361EE",
       sub: todayOrders > 0
         ? `${todayOrders} today · ${todayDelta >= 0 ? "▲" : "▼"}${Math.abs(todayDelta)} vs yesterday`
         : `${analytics?.inTransitCount ?? 0} in transit`,
@@ -248,28 +245,30 @@ export default function SellerDashboard() {
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
 
-      {/* ── Hero Band (D-5 style) ────────────────────────────── */}
+      {/* ── Hero Band ─────────────────────────────────────── */}
       <div
         className="relative overflow-hidden px-4 md:px-8 pt-6 md:pt-8 pb-10"
-        style={{ background: "linear-gradient(135deg, #0D1117 0%, #0D2818 60%, #0a1f12 100%)" }}
+        style={{ background: "linear-gradient(135deg, #080c18 0%, #0d1535 55%, #0a0f2e 100%)" }}
       >
-        {/* background decoration */}
+        {/* background glows */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full opacity-10"
+          <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full opacity-20"
+            style={{ background: "radial-gradient(circle, #4361EE, transparent)" }} />
+          <div className="absolute -bottom-10 left-1/3 w-60 h-60 rounded-full opacity-10"
             style={{ background: "radial-gradient(circle, #00C67A, transparent)" }} />
-          <div className="absolute -bottom-10 left-1/3 w-60 h-60 rounded-full opacity-5"
-            style={{ background: "radial-gradient(circle, #3B82F6, transparent)" }} />
+          <div className="absolute top-1/2 -left-16 w-48 h-48 rounded-full opacity-8"
+            style={{ background: "radial-gradient(circle, #7C3AED, transparent)" }} />
         </div>
 
         <div className="relative flex flex-col md:flex-row md:items-start md:justify-between gap-3">
           <div>
-            <p className="text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
+            <p className="text-sm font-medium mb-1" style={{ color: "rgba(255,255,255,0.45)" }}>
               {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
             </p>
             <h1 className="text-3xl font-bold text-white mb-1">
               {getGreeting()}, {name}! 👋
             </h1>
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+            <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
               Here&apos;s what&apos;s happening with your store today
             </p>
           </div>
@@ -279,7 +278,7 @@ export default function SellerDashboard() {
               <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
                 style={{ background: "rgba(0,198,122,0.12)", border: "1px solid rgba(0,198,122,0.3)" }}>
                 <div className="relative flex-shrink-0">
-                  <Store className="w-5 h-5" style={{ color: "#16A34A" }} />
+                  <Store className="w-5 h-5" style={{ color: "#4ADE80" }} />
                   <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                 </div>
                 <div>
@@ -309,7 +308,7 @@ export default function SellerDashboard() {
         {!loading && analytics && (analytics.totalOrders > 0) && (
           <div className="relative mt-5 flex items-center gap-2 flex-wrap">
             <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
-              style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.9)" }}>
+              style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.9)" }}>
               📅 Today:
               <span className="text-white font-bold">{todayOrders} orders</span>
               {todayOrders > 0 && avgOrderValue > 0 && (
@@ -321,7 +320,7 @@ export default function SellerDashboard() {
             </span>
             {Math.abs(weekOverWeek) > 0 && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-                style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.75)" }}>
+                style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)" }}>
                 📈 This week:
                 <span style={{ color: weekOverWeek >= 0 ? "#4ADE80" : "#F87171" }}>
                   {weekOverWeek >= 0 ? "▲" : "▼"}{Math.abs(weekOverWeek)}% vs last week
@@ -330,28 +329,32 @@ export default function SellerDashboard() {
             )}
             {bestDayLabel && bestDay && bestDay.total > 1 && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-                style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.75)" }}>
+                style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)" }}>
                 🏆 Best day: <span className="text-white">{bestDayLabel} ({bestDay.total} orders)</span>
               </span>
             )}
           </div>
         )}
 
-        {/* Mini stat row inside hero */}
+        {/* Glassmorphic stat cards inside hero */}
         <div className="relative mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           {loading ? (
             [...Array(6)].map((_, i) => (
               <div key={i} className="h-20 rounded-xl animate-pulse"
-                style={{ background: "var(--bg-card)" }} />
+                style={{ background: "rgba(255,255,255,0.06)" }} />
             ))
           ) : stats.map((s) => {
             const Icon = s.icon;
             const isConnectPrompt = s.sub === "connect";
             return (
               <div key={s.label} className="rounded-xl px-4 py-4"
-                style={{ background: "var(--bg-card)", border: `1px solid ${isConnectPrompt ? "rgba(124,58,237,0.3)" : "var(--border)"}` }}>
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: `1px solid ${isConnectPrompt ? "rgba(124,58,237,0.4)" : "rgba(255,255,255,0.1)"}`,
+                  backdropFilter: "blur(8px)",
+                }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>{s.label}</p>
+                  <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>{s.label}</p>
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center"
                     style={{ background: s.iconBg }}>
                     <Icon className="w-3.5 h-3.5" style={{ color: s.iconColor }} />
@@ -359,15 +362,15 @@ export default function SellerDashboard() {
                 </div>
                 <div className="flex items-end justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{s.value}</p>
+                    <p className="text-xl font-bold text-white">{s.value}</p>
                     {isConnectPrompt ? (
                       <Link href="/seller/profile?tab=integrations"
                         className="inline-flex items-center gap-1 text-xs font-semibold mt-1 px-2 py-0.5 rounded-full"
-                        style={{ background: "rgba(124,58,237,0.12)", color: "#7C3AED" }}>
+                        style={{ background: "rgba(124,58,237,0.2)", color: "#C4B5FD" }}>
                         + Connect Meta Ads
                       </Link>
                     ) : (
-                      <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>{s.sub}</p>
+                      <p className="text-xs mt-0.5 truncate" style={{ color: "rgba(255,255,255,0.45)" }}>{s.sub}</p>
                     )}
                   </div>
                   {s.sparkline && s.sparkline.length >= 2 && (
@@ -383,27 +386,27 @@ export default function SellerDashboard() {
       {/* ── Content ─────────────────────────────────────────── */}
       <div className="px-4 md:px-8 py-6 space-y-6">
 
-        {/* Wallet Balance Banner */}
+        {/* Wallet Balance Banner — green gradient kept */}
         {!loading && wallet && wallet.balance > 0 && (
           <div className="flex items-center justify-between gap-4 rounded-2xl px-5 py-4"
             style={{ background: "linear-gradient(135deg, #052e16 0%, #064e3b 100%)", border: "1px solid rgba(0,198,122,0.3)" }}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ background: "rgba(0,198,122,0.2)" }}>
-                <Wallet className="w-5 h-5" style={{ color: "#16A34A" }} />
+                <Wallet className="w-5 h-5" style={{ color: "#4ADE80" }} />
               </div>
               <div>
-                <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+                <p className="text-sm font-bold text-white">
                   ₹{fmt(wallet.balance)} wallet balance
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
+                <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>
                   Your current payout balance
                 </p>
               </div>
             </div>
             <Link href="/seller/wallet"
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex-shrink-0"
-              style={{ background: "rgba(0,198,122,0.2)", color: "#16A34A", border: "1px solid rgba(0,198,122,0.3)" }}>
+              style={{ background: "rgba(0,198,122,0.2)", color: "#4ADE80", border: "1px solid rgba(0,198,122,0.3)" }}>
               View Wallet <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -438,11 +441,11 @@ export default function SellerDashboard() {
         {/* New Orders Pending Banner */}
         {!loading && newOrdersCount > 0 && (
           <div className="flex items-center justify-between gap-4 rounded-2xl px-5 py-4"
-            style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)", border: "1px solid rgba(99,102,241,0.4)" }}>
+            style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)", border: "1px solid rgba(67,97,238,0.4)" }}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse"
-                style={{ background: "rgba(99,102,241,0.25)" }}>
-                <ShoppingCart className="w-5 h-5" style={{ color: "#A5B4FC" }} />
+                style={{ background: "rgba(67,97,238,0.25)" }}>
+                <ShoppingCart className="w-5 h-5" style={{ color: "#818CF8" }} />
               </div>
               <div>
                 <p className="text-sm font-bold" style={{ color: "#E0E7FF" }}>
@@ -455,7 +458,7 @@ export default function SellerDashboard() {
             </div>
             <Link href="/seller/orders"
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex-shrink-0"
-              style={{ background: "rgba(99,102,241,0.25)", color: "#C7D2FE", border: "1px solid rgba(99,102,241,0.4)" }}>
+              style={{ background: "rgba(67,97,238,0.25)", color: "#C7D2FE", border: "1px solid rgba(67,97,238,0.4)" }}>
               View Orders <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -464,12 +467,12 @@ export default function SellerDashboard() {
         {/* Quick Actions */}
         <div className="flex flex-wrap items-center gap-2 md:gap-3">
           {[
-            { label: "View Orders",    href: "/seller/orders",         icon: ShoppingCart, color: "#3B82F6" },
-            { label: "Import Orders",  href: "/seller/orders?import=1", icon: Upload,       color: "#16A34A" },
-            { label: "Product Catalog", href: "/seller/catalog",        icon: Package,      color: "#0891B2" },
-            { label: "Deliveries",     href: "/seller/deliveries",      icon: Truck,        color: "#7C3AED" },
-            { label: "Wallet",         href: "/seller/wallet",          icon: Wallet,       color: "#F59E0B" },
-            { label: "Shopify Store",  href: "/seller/shopify",         icon: Store,        color: "#EF4444" },
+            { label: "View Orders",     href: "/seller/orders",          icon: ShoppingCart, color: "#4361EE" },
+            { label: "Import Orders",   href: "/seller/orders?import=1", icon: Upload,       color: "#16A34A" },
+            { label: "Product Catalog", href: "/seller/catalog",         icon: Package,      color: "#0891B2" },
+            { label: "Deliveries",      href: "/seller/deliveries",      icon: Truck,        color: "#7C3AED" },
+            { label: "Wallet",          href: "/seller/wallet",          icon: Wallet,       color: "#F59E0B" },
+            { label: "Shopify Store",   href: "/seller/shopify",         icon: Store,        color: "#EF4444" },
           ].map((a) => {
             const Icon = a.icon;
             return (
@@ -487,7 +490,7 @@ export default function SellerDashboard() {
         {/* Charts Row */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
 
-          {/* Area Chart — Order Trend */}
+          {/* Order Trend Chart */}
           <div className="md:col-span-2 card p-5">
             <div className="flex items-center justify-between mb-5">
               <div>
@@ -495,13 +498,13 @@ export default function SellerDashboard() {
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>Last {chartDays} days</p>
               </div>
               <div className="flex items-center gap-3">
-                {/* Days selector */}
-                <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-0.5">
+                <div className="flex items-center gap-0.5 rounded-lg p-0.5"
+                  style={{ background: "var(--bg-muted)" }}>
                   {[7, 14, 30, 60].map((d) => (
                     <button key={d} onClick={() => setChartDays(d)}
                       className="px-2.5 py-1 text-xs font-semibold rounded-md transition-all"
                       style={chartDays === d
-                        ? { background: "white", color: "var(--text-900)", boxShadow: "0 1px 2px rgba(0,0,0,0.08)" }
+                        ? { background: "var(--bg-card)", color: "var(--text-900)", boxShadow: "0 1px 3px rgba(0,0,0,0.12)" }
                         : { color: "var(--text-400)" }}>
                       {d}d
                     </button>
@@ -513,7 +516,7 @@ export default function SellerDashboard() {
                     Delivered
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#3B82F6" }} />
+                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#4361EE" }} />
                     Orders
                   </span>
                   <span className="flex items-center gap-1.5">
@@ -530,11 +533,11 @@ export default function SellerDashboard() {
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--text-400)" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--text-400)" }} axisLine={false} tickLine={false} allowDecimals={false} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Line type="monotone" dataKey="Orders" stroke="#3B82F6" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="Orders" stroke="#4361EE" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                   <Line type="monotone" dataKey="Delivered" stroke="#16A34A" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                   <Line type="monotone" dataKey="RTO" stroke="#EF4444" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                 </LineChart>
@@ -548,34 +551,10 @@ export default function SellerDashboard() {
               <h2 className="text-sm font-semibold mb-4" style={{ color: "var(--text-900)" }}>Last 7 Days</h2>
               <div className="space-y-3">
                 {[
-                  {
-                    label: "Orders",
-                    value: last7Total,
-                    delta: weekOverWeek,
-                    icon: ShoppingCart,
-                    color: "#3B82F6",
-                  },
-                  {
-                    label: "Delivered",
-                    value: last7.reduce((s, d) => s + d.delivered, 0),
-                    delta: null,
-                    icon: CheckCircle2,
-                    color: "#16A34A",
-                  },
-                  {
-                    label: "RTO",
-                    value: last7.reduce((s, d) => s + d.rto, 0),
-                    delta: null,
-                    icon: TrendingDown,
-                    color: "#EF4444",
-                  },
-                  {
-                    label: "Avg / day",
-                    value: +(last7Total / 7).toFixed(1),
-                    delta: null,
-                    icon: Clock,
-                    color: "#F59E0B",
-                  },
+                  { label: "Orders",    value: last7Total,                                  delta: weekOverWeek, icon: ShoppingCart, color: "#4361EE" },
+                  { label: "Delivered", value: last7.reduce((s, d) => s + d.delivered, 0), delta: null,         icon: CheckCircle2, color: "#16A34A" },
+                  { label: "RTO",       value: last7.reduce((s, d) => s + d.rto, 0),       delta: null,         icon: TrendingDown, color: "#EF4444" },
+                  { label: "Avg / day", value: +(last7Total / 7).toFixed(1),                delta: null,         icon: Clock,        color: "#F59E0B" },
                 ].map((row) => {
                   const Icon = row.icon;
                   return (
@@ -612,14 +591,14 @@ export default function SellerDashboard() {
             {loading ? (
               <div className="space-y-3">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-8 rounded-lg animate-pulse bg-gray-100" />
+                  <div key={i} className="h-8 rounded-lg animate-pulse" style={{ background: "var(--bg-muted)" }} />
                 ))}
               </div>
             ) : (
               <div className="space-y-3">
                 {[
                   { label: "Delivered",  count: analytics?.deliveredCount ?? 0, color: "#16A34A", icon: CheckCircle2 },
-                  { label: "In Transit", count: analytics?.inTransitCount ?? 0, color: "#025864", icon: Truck },
+                  { label: "In Transit", count: analytics?.inTransitCount ?? 0, color: "#4361EE", icon: Truck },
                   { label: "RTO",        count: analytics?.rtoCount ?? 0,       color: "#EF4444", icon: TrendingDown },
                   { label: "Cancelled",  count: analytics?.cancelledCount ?? 0, color: "#6B7280", icon: XCircle },
                 ].map((item) => {
@@ -638,7 +617,7 @@ export default function SellerDashboard() {
                           <span className="text-xs" style={{ color: "var(--text-400)" }}>{pct}%</span>
                         </div>
                       </div>
-                      <div className="w-full h-1.5 rounded-full" style={{ background: "#F3F4F6" }}>
+                      <div className="w-full h-1.5 rounded-full" style={{ background: "var(--bg-muted)" }}>
                         <div className="h-full rounded-full transition-all"
                           style={{ width: `${pct}%`, background: item.color }} />
                       </div>
@@ -647,7 +626,6 @@ export default function SellerDashboard() {
                 })}
               </div>
             )}
-
           </div>
         </div>
 
@@ -660,12 +638,12 @@ export default function SellerDashboard() {
           const isProfit    = netProfit >= 0;
 
           const rows = [
-            { label: "Revenue (GMV)",    value: e.totalGMV,           color: "#16A34A", sign: "+" },
-            { label: "Product Cost",     value: e.totalProductCost,   color: "#EF4444", sign: "−" },
-            { label: "Shipping Charges", value: e.totalShipping,      color: "#EF4444", sign: "−" },
-            { label: "Platform Fee",     value: e.totalFees,          color: "#EF4444", sign: "−" },
-            { label: "RTO Losses",       value: e.totalRtoCharge,     color: "#EF4444", sign: "−" },
-            { label: "Ad Spend (30d)",   value: adSpend,              color: "#7C3AED", sign: "−" },
+            { label: "Revenue (GMV)",    value: e.totalGMV,         color: "#16A34A", sign: "+" },
+            { label: "Product Cost",     value: e.totalProductCost, color: "#EF4444", sign: "−" },
+            { label: "Shipping Charges", value: e.totalShipping,    color: "#EF4444", sign: "−" },
+            { label: "Platform Fee",     value: e.totalFees,        color: "#EF4444", sign: "−" },
+            { label: "RTO Losses",       value: e.totalRtoCharge,   color: "#EF4444", sign: "−" },
+            { label: "Ad Spend (30d)",   value: adSpend,            color: "#7C3AED", sign: "−" },
           ];
 
           return (
@@ -684,7 +662,6 @@ export default function SellerDashboard() {
                   </p>
                 </div>
               </div>
-
               <div className="space-y-2.5">
                 {rows.map((r) => (
                   <div key={r.label} className="flex items-center justify-between py-2"
@@ -695,8 +672,6 @@ export default function SellerDashboard() {
                     </p>
                   </div>
                 ))}
-
-                {/* Net line */}
                 <div className="flex items-center justify-between pt-2">
                   <p className="text-sm font-black" style={{ color: "var(--text-900)" }}>Net Profit</p>
                   <p className="text-sm font-black" style={{ color: isProfit ? "#16A34A" : "#EF4444" }}>
@@ -710,16 +685,14 @@ export default function SellerDashboard() {
 
         {/* Recent Orders */}
         <div className="card">
-          {/* Row 1: title + View All */}
           <div className="px-5 pt-4 pb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Recent Orders</h2>
             <Link href="/seller/orders"
               className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-              style={{ color: "var(--green-500)", background: "#F0FDF4", border: "1px solid #D1FAE5" }}>
+              style={{ color: "#4361EE", background: "rgba(67,97,238,0.08)", border: "1px solid rgba(67,97,238,0.2)" }}>
               View All <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
-          {/* Row 2: status filter tabs */}
           <div className="px-5 pb-3 flex items-center gap-1.5 flex-wrap" style={{ borderBottom: "1px solid var(--border)" }}>
             {(["ALL", "NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "RTO", "CANCELLED"]).map((s) => {
               const cfg = STATUS_CONFIG[s];
@@ -728,8 +701,8 @@ export default function SellerDashboard() {
                 <button key={s} onClick={() => setOrderFilter(s)}
                   className="px-3 py-1 rounded-full text-xs font-semibold transition-all"
                   style={isActive
-                    ? { background: cfg ? cfg.color : "#0A0E1A", color: "#fff" }
-                    : { background: cfg ? cfg.bg : "#F3F4F6", color: cfg ? cfg.color : "var(--text-500)" }
+                    ? { background: cfg ? cfg.color : "#4361EE", color: "#fff" }
+                    : { background: cfg ? cfg.bg : "var(--bg-muted)", color: cfg ? cfg.color : "var(--text-500)" }
                   }>
                   {s === "ALL" ? "All" : cfg?.label ?? s}
                 </button>
@@ -740,7 +713,7 @@ export default function SellerDashboard() {
           {loading || ordersLoading ? (
             <div className="p-5 space-y-3">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-10 rounded-lg animate-pulse bg-gray-50" />
+                <div key={i} className="h-10 rounded-lg animate-pulse" style={{ background: "var(--bg-muted)" }} />
               ))}
             </div>
           ) : recentOrders.length === 0 ? (
@@ -752,7 +725,7 @@ export default function SellerDashboard() {
               {orderFilter === "ALL" && (
                 <Link href="/seller/shopify"
                   className="mt-2 flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white"
-                  style={{ background: "var(--green-500)" }}>
+                  style={{ background: "#4361EE" }}>
                   <Store className="w-4 h-4" /> Connect Store
                 </Link>
               )}
@@ -762,7 +735,9 @@ export default function SellerDashboard() {
               {recentOrders.map((order) => {
                 const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.NEW;
                 return (
-                  <div key={order.id} className="px-5 py-3 flex items-center gap-4 hover:bg-gray-50/50 transition-colors">
+                  <div key={order.id} className="px-5 py-3 flex items-center gap-4 transition-colors"
+                    onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-muted)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{ background: cfg.bg }}>
                       <ShoppingCart className="w-4 h-4" style={{ color: cfg.color }} />
