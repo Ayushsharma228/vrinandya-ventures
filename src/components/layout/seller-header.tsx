@@ -99,8 +99,9 @@ export function SellerHeader({ userName, userEmail }: {
           <span className="hidden sm:block font-bold text-base" style={{ color: "#1e1b4b" }}>AXQEN</span>
         </Link>
 
-        {/* ── Nav — active item gets blue pill, rest plain text ── */}
-        <nav className="hidden md:flex items-center gap-1">
+        {/* ── Nav inside smoke rounded rectangle ── */}
+        <nav className="hidden md:flex items-center gap-1 px-2 py-1.5 rounded-2xl ml-4"
+          style={{ background: "#F0F2F8" }}>
           {sellerNav.map((group) => {
             const active = isGroupActive(group);
             const isOpen = openGroup === group.label;
