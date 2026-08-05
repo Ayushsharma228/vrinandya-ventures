@@ -11,6 +11,7 @@ import {
   ShoppingCart, TrendingUp, TrendingDown, AlertTriangle,
   Wallet, Package, ArrowRight, Store,
   CheckCircle2, Clock, Truck, XCircle, IndianRupee, Megaphone, Upload,
+  ChevronDown,
 } from "lucide-react";
 
 interface Analytics {
@@ -55,28 +56,11 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   NEW:        { label: "New",        color: "#4361EE", bg: "rgba(67,97,238,0.1)" },
   PROCESSING: { label: "Processing", color: "#F59E0B", bg: "#FFF7ED" },
   SHIPPED:    { label: "Shipped",    color: "#7C3AED", bg: "#F5F3FF" },
-  IN_TRANSIT: { label: "In Transit", color: "#025864", bg: "#ECFDF5" },
-  DELIVERED:  { label: "Delivered",  color: "#16A34A", bg: "#F0FDF4" },
+  IN_TRANSIT: { label: "In Transit", color: "#0891B2", bg: "#ECFEFF" },
+  DELIVERED:  { label: "Delivered",  color: "#059669", bg: "#ECFDF5" },
   RTO:        { label: "RTO",        color: "#EF4444", bg: "#FEF2F2" },
   CANCELLED:  { label: "Cancelled",  color: "#6B7280", bg: "rgba(107,114,128,0.1)" },
 };
-
-function Sparkline({ values, color }: { values: number[]; color: string }) {
-  if (values.length < 2) return null;
-  const max = Math.max(...values, 1);
-  const min = Math.min(...values, 0);
-  const range = max - min || 1;
-  const W = 52, H = 18;
-  const pts = values.map((v, i) =>
-    `${((i / (values.length - 1)) * W).toFixed(1)},${(H - ((v - min) / range) * H).toFixed(1)}`
-  ).join(" ");
-  return (
-    <svg width={W} height={H} style={{ display: "block", flexShrink: 0 }}>
-      <polyline fill="none" stroke={color} strokeWidth="1.5"
-        strokeLinecap="round" strokeLinejoin="round" points={pts} opacity={0.55} />
-    </svg>
-  );
-}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function CustomTooltip({ active, payload, label }: any) {
@@ -86,11 +70,39 @@ function CustomTooltip({ active, payload, label }: any) {
       style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
       <p className="font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>{label}</p>
       {payload.map((p: { name: string; value: number; color: string }, i: number) => (
-        <p key={i} style={{ color: p.color }} className="font-medium">
-          {p.name}: {p.value}
-        </p>
+        <p key={i} style={{ color: p.color }} className="font-medium">{p.name}: {p.value}</p>
       ))}
     </div>
+  );
+}
+
+function SectionToggle({ label, icon: Icon, open, onToggle, count }: {
+  label: string;
+  icon: React.ElementType;
+  open: boolean;
+  onToggle: () => void;
+  count?: string;
+}) {
+  return (
+    <button onClick={onToggle}
+      className="w-full flex items-center justify-between px-5 py-4 transition-colors"
+      style={{ background: "var(--bg-card)", borderBottom: open ? "1px solid var(--border)" : "none" }}
+      onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-muted)"; }}
+      onMouseLeave={e => { e.currentTarget.style.background = open ? "var(--bg-card)" : "var(--bg-card)"; }}>
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+          style={{ background: "rgba(67,97,238,0.1)" }}>
+          <Icon className="w-4 h-4" style={{ color: "#4361EE" }} />
+        </div>
+        <span className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>{label}</span>
+        {count && (
+          <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+            style={{ background: "rgba(67,97,238,0.1)", color: "#4361EE" }}>{count}</span>
+        )}
+      </div>
+      <ChevronDown className="w-4 h-4 transition-transform"
+        style={{ color: "var(--text-400)", transform: open ? "rotate(180deg)" : "rotate(0deg)" }} />
+    </button>
   );
 }
 
@@ -108,6 +120,8 @@ export default function SellerDashboard() {
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [orderFilter, setOrderFilter] = useState("ALL");
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showFinancials, setShowFinancials] = useState(false);
 
   const name = session?.user?.name?.split(" ")[0] || "Seller";
 
@@ -159,8 +173,8 @@ export default function SellerDashboard() {
   const avgOrderValue   = analytics ? analytics.totalRevenue / Math.max(analytics.totalOrders, 1) : 0;
   const todayRevEst     = Math.round(todayOrders * avgOrderValue);
 
-  const last7  = analytics?.trend?.slice(-7)    ?? [];
-  const prior7 = analytics?.trend?.slice(-14, -7) ?? [];
+  const last7    = analytics?.trend?.slice(-7)    ?? [];
+  const prior7   = analytics?.trend?.slice(-14, -7) ?? [];
   const last7Total  = last7.reduce((s, d) => s + d.total, 0);
   const prior7Total = prior7.reduce((s, d) => s + d.total, 0);
   const weekOverWeek = prior7Total > 0
@@ -173,526 +187,245 @@ export default function SellerDashboard() {
     ? new Date(bestDay.date).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })
     : null;
 
-  const orderSparkline    = analytics?.trend?.slice(-7).map(d => d.total) ?? [];
   const deliverySparkline = analytics?.trend?.slice(-7).map(d =>
     d.total > 0 ? (d.delivered / d.total) * 100 : 0) ?? [];
   const rtoSparkline = analytics?.trend?.slice(-7).map(d =>
     d.total > 0 ? (d.rto / d.total) * 100 : 0) ?? [];
 
-  const stats = [
-    {
-      label: "Total Orders",
-      value: fmt(analytics?.totalOrders ?? 0),
-      icon: ShoppingCart,
-      iconBg: "rgba(67,97,238,0.15)",
-      iconColor: "#4361EE",
-      sub: todayOrders > 0
-        ? `${todayOrders} today · ${todayDelta >= 0 ? "▲" : "▼"}${Math.abs(todayDelta)} vs yesterday`
-        : `${analytics?.inTransitCount ?? 0} in transit`,
-      sparkline: orderSparkline,
-    },
-    {
-      label: "Total Revenue",
-      value: `₹${fmt(analytics?.totalRevenue ?? 0)}`,
-      icon: IndianRupee,
-      iconBg: "#F0FDF4",
-      iconColor: "#16A34A",
-      sub: todayOrders > 0 && avgOrderValue > 0
-        ? `~₹${fmt(todayRevEst)} today`
-        : wallet ? `₹${fmt(wallet.totalRemittance)} remitted` : "—",
-      sparkline: orderSparkline.map(v => v * avgOrderValue),
-    },
-    {
-      label: "Delivery Rate",
-      value: `${deliveryRate.toFixed(1)}%`,
-      icon: CheckCircle2,
-      iconBg: deliveryRate >= 80 ? "#F0FDF4" : deliveryRate >= 60 ? "#FFF7ED" : "#FEF2F2",
-      iconColor: deliveryRate >= 80 ? "#16A34A" : deliveryRate >= 60 ? "#F59E0B" : "#EF4444",
-      sub: `${analytics?.deliveredCount ?? 0} delivered`,
-      sparkline: deliverySparkline,
-    },
-    {
-      label: "RTO Rate",
-      value: `${rtoRate.toFixed(1)}%`,
-      icon: TrendingDown,
-      iconBg: rtoRate <= 10 ? "#F0FDF4" : rtoRate <= 20 ? "#FFF7ED" : "#FEF2F2",
-      iconColor: rtoRate <= 10 ? "#16A34A" : rtoRate <= 20 ? "#F59E0B" : "#EF4444",
-      sub: `${analytics?.rtoCount ?? 0} returned`,
-      sparkline: rtoSparkline,
-    },
-    {
-      label: "Meta Ads Spent",
-      value: metaConnected ? `₹${fmt(adSpend)}` : "—",
-      icon: Megaphone,
-      iconBg: "#F5F3FF",
-      iconColor: "#7C3AED",
-      sub: metaConnected
-        ? (adSpend > 0 ? `${(adRevenue / adSpend).toFixed(2)}x ROAS · Last 30 days` : "No spend in last 30 days")
-        : "connect",
-      sparkline: [] as number[],
-    },
-    {
-      label: "Net Payout",
-      value: `₹${fmt(wallet?.totalRemittance ?? 0)}`,
-      icon: TrendingUp,
-      iconBg: "#F0FDF4",
-      iconColor: "#16A34A",
-      sub: "Total paid to your account",
-      sparkline: [] as number[],
-    },
-  ];
-
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
 
-      {/* ── Hero Band ─────────────────────────────────────── */}
-      <div
-        className="relative overflow-hidden px-4 md:px-8 pt-6 md:pt-8 pb-10"
-        style={{ background: "linear-gradient(135deg, #080c18 0%, #0d1535 55%, #0a0f2e 100%)" }}
-      >
-        {/* background glows */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full opacity-20"
-            style={{ background: "radial-gradient(circle, #4361EE, transparent)" }} />
-          <div className="absolute -bottom-10 left-1/3 w-60 h-60 rounded-full opacity-10"
-            style={{ background: "radial-gradient(circle, #00C67A, transparent)" }} />
-          <div className="absolute top-1/2 -left-16 w-48 h-48 rounded-full opacity-8"
-            style={{ background: "radial-gradient(circle, #7C3AED, transparent)" }} />
-        </div>
+      {/* ── Hero — light smoke/blue, not dark ─────────────── */}
+      <div className="px-4 md:px-8 pt-8 pb-8"
+        style={{ background: "linear-gradient(135deg, #eef2ff 0%, #f8faff 100%)", borderBottom: "1px solid #e0e7ff" }}>
 
-        <div className="relative flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-8">
           <div>
-            <p className="text-sm font-medium mb-1" style={{ color: "rgba(255,255,255,0.45)" }}>
+            <p className="text-xs font-medium mb-1" style={{ color: "#6366F1" }}>
               {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
             </p>
-            <h1 className="text-3xl font-bold text-white mb-1">
+            <h1 className="text-3xl font-bold mb-1" style={{ color: "#1e1b4b" }}>
               {getGreeting()}, {name}! 👋
             </h1>
-            <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
-              Here&apos;s what&apos;s happening with your store today
+            <p className="text-sm" style={{ color: "#6B7280" }}>
+              Here&apos;s a quick look at your store today
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            {analytics?.store ? (
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
-                style={{ background: "rgba(0,198,122,0.12)", border: "1px solid rgba(0,198,122,0.3)" }}>
-                <div className="relative flex-shrink-0">
-                  <Store className="w-5 h-5" style={{ color: "#4ADE80" }} />
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-white leading-none">
-                    {analytics.store.storeName || analytics.store.storeUrl.replace(".myshopify.com", "")}
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: "#4ADE80" }}>
-                    Shopify Connected · {analytics.store.storeUrl}
-                  </p>
-                </div>
+          {/* Store status chip */}
+          {analytics?.store ? (
+            <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl self-start"
+              style={{ background: "rgba(67,97,238,0.08)", border: "1px solid rgba(67,97,238,0.2)" }}>
+              <Store className="w-4 h-4" style={{ color: "#4361EE" }} />
+              <div>
+                <p className="text-xs font-bold" style={{ color: "#4361EE" }}>
+                  {analytics.store.storeName || analytics.store.storeUrl.replace(".myshopify.com", "")}
+                </p>
+                <p className="text-[10px]" style={{ color: "#818CF8" }}>Shopify Connected</p>
               </div>
-            ) : (
-              <Link href="/seller/shopify"
-                className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:opacity-90"
-                style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.4)" }}>
-                <AlertTriangle className="w-5 h-5 flex-shrink-0" style={{ color: "#F87171" }} />
-                <div>
-                  <p className="text-sm font-bold" style={{ color: "#FCA5A5" }}>Shopify Not Connected</p>
-                  <p className="text-xs" style={{ color: "#F87171" }}>Tap to connect your store →</p>
-                </div>
-              </Link>
-            )}
-          </div>
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            </div>
+          ) : (
+            <Link href="/seller/shopify" className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl self-start"
+              style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+              <AlertTriangle className="w-4 h-4" style={{ color: "#EF4444" }} />
+              <p className="text-xs font-semibold" style={{ color: "#EF4444" }}>Connect Shopify →</p>
+            </Link>
+          )}
         </div>
 
-        {/* Today at a glance strip */}
-        {!loading && analytics && (analytics.totalOrders > 0) && (
-          <div className="relative mt-5 flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
-              style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.9)" }}>
-              📅 Today:
-              <span className="text-white font-bold">{todayOrders} orders</span>
-              {todayOrders > 0 && avgOrderValue > 0 && (
-                <span style={{ color: "#4ADE80" }}>· ~₹{fmt(todayRevEst)}</span>
-              )}
-              <span style={{ color: todayDelta >= 0 ? "#4ADE80" : "#F87171" }}>
-                {todayDelta >= 0 ? "▲" : "▼"}{Math.abs(todayDelta)} vs yesterday
-              </span>
-            </span>
+        {/* 3 Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {loading ? (
+            [...Array(3)].map((_, i) => (
+              <div key={i} className="h-24 rounded-2xl animate-pulse bg-white/70" />
+            ))
+          ) : (
+            <>
+              {/* Total Orders */}
+              <div className="bg-white rounded-2xl px-6 py-5" style={{ boxShadow: "0 1px 12px rgba(67,97,238,0.08)" }}>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "#9CA3AF" }}>Total Orders</p>
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                    style={{ background: "rgba(67,97,238,0.1)" }}>
+                    <ShoppingCart className="w-4 h-4" style={{ color: "#4361EE" }} />
+                  </div>
+                </div>
+                <p className="text-3xl font-black" style={{ color: "#1e1b4b" }}>{fmt(analytics?.totalOrders ?? 0)}</p>
+                <p className="text-xs mt-1.5" style={{ color: todayDelta >= 0 ? "#4361EE" : "#EF4444" }}>
+                  {todayOrders} today · {todayDelta >= 0 ? "▲" : "▼"}{Math.abs(todayDelta)} vs yesterday
+                </p>
+              </div>
+
+              {/* Total Revenue */}
+              <div className="bg-white rounded-2xl px-6 py-5" style={{ boxShadow: "0 1px 12px rgba(67,97,238,0.08)" }}>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "#9CA3AF" }}>Total Revenue</p>
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                    style={{ background: "rgba(67,97,238,0.1)" }}>
+                    <IndianRupee className="w-4 h-4" style={{ color: "#4361EE" }} />
+                  </div>
+                </div>
+                <p className="text-3xl font-black" style={{ color: "#1e1b4b" }}>₹{fmt(analytics?.totalRevenue ?? 0)}</p>
+                <p className="text-xs mt-1.5" style={{ color: "#9CA3AF" }}>
+                  {todayOrders > 0 && avgOrderValue > 0 ? `~₹${fmt(todayRevEst)} today` : `₹${fmt(wallet?.totalRemittance ?? 0)} remitted`}
+                </p>
+              </div>
+
+              {/* Delivery Rate */}
+              <div className="bg-white rounded-2xl px-6 py-5" style={{ boxShadow: "0 1px 12px rgba(67,97,238,0.08)" }}>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "#9CA3AF" }}>Delivery Rate</p>
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                    style={{ background: deliveryRate >= 70 ? "rgba(67,97,238,0.1)" : "#FEF2F2" }}>
+                    <CheckCircle2 className="w-4 h-4"
+                      style={{ color: deliveryRate >= 70 ? "#4361EE" : "#EF4444" }} />
+                  </div>
+                </div>
+                <p className="text-3xl font-black" style={{ color: deliveryRate >= 70 ? "#1e1b4b" : "#EF4444" }}>
+                  {deliveryRate.toFixed(1)}%
+                </p>
+                <p className="text-xs mt-1.5" style={{ color: "#9CA3AF" }}>
+                  {analytics?.deliveredCount ?? 0} delivered · RTO {rtoRate.toFixed(1)}%
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Today strip */}
+        {!loading && analytics && analytics.totalOrders > 0 && (
+          <div className="flex items-center gap-2 flex-wrap mt-4">
             {Math.abs(weekOverWeek) > 0 && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-                style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)" }}>
-                📈 This week:
-                <span style={{ color: weekOverWeek >= 0 ? "#4ADE80" : "#F87171" }}>
-                  {weekOverWeek >= 0 ? "▲" : "▼"}{Math.abs(weekOverWeek)}% vs last week
-                </span>
+                style={{ background: "rgba(67,97,238,0.08)", color: "#4361EE" }}>
+                📈 This week: {weekOverWeek >= 0 ? "▲" : "▼"}{Math.abs(weekOverWeek)}% vs last week
               </span>
             )}
             {bestDayLabel && bestDay && bestDay.total > 1 && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-                style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)" }}>
-                🏆 Best day: <span className="text-white">{bestDayLabel} ({bestDay.total} orders)</span>
+                style={{ background: "rgba(67,97,238,0.08)", color: "#4361EE" }}>
+                🏆 Best: {bestDayLabel} ({bestDay.total} orders)
               </span>
             )}
           </div>
         )}
-
-        {/* Glassmorphic stat cards inside hero */}
-        <div className="relative mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          {loading ? (
-            [...Array(6)].map((_, i) => (
-              <div key={i} className="h-20 rounded-xl animate-pulse"
-                style={{ background: "rgba(255,255,255,0.06)" }} />
-            ))
-          ) : stats.map((s) => {
-            const Icon = s.icon;
-            const isConnectPrompt = s.sub === "connect";
-            return (
-              <div key={s.label} className="rounded-xl px-4 py-4"
-                style={{
-                  background: "rgba(255,255,255,0.06)",
-                  border: `1px solid ${isConnectPrompt ? "rgba(124,58,237,0.4)" : "rgba(255,255,255,0.1)"}`,
-                  backdropFilter: "blur(8px)",
-                }}>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>{s.label}</p>
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-                    style={{ background: s.iconBg }}>
-                    <Icon className="w-3.5 h-3.5" style={{ color: s.iconColor }} />
-                  </div>
-                </div>
-                <div className="flex items-end justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-xl font-bold text-white">{s.value}</p>
-                    {isConnectPrompt ? (
-                      <Link href="/seller/profile?tab=integrations"
-                        className="inline-flex items-center gap-1 text-xs font-semibold mt-1 px-2 py-0.5 rounded-full"
-                        style={{ background: "rgba(124,58,237,0.2)", color: "#C4B5FD" }}>
-                        + Connect Meta Ads
-                      </Link>
-                    ) : (
-                      <p className="text-xs mt-0.5 truncate" style={{ color: "rgba(255,255,255,0.45)" }}>{s.sub}</p>
-                    )}
-                  </div>
-                  {s.sparkline && s.sparkline.length >= 2 && (
-                    <Sparkline values={s.sparkline} color={s.iconColor} />
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
       </div>
 
       {/* ── Content ─────────────────────────────────────────── */}
-      <div className="px-4 md:px-8 py-6 space-y-6">
+      <div className="px-4 md:px-8 py-6 space-y-4">
 
-        {/* Wallet Balance Banner — green gradient kept */}
-        {!loading && wallet && wallet.balance > 0 && (
-          <div className="flex items-center justify-between gap-4 rounded-2xl px-5 py-4"
-            style={{ background: "linear-gradient(135deg, #052e16 0%, #064e3b 100%)", border: "1px solid rgba(0,198,122,0.3)" }}>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "rgba(0,198,122,0.2)" }}>
-                <Wallet className="w-5 h-5" style={{ color: "#4ADE80" }} />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white">
-                  ₹{fmt(wallet.balance)} wallet balance
-                </p>
-                <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>
-                  Your current payout balance
-                </p>
-              </div>
-            </div>
-            <Link href="/seller/wallet"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex-shrink-0"
-              style={{ background: "rgba(0,198,122,0.2)", color: "#4ADE80", border: "1px solid rgba(0,198,122,0.3)" }}>
-              View Wallet <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        )}
-
-        {/* NDR Alert Banner */}
+        {/* Alert Banners — only when relevant */}
         {!loading && openNdrs > 0 && (
           <div className="flex items-center justify-between gap-4 rounded-2xl px-5 py-4"
-            style={{ background: "linear-gradient(135deg, #431407 0%, #7c2d12 100%)", border: "1px solid rgba(239,68,68,0.4)" }}>
+            style={{ background: "#FEF2F2", border: "1px solid rgba(239,68,68,0.3)" }}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse"
-                style={{ background: "rgba(239,68,68,0.25)" }}>
-                <AlertTriangle className="w-5 h-5" style={{ color: "#F87171" }} />
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(239,68,68,0.15)" }}>
+                <AlertTriangle className="w-4.5 h-4.5" style={{ color: "#EF4444" }} />
               </div>
               <div>
-                <p className="text-sm font-bold" style={{ color: "#FECACA" }}>
-                  {openNdrs} Open NDR{openNdrs > 1 ? "s" : ""} Need Your Action
+                <p className="text-sm font-bold" style={{ color: "#991B1B" }}>
+                  {openNdrs} NDR{openNdrs > 1 ? "s" : ""} need action
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: "#FCA5A5" }}>
-                  Unresolved non-delivery reports can lead to RTO — act now
+                <p className="text-xs mt-0.5" style={{ color: "#EF4444" }}>
+                  Unresolved NDRs can convert to RTO
                 </p>
               </div>
             </div>
             <Link href="/seller/ndr"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex-shrink-0"
-              style={{ background: "rgba(239,68,68,0.25)", color: "#FCA5A5", border: "1px solid rgba(239,68,68,0.4)" }}>
-              Resolve Now <ArrowRight className="w-3.5 h-3.5" />
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap"
+              style={{ background: "rgba(239,68,68,0.15)", color: "#DC2626" }}>
+              Resolve <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
         )}
 
-        {/* New Orders Pending Banner */}
         {!loading && newOrdersCount > 0 && (
           <div className="flex items-center justify-between gap-4 rounded-2xl px-5 py-4"
-            style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)", border: "1px solid rgba(67,97,238,0.4)" }}>
+            style={{ background: "rgba(67,97,238,0.06)", border: "1px solid rgba(67,97,238,0.2)" }}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse"
-                style={{ background: "rgba(67,97,238,0.25)" }}>
-                <ShoppingCart className="w-5 h-5" style={{ color: "#818CF8" }} />
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse"
+                style={{ background: "rgba(67,97,238,0.15)" }}>
+                <ShoppingCart className="w-4 h-4" style={{ color: "#4361EE" }} />
               </div>
               <div>
-                <p className="text-sm font-bold" style={{ color: "#E0E7FF" }}>
-                  {newOrdersCount} New Order{newOrdersCount > 1 ? "s" : ""} Waiting
+                <p className="text-sm font-bold" style={{ color: "#1e1b4b" }}>
+                  {newOrdersCount} new order{newOrdersCount > 1 ? "s" : ""} waiting
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: "#A5B4FC" }}>
-                  Confirm them to trigger fulfillment
-                </p>
+                <p className="text-xs mt-0.5" style={{ color: "#6366F1" }}>Confirm to trigger fulfillment</p>
               </div>
             </div>
             <Link href="/seller/orders"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex-shrink-0"
-              style={{ background: "rgba(67,97,238,0.25)", color: "#C7D2FE", border: "1px solid rgba(67,97,238,0.4)" }}>
-              View Orders <ArrowRight className="w-3.5 h-3.5" />
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap"
+              style={{ background: "rgba(67,97,238,0.15)", color: "#4361EE" }}>
+              View <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+        )}
+
+        {!loading && wallet && wallet.balance > 0 && (
+          <div className="flex items-center justify-between gap-4 rounded-2xl px-5 py-4"
+            style={{ background: "rgba(67,97,238,0.06)", border: "1px solid rgba(67,97,238,0.2)" }}>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(67,97,238,0.15)" }}>
+                <Wallet className="w-4 h-4" style={{ color: "#4361EE" }} />
+              </div>
+              <div>
+                <p className="text-sm font-bold" style={{ color: "#1e1b4b" }}>
+                  ₹{fmt(wallet.balance)} wallet balance
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: "#6366F1" }}>Available for withdrawal</p>
+              </div>
+            </div>
+            <Link href="/seller/wallet"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap"
+              style={{ background: "rgba(67,97,238,0.15)", color: "#4361EE" }}>
+              View Wallet <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
         )}
 
         {/* Quick Actions */}
-        <div className="flex flex-wrap items-center gap-2 md:gap-3">
+        <div className="flex flex-wrap gap-2">
           {[
-            { label: "View Orders",     href: "/seller/orders",          icon: ShoppingCart, color: "#4361EE" },
-            { label: "Import Orders",   href: "/seller/orders?import=1", icon: Upload,       color: "#16A34A" },
-            { label: "Product Catalog", href: "/seller/catalog",         icon: Package,      color: "#0891B2" },
-            { label: "Deliveries",      href: "/seller/deliveries",      icon: Truck,        color: "#7C3AED" },
-            { label: "Wallet",          href: "/seller/wallet",          icon: Wallet,       color: "#F59E0B" },
-            { label: "Shopify Store",   href: "/seller/shopify",         icon: Store,        color: "#EF4444" },
+            { label: "Orders",     href: "/seller/orders",          icon: ShoppingCart },
+            { label: "Import",     href: "/seller/orders?import=1", icon: Upload },
+            { label: "Products",   href: "/seller/catalog",         icon: Package },
+            { label: "Deliveries", href: "/seller/deliveries",      icon: Truck },
+            { label: "Wallet",     href: "/seller/wallet",          icon: Wallet },
+            { label: "Store",      href: "/seller/shopify",         icon: Store },
           ].map((a) => {
             const Icon = a.icon;
             return (
               <Link key={a.href} href={a.href}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:shadow-sm"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all"
                 style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-600)" }}>
-                <Icon className="w-4 h-4" style={{ color: a.color }} />
+                <Icon className="w-3.5 h-3.5" style={{ color: "#4361EE" }} />
                 {a.label}
-                <ArrowRight className="w-3 h-3 ml-auto opacity-40" />
               </Link>
             );
           })}
         </div>
 
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-
-          {/* Order Trend Chart */}
-          <div className="md:col-span-2 card p-5">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Order Trend</h2>
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>Last {chartDays} days</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-0.5 rounded-lg p-0.5"
-                  style={{ background: "var(--bg-muted)" }}>
-                  {[7, 14, 30, 60].map((d) => (
-                    <button key={d} onClick={() => setChartDays(d)}
-                      className="px-2.5 py-1 text-xs font-semibold rounded-md transition-all"
-                      style={chartDays === d
-                        ? { background: "var(--bg-card)", color: "var(--text-900)", boxShadow: "0 1px 3px rgba(0,0,0,0.12)" }
-                        : { color: "var(--text-400)" }}>
-                      {d}d
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-400)" }}>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#16A34A" }} />
-                    Delivered
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#4361EE" }} />
-                    Orders
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#EF4444" }} />
-                    RTO
-                  </span>
-                </div>
-              </div>
-            </div>
-            {chartData.length === 0 ? (
-              <div className="h-48 flex items-center justify-center text-sm" style={{ color: "var(--text-400)" }}>
-                No order data yet
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--text-400)" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "var(--text-400)" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Line type="monotone" dataKey="Orders" stroke="#4361EE" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="Delivered" stroke="#16A34A" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="RTO" stroke="#EF4444" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-
-          {/* 7-Day Snapshot */}
-          {analytics && last7.length >= 3 && (
-            <div className="card p-5">
-              <h2 className="text-sm font-semibold mb-4" style={{ color: "var(--text-900)" }}>Last 7 Days</h2>
-              <div className="space-y-3">
-                {[
-                  { label: "Orders",    value: last7Total,                                  delta: weekOverWeek, icon: ShoppingCart, color: "#4361EE" },
-                  { label: "Delivered", value: last7.reduce((s, d) => s + d.delivered, 0), delta: null,         icon: CheckCircle2, color: "#16A34A" },
-                  { label: "RTO",       value: last7.reduce((s, d) => s + d.rto, 0),       delta: null,         icon: TrendingDown, color: "#EF4444" },
-                  { label: "Avg / day", value: +(last7Total / 7).toFixed(1),                delta: null,         icon: Clock,        color: "#F59E0B" },
-                ].map((row) => {
-                  const Icon = row.icon;
-                  return (
-                    <div key={row.label} className="flex items-center justify-between py-1.5"
-                      style={{ borderBottom: "1px solid var(--border)" }}>
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-3.5 h-3.5" style={{ color: row.color }} />
-                        <span className="text-xs font-medium" style={{ color: "var(--text-600)" }}>{row.label}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold" style={{ color: "var(--text-900)" }}>{row.value}</span>
-                        {row.delta !== null && Math.abs(row.delta) > 0 && (
-                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-                            style={{ background: row.delta >= 0 ? "#F0FDF4" : "#FEF2F2", color: row.delta >= 0 ? "#16A34A" : "#DC2626" }}>
-                            {row.delta >= 0 ? "▲" : "▼"}{Math.abs(row.delta)}%
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-                {bestDayLabel && bestDay && (
-                  <p className="text-[10px] pt-1" style={{ color: "var(--text-400)" }}>
-                    🏆 Best day: {bestDayLabel} ({bestDay.total} orders)
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Delivery Breakdown */}
-          <div className="card p-5">
-            <h2 className="text-sm font-semibold mb-4" style={{ color: "var(--text-900)" }}>Delivery Breakdown</h2>
-            {loading ? (
-              <div className="space-y-3">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-8 rounded-lg animate-pulse" style={{ background: "var(--bg-muted)" }} />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {[
-                  { label: "Delivered",  count: analytics?.deliveredCount ?? 0, color: "#16A34A", icon: CheckCircle2 },
-                  { label: "In Transit", count: analytics?.inTransitCount ?? 0, color: "#4361EE", icon: Truck },
-                  { label: "RTO",        count: analytics?.rtoCount ?? 0,       color: "#EF4444", icon: TrendingDown },
-                  { label: "Cancelled",  count: analytics?.cancelledCount ?? 0, color: "#6B7280", icon: XCircle },
-                ].map((item) => {
-                  const total = analytics?.totalOrders || 1;
-                  const pct = Math.round((item.count / total) * 100);
-                  const Icon = item.icon;
-                  return (
-                    <div key={item.label}>
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1.5">
-                          <Icon className="w-3.5 h-3.5" style={{ color: item.color }} />
-                          <span className="text-xs font-medium" style={{ color: "var(--text-600)" }}>{item.label}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold" style={{ color: "var(--text-900)" }}>{item.count}</span>
-                          <span className="text-xs" style={{ color: "var(--text-400)" }}>{pct}%</span>
-                        </div>
-                      </div>
-                      <div className="w-full h-1.5 rounded-full" style={{ background: "var(--bg-muted)" }}>
-                        <div className="h-full rounded-full transition-all"
-                          style={{ width: `${pct}%`, background: item.color }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* P&L Summary */}
-        {!loading && analytics?.earnings && (() => {
-          const e = analytics.earnings;
-          const grossProfit = e.totalGMV - e.totalProductCost - e.totalShipping - e.totalFees - e.totalRtoCharge;
-          const netProfit   = grossProfit - adSpend;
-          const margin      = e.totalGMV > 0 ? (netProfit / e.totalGMV) * 100 : 0;
-          const isProfit    = netProfit >= 0;
-
-          const rows = [
-            { label: "Revenue (GMV)",    value: e.totalGMV,         color: "#16A34A", sign: "+" },
-            { label: "Product Cost",     value: e.totalProductCost, color: "#EF4444", sign: "−" },
-            { label: "Shipping Charges", value: e.totalShipping,    color: "#EF4444", sign: "−" },
-            { label: "Platform Fee",     value: e.totalFees,        color: "#EF4444", sign: "−" },
-            { label: "RTO Losses",       value: e.totalRtoCharge,   color: "#EF4444", sign: "−" },
-            { label: "Ad Spend (30d)",   value: adSpend,            color: "#7C3AED", sign: "−" },
-          ];
-
-          return (
-            <div className="card p-5">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Profit & Margin</h2>
-                  <p className="text-xs mt-0.5" style={{ color: "var(--text-400)" }}>Revenue minus all costs</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-black" style={{ color: isProfit ? "#16A34A" : "#EF4444" }}>
-                    {isProfit ? "+" : "−"}₹{fmt(Math.abs(netProfit))}
-                  </p>
-                  <p className="text-xs font-semibold mt-0.5" style={{ color: isProfit ? "#16A34A" : "#EF4444" }}>
-                    {margin.toFixed(1)}% net margin
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-2.5">
-                {rows.map((r) => (
-                  <div key={r.label} className="flex items-center justify-between py-2"
-                    style={{ borderBottom: "1px solid var(--border)" }}>
-                    <p className="text-xs font-medium" style={{ color: "var(--text-600)" }}>{r.label}</p>
-                    <p className="text-xs font-bold" style={{ color: r.color }}>
-                      {r.sign}₹{fmt(r.value)}
-                    </p>
-                  </div>
-                ))}
-                <div className="flex items-center justify-between pt-2">
-                  <p className="text-sm font-black" style={{ color: "var(--text-900)" }}>Net Profit</p>
-                  <p className="text-sm font-black" style={{ color: isProfit ? "#16A34A" : "#EF4444" }}>
-                    {isProfit ? "+" : "−"}₹{fmt(Math.abs(netProfit))} ({margin.toFixed(1)}%)
-                  </p>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Recent Orders */}
-        <div className="card">
+        {/* Recent Orders — always visible */}
+        <div className="card overflow-hidden">
           <div className="px-5 pt-4 pb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Recent Orders</h2>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{ background: "rgba(67,97,238,0.1)" }}>
+                <ShoppingCart className="w-4 h-4" style={{ color: "#4361EE" }} />
+              </div>
+              <h2 className="text-sm font-semibold" style={{ color: "var(--text-900)" }}>Recent Orders</h2>
+            </div>
             <Link href="/seller/orders"
-              className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+              className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg"
               style={{ color: "#4361EE", background: "rgba(67,97,238,0.08)", border: "1px solid rgba(67,97,238,0.2)" }}>
               View All <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
+
           <div className="px-5 pb-3 flex items-center gap-1.5 flex-wrap" style={{ borderBottom: "1px solid var(--border)" }}>
             {(["ALL", "NEW", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "RTO", "CANCELLED"]).map((s) => {
               const cfg = STATUS_CONFIG[s];
@@ -712,7 +445,7 @@ export default function SellerDashboard() {
 
           {loading || ordersLoading ? (
             <div className="p-5 space-y-3">
-              {[...Array(5)].map((_, i) => (
+              {[...Array(4)].map((_, i) => (
                 <div key={i} className="h-10 rounded-lg animate-pulse" style={{ background: "var(--bg-muted)" }} />
               ))}
             </div>
@@ -746,13 +479,9 @@ export default function SellerDashboard() {
                       <p className="text-sm font-semibold truncate" style={{ color: "var(--text-900)" }}>
                         #{order.externalOrderId}
                       </p>
-                      <p className="text-xs truncate" style={{ color: "var(--text-400)" }}>
-                        {order.customerName}
-                      </p>
+                      <p className="text-xs truncate" style={{ color: "var(--text-400)" }}>{order.customerName}</p>
                     </div>
-                    <span className="text-sm font-bold" style={{ color: "var(--text-900)" }}>
-                      ₹{fmt(order.totalAmount)}
-                    </span>
+                    <span className="text-sm font-bold" style={{ color: "var(--text-900)" }}>₹{fmt(order.totalAmount)}</span>
                     <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
                       style={{ background: cfg.bg, color: cfg.color }}>
                       {cfg.label}
@@ -766,6 +495,224 @@ export default function SellerDashboard() {
             </div>
           )}
         </div>
+
+        {/* Analytics — collapsible */}
+        <div className="card overflow-hidden">
+          <SectionToggle
+            label="Analytics & Charts"
+            icon={TrendingUp}
+            open={showAnalytics}
+            onToggle={() => setShowAnalytics(v => !v)}
+            count={`Last ${chartDays}d`}
+          />
+          {showAnalytics && (
+            <div className="p-5 space-y-5">
+
+              {/* Day selector */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-400)" }}>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full inline-block" style={{ background: "#4361EE" }} /> Orders
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full inline-block" style={{ background: "#059669" }} /> Delivered
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full inline-block" style={{ background: "#EF4444" }} /> RTO
+                  </span>
+                </div>
+                <div className="flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: "var(--bg-muted)" }}>
+                  {[7, 14, 30, 60].map((d) => (
+                    <button key={d} onClick={() => setChartDays(d)}
+                      className="px-2.5 py-1 text-xs font-semibold rounded-md transition-all"
+                      style={chartDays === d
+                        ? { background: "var(--bg-card)", color: "var(--text-900)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+                        : { color: "var(--text-400)" }}>
+                      {d}d
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Chart */}
+              {chartData.length === 0 ? (
+                <div className="h-48 flex items-center justify-center text-sm" style={{ color: "var(--text-400)" }}>
+                  No data yet
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--text-400)" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: "var(--text-400)" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line type="monotone" dataKey="Orders" stroke="#4361EE" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="Delivered" stroke="#059669" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="RTO" stroke="#EF4444" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+
+              {/* Delivery breakdown + 7-day side by side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--text-400)" }}>Delivery Breakdown</h3>
+                  <div className="space-y-3">
+                    {[
+                      { label: "Delivered",  count: analytics?.deliveredCount ?? 0, color: "#059669" },
+                      { label: "In Transit", count: analytics?.inTransitCount ?? 0, color: "#4361EE" },
+                      { label: "RTO",        count: analytics?.rtoCount ?? 0,       color: "#EF4444" },
+                      { label: "Cancelled",  count: analytics?.cancelledCount ?? 0, color: "#9CA3AF" },
+                    ].map((item) => {
+                      const total = analytics?.totalOrders || 1;
+                      const pct = Math.round((item.count / total) * 100);
+                      return (
+                        <div key={item.label}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium" style={{ color: "var(--text-600)" }}>{item.label}</span>
+                            <span className="text-xs font-bold" style={{ color: "var(--text-900)" }}>{item.count} <span style={{ color: "var(--text-400)" }}>({pct}%)</span></span>
+                          </div>
+                          <div className="w-full h-1.5 rounded-full" style={{ background: "var(--bg-muted)" }}>
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: item.color }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {last7.length >= 3 && (
+                  <div>
+                    <h3 className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--text-400)" }}>Last 7 Days</h3>
+                    <div className="space-y-2">
+                      {[
+                        { label: "Orders",    value: last7Total,                                  icon: ShoppingCart, color: "#4361EE", delta: weekOverWeek },
+                        { label: "Delivered", value: last7.reduce((s, d) => s + d.delivered, 0), icon: CheckCircle2, color: "#059669", delta: null },
+                        { label: "RTO",       value: last7.reduce((s, d) => s + d.rto, 0),       icon: TrendingDown, color: "#EF4444", delta: null },
+                        { label: "Avg/day",   value: +(last7Total / 7).toFixed(1),                icon: Clock,        color: "#6366F1", delta: null },
+                      ].map((row) => {
+                        const Icon = row.icon;
+                        return (
+                          <div key={row.label} className="flex items-center justify-between py-1.5"
+                            style={{ borderBottom: "1px solid var(--border)" }}>
+                            <div className="flex items-center gap-2">
+                              <Icon className="w-3.5 h-3.5" style={{ color: row.color }} />
+                              <span className="text-xs" style={{ color: "var(--text-600)" }}>{row.label}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold" style={{ color: "var(--text-900)" }}>{row.value}</span>
+                              {row.delta !== null && Math.abs(row.delta) > 0 && (
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                                  style={{ background: row.delta >= 0 ? "rgba(67,97,238,0.1)" : "#FEF2F2", color: row.delta >= 0 ? "#4361EE" : "#DC2626" }}>
+                                  {row.delta >= 0 ? "▲" : "▼"}{Math.abs(row.delta)}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {bestDayLabel && bestDay && (
+                        <p className="text-[10px] pt-1" style={{ color: "var(--text-400)" }}>
+                          🏆 Best day: {bestDayLabel} ({bestDay.total} orders)
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Unused sparkline variables suppressed */}
+              <div style={{ display: "none" }}>{deliverySparkline.length}{rtoSparkline.length}</div>
+            </div>
+          )}
+        </div>
+
+        {/* Financials — collapsible */}
+        {analytics?.earnings && (
+          <div className="card overflow-hidden">
+            <SectionToggle
+              label="Financials & P&L"
+              icon={Wallet}
+              open={showFinancials}
+              onToggle={() => setShowFinancials(v => !v)}
+              count={metaConnected && adSpend > 0 ? `${(adRevenue / adSpend).toFixed(2)}x ROAS` : undefined}
+            />
+            {showFinancials && (() => {
+              const e = analytics.earnings;
+              const grossProfit = e.totalGMV - e.totalProductCost - e.totalShipping - e.totalFees - e.totalRtoCharge;
+              const netProfit   = grossProfit - adSpend;
+              const margin      = e.totalGMV > 0 ? (netProfit / e.totalGMV) * 100 : 0;
+              const isProfit    = netProfit >= 0;
+
+              const rows = [
+                { label: "Revenue (GMV)",    value: e.totalGMV,         color: "#4361EE", sign: "+" },
+                { label: "Product Cost",     value: e.totalProductCost, color: "#EF4444", sign: "−" },
+                { label: "Shipping",         value: e.totalShipping,    color: "#EF4444", sign: "−" },
+                { label: "Platform Fee",     value: e.totalFees,        color: "#EF4444", sign: "−" },
+                { label: "RTO Losses",       value: e.totalRtoCharge,   color: "#EF4444", sign: "−" },
+                { label: "Ad Spend (30d)",   value: adSpend,            color: "#7C3AED", sign: "−" },
+              ];
+
+              return (
+                <div className="p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-400)" }}>Net Profit</p>
+                      <p className="text-2xl font-black mt-0.5" style={{ color: isProfit ? "#4361EE" : "#EF4444" }}>
+                        {isProfit ? "+" : "−"}₹{fmt(Math.abs(netProfit))}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs" style={{ color: "var(--text-400)" }}>Net margin</p>
+                      <p className="text-lg font-bold" style={{ color: isProfit ? "#4361EE" : "#EF4444" }}>
+                        {margin.toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-0">
+                    {rows.map((r) => (
+                      <div key={r.label} className="flex items-center justify-between py-2.5"
+                        style={{ borderBottom: "1px solid var(--border)" }}>
+                        <p className="text-xs font-medium" style={{ color: "var(--text-600)" }}>{r.label}</p>
+                        <p className="text-xs font-bold" style={{ color: r.color }}>{r.sign}₹{fmt(r.value)}</p>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between pt-3">
+                      <p className="text-sm font-black" style={{ color: "var(--text-900)" }}>Net Profit</p>
+                      <p className="text-sm font-black" style={{ color: isProfit ? "#4361EE" : "#EF4444" }}>
+                        {isProfit ? "+" : "−"}₹{fmt(Math.abs(netProfit))} ({margin.toFixed(1)}%)
+                      </p>
+                    </div>
+                  </div>
+                  {metaConnected && (
+                    <div className="mt-4 flex items-center justify-between px-4 py-3 rounded-xl"
+                      style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.15)" }}>
+                      <div className="flex items-center gap-2">
+                        <Megaphone className="w-4 h-4" style={{ color: "#7C3AED" }} />
+                        <span className="text-xs font-medium" style={{ color: "var(--text-600)" }}>Meta Ads (30d)</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-bold" style={{ color: "#7C3AED" }}>₹{fmt(adSpend)} spent</p>
+                        {adSpend > 0 && <p className="text-[10px]" style={{ color: "var(--text-400)" }}>{(adRevenue / adSpend).toFixed(2)}x ROAS</p>}
+                      </div>
+                    </div>
+                  )}
+                  {!metaConnected && (
+                    <Link href="/seller/profile?tab=integrations"
+                      className="mt-4 flex items-center justify-between px-4 py-3 rounded-xl"
+                      style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.15)" }}>
+                      <div className="flex items-center gap-2">
+                        <Megaphone className="w-4 h-4" style={{ color: "#7C3AED" }} />
+                        <span className="text-xs font-medium" style={{ color: "#7C3AED" }}>Connect Meta Ads to track ROAS</span>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5" style={{ color: "#7C3AED" }} />
+                    </Link>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
       </div>
     </div>
