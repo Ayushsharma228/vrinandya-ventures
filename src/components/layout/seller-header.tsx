@@ -90,7 +90,7 @@ export function SellerHeader({ userName, userEmail }: {
       {/* NO border-bottom, NO box-shadow separator */}
       <header
         ref={ref}
-        className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center px-6 md:px-8 gap-6"
+        className="fixed top-0 left-0 right-0 z-50 h-20 flex items-center px-6 md:px-8 gap-6"
         style={{ background: "white" }}
       >
         {/* ── Logo + Name (left) ── */}
@@ -284,7 +284,7 @@ export function SellerHeader({ userName, userEmail }: {
         <div className="md:hidden fixed inset-0 z-40" onClick={() => setMobileOpen(false)}>
           <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.2)" }} />
           <div
-            className="absolute top-16 left-0 right-0 bg-white shadow-2xl overflow-y-auto max-h-[calc(100vh-64px)]"
+            className="absolute top-20 left-0 right-0 bg-white shadow-2xl overflow-y-auto max-h-[calc(100vh-80px)]"
             onClick={e => e.stopPropagation()}
           >
             {sellerNav.map((group) =>
