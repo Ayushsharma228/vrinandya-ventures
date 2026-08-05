@@ -36,8 +36,8 @@ interface Analytics {
 
 interface Wallet {
   balance: number;
-  totalCredit: number;
-  totalDebit: number;
+  totalRemittance: number;
+  totalDeductions: number;
 }
 
 function getGreeting() {
@@ -147,8 +147,6 @@ export default function SellerDashboard() {
     RTO: d.rto,
   })) ?? [];
 
-  const netPayout = wallet?.balance ?? 0;
-
   const deliveryRate = analytics?.deliveryRate ?? 0;
   const rtoRate      = analytics?.rtoRate ?? 0;
 
@@ -204,7 +202,7 @@ export default function SellerDashboard() {
       iconColor: "#16A34A",
       sub: todayOrders > 0 && avgOrderValue > 0
         ? `~₹${fmt(todayRevEst)} today`
-        : wallet ? `₹${fmt(wallet.totalCredit)} remitted` : "—",
+        : wallet ? `₹${fmt(wallet.totalRemittance)} remitted` : "—",
       sparkline: orderSparkline.map(v => v * avgOrderValue),
     },
     {
@@ -238,7 +236,7 @@ export default function SellerDashboard() {
     },
     {
       label: "Net Payout",
-      value: `₹${fmt(wallet?.totalCredit ?? 0)}`,
+      value: `₹${fmt(wallet?.totalRemittance ?? 0)}`,
       icon: TrendingUp,
       iconBg: "#F0FDF4",
       iconColor: "#16A34A",

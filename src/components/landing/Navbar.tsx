@@ -39,7 +39,7 @@ export function Navbar() {
             A
           </div>
           <span className="font-black text-base tracking-tight" style={{ color: C.heading, fontFamily: "var(--font-space)" }}>
-            Axiqen
+            AXQEN
           </span>
         </a>
 

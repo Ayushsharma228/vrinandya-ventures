@@ -24,8 +24,9 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Axiqen",
-  description: "Modern Dropshipping & Marketplace Platform",
+  title: "AXQEN",
+  description: "AI Commerce Operating System",
+  icons: { icon: "/axqen-icon.svg" },
 };
 
 export default function RootLayout({

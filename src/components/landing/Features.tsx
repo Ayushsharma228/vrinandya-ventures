@@ -63,7 +63,7 @@ export function Features() {
             Automation does the work.<br className="hidden md:block" /> Our team watches it.
           </h2>
           <p className="text-base max-w-xl mx-auto" style={{ color: C.body }}>
-            Most platforms give you a dashboard and disappear. Axiqen gives you the dashboard{" "}
+            Most platforms give you a dashboard and disappear. AXQEN gives you the dashboard{" "}
             <em style={{ color: C.heading }}>and</em> the people behind it.
           </p>
         </div>

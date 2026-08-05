@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Vrinandya Ventures",
-  description: "How Vrinandya Ventures collects, uses, and protects your data.",
+  title: "Privacy Policy — AXQEN",
+  description: "How AXQEN collects, uses, and protects your data.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -16,7 +16,7 @@ export default function PrivacyPolicyPage() {
 
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-2">1. Who We Are</h2>
-            <p>Vrinandya Ventures (&quot;we&quot;, &quot;our&quot;, &quot;us&quot;) operates the platform at <strong>app.vrinandyaventures.in</strong> — a dropshipping SaaS platform that connects sellers, suppliers, and administrators. Our registered contact email is <a href="mailto:vrinandyaventures@gmail.com" className="text-blue-600 underline">vrinandyaventures@gmail.com</a>.</p>
+            <p>AXQEN (&quot;we&quot;, &quot;our&quot;, &quot;us&quot;) operates the platform at <strong>app.vrinandyaventures.in</strong> — a dropshipping SaaS platform that connects sellers, suppliers, and administrators. Our registered contact email is <a href="mailto:vrinandyaventures@gmail.com" className="text-blue-600 underline">vrinandyaventures@gmail.com</a>.</p>
           </div>
 
           <div>
@@ -97,7 +97,7 @@ export default function PrivacyPolicyPage() {
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-2">11. Contact Us</h2>
             <p>For any privacy-related questions, contact us at:<br />
-            <strong>Vrinandya Ventures</strong><br />
+            <strong>AXQEN</strong><br />
             Email: <a href="mailto:vrinandyaventures@gmail.com" className="text-blue-600 underline">vrinandyaventures@gmail.com</a><br />
             Website: <a href="https://vrinandyaventures.in" className="text-blue-600 underline">vrinandyaventures.in</a>
             </p>

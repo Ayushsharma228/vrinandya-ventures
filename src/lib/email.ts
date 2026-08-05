@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM   = "Vrinandya Ventures <noreply@vrinandyaventures.in>";
+const FROM   = "AXQEN <noreply@vrinandyaventures.in>";
 
 function isConfigured(): boolean {
   const key = process.env.RESEND_API_KEY ?? "";
@@ -18,11 +18,11 @@ function base(body: string): string {
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
 <tr><td style="background:#0D1F13;padding:24px 32px;text-align:center">
-  <span style="display:inline-block;background:#00C67A;color:#fff;font-weight:bold;font-size:18px;padding:8px 20px;border-radius:8px">Vrinandya</span>
+  <span style="display:inline-block;background:#4361EE;color:#fff;font-weight:bold;font-size:18px;padding:8px 20px;border-radius:8px">AXQEN</span>
 </td></tr>
 <tr><td style="padding:32px">${body}</td></tr>
 <tr><td style="padding:20px 32px;background:#f8f8f8;border-top:1px solid #eee;text-align:center">
-  <p style="margin:0;font-size:12px;color:#9ca3af">Vrinandya Ventures Private Limited &nbsp;·&nbsp; connect@vrinandyaventures.in &nbsp;·&nbsp; +91 7060401016</p>
+  <p style="margin:0;font-size:12px;color:#9ca3af">AXQEN &nbsp;·&nbsp; connect@vrinandyaventures.in &nbsp;·&nbsp; +91 7060401016</p>
   <p style="margin:4px 0 0;font-size:11px;color:#d1d5db">CIN: U63112UP2025PTC239392 &nbsp;·&nbsp; GST: 09AALCV7054P1ZD</p>
 </td></tr>
 </table>
@@ -192,10 +192,10 @@ export async function emailKycRejected(opts: { to: string; name: string; reason:
 export async function emailOnboardingComplete(opts: { to: string; name: string }): Promise<void> {
   await send(
     opts.to,
-    "Welcome to Vrinandya Ventures!",
+    "Welcome to AXQEN!",
     base(`
       ${h2(`Welcome, ${opts.name}!`)}
-      ${p("You have successfully completed onboarding with Vrinandya Ventures Private Limited.")}
+      ${p("You have successfully completed onboarding with AXQEN Private Limited.")}
       ${hr()}
       ${p("Our team is reviewing your details and will activate your account within <strong>24–48 hours</strong>.")}
       ${kv([
@@ -271,7 +271,7 @@ export async function emailDigest(opts: {
   const deliveryRate = opts.totalOrders > 0 ? Math.round((opts.delivered / opts.totalOrders) * 100) : 0;
   await send(
     opts.to,
-    `Your ${opts.period} Summary — Vrinandya Ventures`,
+    `Your ${opts.period} Summary — AXQEN`,
     base(`
       ${h2(`${opts.period} Business Summary`)}
       ${p(`Hi ${opts.name}, here's how your business performed ${opts.period === "Daily" ? "yesterday" : "this week"}.`)}

@@ -6,11 +6,11 @@ export function Footer() {
       <div className="max-w-[1200px] mx-auto px-6 py-5 flex items-center justify-between">
 
         <span className="font-black text-sm" style={{ color: C.heading, fontFamily: "var(--font-space)" }}>
-          Axiqen
+          AXQEN
         </span>
 
         <p className="text-xs" style={{ color: C.muted }}>
-          © {new Date().getFullYear()} Axiqen. India&apos;s COD Dropshipping Platform.
+          © {new Date().getFullYear()} AXQEN. India&apos;s COD Dropshipping Platform.
         </p>
 
         <div className="flex items-center gap-4 text-sm" style={{ color: C.body }}>

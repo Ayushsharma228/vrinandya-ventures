@@ -183,10 +183,10 @@ export default function NdrPage() {
 
         {/* Pending NDRs */}
         <div>
-          <h2 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+          <h2 className="text-sm font-bold mb-3 flex items-center gap-2" style={{ color: "var(--text-900)" }}>
             <AlertTriangle className="w-4 h-4 text-red-500" />
             Pending Action ({pending.length})
-            <span className="text-xs font-normal text-gray-400 ml-1">sorted by oldest first</span>
+            <span className="text-xs font-normal ml-1" style={{ color: "var(--text-400)" }}>sorted by oldest first</span>
           </h2>
 
           {loading ? (
@@ -262,7 +262,7 @@ export default function NdrPage() {
 
                         {/* Action toggle */}
                         <div>
-                          <label className="block text-xs font-semibold text-gray-600 mb-2">Action</label>
+                          <label className="block text-xs font-semibold mb-2" style={{ color: "var(--text-600)" }}>Action</label>
                           <div className="grid grid-cols-2 gap-2">
                             <button type="button" onClick={() => setForm(order.id, { action: "REATTEMPT" })}
                               className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border transition-all"
@@ -289,12 +289,12 @@ export default function NdrPage() {
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Customer Name</label>
+                                <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-600)" }}>Customer Name</label>
                                 <input value={form.name} onChange={e => setForm(order.id, { name: e.target.value })}
                                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
                               </div>
                               <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
+                                <label className="block text-xs font-semibold mb-1 flex items-center gap-1" style={{ color: "var(--text-600)" }}>
                                   <Phone className="w-3 h-3" /> Phone *
                                 </label>
                                 <input value={form.phone} onChange={e => setForm(order.id, { phone: e.target.value })}
@@ -302,27 +302,27 @@ export default function NdrPage() {
                                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
                               </div>
                               <div className="col-span-2">
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Address</label>
+                                <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-600)" }}>Address</label>
                                 <input value={form.address} onChange={e => setForm(order.id, { address: e.target.value })}
                                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
                               </div>
                               <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">City</label>
+                                <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-600)" }}>City</label>
                                 <input value={form.city} onChange={e => setForm(order.id, { city: e.target.value })}
                                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
                               </div>
                               <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Pincode</label>
+                                <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-600)" }}>Pincode</label>
                                 <input value={form.pincode} onChange={e => setForm(order.id, { pincode: e.target.value })}
                                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
                               </div>
                               <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">State</label>
+                                <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-600)" }}>State</label>
                                 <input value={form.state} onChange={e => setForm(order.id, { state: e.target.value })}
                                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
                               </div>
                               <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Comments (optional)</label>
+                                <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-600)" }}>Comments (optional)</label>
                                 <input value={form.comments} onChange={e => setForm(order.id, { comments: e.target.value })}
                                   placeholder="e.g. Call before delivery"
                                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
@@ -361,21 +361,21 @@ export default function NdrPage() {
         {/* Actioned NDRs */}
         {actioned.length > 0 && (
           <div>
-            <h2 className="text-sm font-bold text-gray-700 mb-3">Recent Actions ({actioned.length})</h2>
+            <h2 className="text-sm font-bold mb-3" style={{ color: "var(--text-900)" }}>Recent Actions ({actioned.length})</h2>
             <div className="card overflow-hidden">
               <div className="overflow-x-auto"><table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50/50">
+                  <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-muted)" }}>
                     {["Order #", "Customer", "AWB", "NDR Reason", "Action Taken", "Attempts", "Was Open"].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: "var(--text-500)" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody style={{ borderColor: "var(--border)" }}>
                   {actioned.map(o => {
                     const age = ndrAge(o.ndrCreatedAt);
                     return (
-                      <tr key={o.id} className="hover:bg-gray-50/50">
+                      <tr key={o.id} className="hover:bg-gray-50/50" style={{ borderBottom: "1px solid var(--border)" }}>
                         <td className="px-4 py-3 font-mono text-xs text-blue-600">#{o.externalOrderId}</td>
                         <td className="px-4 py-3 text-sm text-gray-700">{o.customerName || "—"}</td>
                         <td className="px-4 py-3 font-mono text-xs text-gray-500">{o.awbNumber || "—"}</td>

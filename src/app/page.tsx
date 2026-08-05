@@ -5,9 +5,9 @@ import { redirect } from "next/navigation";
 import LandingPage from "@/components/landing/LandingPage";
 
 export const metadata: Metadata = {
-  title: "Axiqen – Done-For-You COD Dropshipping Platform India | Start Without Inventory",
+  title: "AXQEN – Done-For-You COD Dropshipping Platform India | Start Without Inventory",
   description:
-    "Axiqen automates your Shopify COD dropshipping business in India. Verified suppliers, Delhivery fulfilment, weekly payouts, and a dedicated account manager — all in one platform.",
+    "AXQEN automates your Shopify COD dropshipping business in India. Verified suppliers, Delhivery fulfilment, weekly payouts, and a dedicated account manager — all in one platform.",
   keywords: [
     "COD dropshipping India",
     "dropshipping platform India",
@@ -18,11 +18,11 @@ export const metadata: Metadata = {
     "weekly payout dropshipping",
   ],
   openGraph: {
-    title: "Axiqen – Done-For-You COD Dropshipping Platform India",
+    title: "AXQEN – Done-For-You COD Dropshipping Platform India",
     description:
       "Connect your Shopify store, pick verified products, and let our team handle fulfilment, tracking, RTOs, and weekly payouts. You focus on ads.",
     url: "https://app.vrinandyaventures.in",
-    siteName: "Axiqen",
+    siteName: "AXQEN",
     locale: "en_IN",
     type: "website",
     // TODO: add real OG image — 1200×630px
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Axiqen – Done-For-You COD Dropshipping Platform India",
+    title: "AXQEN – Done-For-You COD Dropshipping Platform India",
     description: "Automate your Shopify COD dropshipping. Verified suppliers, weekly payouts, live tracking — with a human on WhatsApp when you need one.",
   },
   robots: { index: true, follow: true },
@@ -43,7 +43,7 @@ const JSON_LD = {
     {
       "@type": "Organization",
       "@id": "https://app.vrinandyaventures.in/#organization",
-      name: "Axiqen",
+      name: "AXQEN",
       url: "https://app.vrinandyaventures.in",
       logo: "https://app.vrinandyaventures.in/logo.png", // TODO: add real logo URL
       contactPoint: {
@@ -62,20 +62,20 @@ const JSON_LD = {
           name: "What is COD dropshipping?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "COD dropshipping means you sell products online without holding inventory. When a customer orders and pays cash on delivery, the supplier ships directly to them. Your profit is the difference between your selling price and the supplier cost. Axiqen automates the entire chain.",
+            text: "COD dropshipping means you sell products online without holding inventory. When a customer orders and pays cash on delivery, the supplier ships directly to them. Your profit is the difference between your selling price and the supplier cost. AXQEN automates the entire chain.",
           },
         },
         {
           "@type": "Question",
-          name: "How is Axiqen different from other dropshipping platforms?",
+          name: "How is AXQEN different from other dropshipping platforms?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Axiqen is done-for-you: our team sets up your Shopify store, connects the app, and lists your first products. We also provide a dedicated account manager on WhatsApp and fully transparent payout remittances — every rupee itemised.",
+            text: "AXQEN is done-for-you: our team sets up your Shopify store, connects the app, and lists your first products. We also provide a dedicated account manager on WhatsApp and fully transparent payout remittances — every rupee itemised.",
           },
         },
         {
           "@type": "Question",
-          name: "Do I need inventory or GST to start dropshipping with Axiqen?",
+          name: "Do I need inventory or GST to start dropshipping with AXQEN?",
           acceptedAnswer: {
             "@type": "Answer",
             text: "No inventory required — suppliers ship directly to your customers. GST is required for payouts; our team guides you through registration if you don't have one.",
@@ -86,12 +86,12 @@ const JSON_LD = {
           name: "How and when do I get paid?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Your margin is credited to your Axiqen wallet after each successful delivery. Every Monday, earnings are transferred to your registered bank account with a full line-by-line payout breakdown.",
+            text: "Your margin is credited to your AXQEN wallet after each successful delivery. Every Monday, earnings are transferred to your registered bank account with a full line-by-line payout breakdown.",
           },
         },
         {
           "@type": "Question",
-          name: "Can I connect my existing Shopify store to Axiqen?",
+          name: "Can I connect my existing Shopify store to AXQEN?",
           acceptedAnswer: {
             "@type": "Answer",
             text: "Yes. Connecting your existing Shopify store takes under 5 minutes on your onboarding call. Your existing products and orders are untouched.",

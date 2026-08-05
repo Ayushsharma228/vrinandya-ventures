@@ -240,10 +240,17 @@ export default function OnboardingPage() {
 
       {/* Logo */}
       <div className="flex items-center gap-2.5 mb-7">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-base"
-          style={{ background: "#0048DF" }}>A</div>
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden"
+          style={{ background: "#4361EE" }}>
+          <svg viewBox="0 0 100 108" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5">
+            <path d="M50 10 C47 7 42 8 40 14 L13 80 C10 88 13 96 21 96 C29 96 32 91 34 86 L50 62"
+                  stroke="white" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M50 10 C53 7 58 8 60 14 L87 80 C90 88 87 96 79 96 C71 96 68 91 66 86 L50 62"
+                  stroke="white" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
         <div>
-          <p className="font-bold text-sm leading-tight" style={{ color: "#0A0E1A" }}>Axiqen</p>
+          <p className="font-bold text-sm leading-tight" style={{ color: "#0A0E1A" }}>AXQEN</p>
           <p className="text-xs" style={{ color: "#9CA3AF" }}>Seller Onboarding</p>
         </div>
       </div>
@@ -312,7 +319,7 @@ export default function OnboardingPage() {
           <div className="space-y-5">
             <div>
               <h3 className="text-xl font-bold mb-1" style={{ color: "#0A0E1A" }}>
-                Welcome to Axiqen! 🎉
+                Welcome to AXQEN! 🎉
               </h3>
               <p className="text-sm" style={{ color: "#6B7280" }}>
                 You&apos;re just a few steps away from launching your dropshipping business.
@@ -406,11 +413,11 @@ export default function OnboardingPage() {
             <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(0,72,223,0.2)" }}>
               <div className="flex items-center gap-2 px-4 py-3" style={{ background: "rgba(0,72,223,0.07)", borderBottom: "1px solid rgba(0,72,223,0.15)" }}>
                 <ShieldCheck className="w-4 h-4 flex-shrink-0" style={{ color: "#0048DF" }} />
-                <p className="text-xs font-bold" style={{ color: "#0A0E1A" }}>Vrinandya Ventures Seller Agreement</p>
+                <p className="text-xs font-bold" style={{ color: "#0A0E1A" }}>AXQEN Seller Agreement</p>
               </div>
               <div className="overflow-y-auto p-4 text-xs leading-relaxed space-y-3" style={{ maxHeight: "220px", color: "#374151", background: "#fff" }}>
                 <p><strong>1. Introduction</strong><br />
-                This Seller Agreement ("Agreement") is entered into between Vrinandya Ventures ("Company", "we", "us") and you ("Seller"). By ticking the checkbox below, you agree to be bound by these terms in full.</p>
+                This Seller Agreement ("Agreement") is entered into between AXQEN ("Company", "we", "us") and you ("Seller"). By ticking the checkbox below, you agree to be bound by these terms in full.</p>
 
                 <p><strong>2. Platform Usage</strong><br />
                 The Company provides a dropshipping and marketplace management platform ("Platform"). The Seller is granted a non-exclusive, non-transferable licence to use the Platform solely for managing their ecommerce operations. The Seller shall not reverse-engineer, resell, or sublicense the Platform.</p>
@@ -446,16 +453,16 @@ export default function OnboardingPage() {
                 This Agreement shall be governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of courts in Agra, Uttar Pradesh. The parties agree to attempt mediation before initiating legal proceedings.</p>
 
                 <p><strong>13. Amendments</strong><br />
-                Vrinandya Ventures reserves the right to amend these terms at any time. Sellers will be notified via email at least 7 days before material changes take effect. Continued use of the Platform constitutes acceptance of the revised terms.</p>
+                AXQEN reserves the right to amend these terms at any time. Sellers will be notified via email at least 7 days before material changes take effect. Continued use of the Platform constitutes acceptance of the revised terms.</p>
 
-                <p style={{ color: "#9CA3AF" }}>Last updated: January 2025 · Vrinandya Ventures, Agra, Uttar Pradesh, India</p>
+                <p style={{ color: "#9CA3AF" }}>Last updated: January 2025 · AXQEN, Agra, Uttar Pradesh, India</p>
               </div>
               <div className="px-4 py-3" style={{ background: "rgba(0,72,223,0.03)", borderTop: "1px solid rgba(0,72,223,0.1)" }}>
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)}
                     className="mt-0.5 w-4 h-4 flex-shrink-0 rounded accent-[#0048DF]" />
                   <span className="text-xs" style={{ color: "#374151" }}>
-                    I have read and agree to the <strong>Vrinandya Ventures Seller Agreement</strong> and Terms of Service.
+                    I have read and agree to the <strong>AXQEN Seller Agreement</strong> and Terms of Service.
                   </span>
                 </label>
               </div>

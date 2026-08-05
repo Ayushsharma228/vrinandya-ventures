@@ -6,10 +6,10 @@ import { useInView } from "./useInView";
 const FAQS = [
   {
     q: "What is COD dropshipping?",
-    a: "You sell products online without buying or storing any inventory. When a customer orders on your store and opts for Cash on Delivery, the supplier packs and ships the product directly to them. You earn the difference between your selling price and the supplier's cost. Axiqen automates the entire chain — order routing to supplier, dispatch, tracking, RTO handling, and weekly payout — so you never have to touch a product or log into multiple dashboards.",
+    a: "You sell products online without buying or storing any inventory. When a customer orders on your store and opts for Cash on Delivery, the supplier packs and ships the product directly to them. You earn the difference between your selling price and the supplier's cost. AXQEN automates the entire chain — order routing to supplier, dispatch, tracking, RTO handling, and weekly payout — so you never have to touch a product or log into multiple dashboards.",
   },
   {
-    q: "How is Axiqen different from other dropshipping platforms?",
+    q: "How is AXQEN different from other dropshipping platforms?",
     a: "Two things most platforms skip. First, we're done-for-you: our team physically sets up your Shopify store, connects the app, and lists your first products — you don't figure it out alone with a help article. Second, we're radically transparent: every weekly payout shows you the exact math — gross order value, supplier cost, shipping fee, RTO deductions — before the money reaches your bank. No black-box wallets, no surprise deductions.",
   },
   {
@@ -18,11 +18,11 @@ const FAQS = [
   },
   {
     q: "How and when do I get paid?",
-    a: "Every successfully delivered order credits your margin to your Axiqen wallet within 48 hours of delivery confirmation. Every Monday, we batch the week's earnings and transfer them to your registered bank account with a line-by-line payout statement — so you can reconcile exactly: delivered orders × margin, minus any RTO deductions and platform fees. No chasing, no \"processing,\" no moving the date. Monday means Monday.",
+    a: "Every successfully delivered order credits your margin to your AXQEN wallet within 48 hours of delivery confirmation. Every Monday, we batch the week's earnings and transfer them to your registered bank account with a line-by-line payout statement — so you can reconcile exactly: delivered orders × margin, minus any RTO deductions and platform fees. No chasing, no \"processing,\" no moving the date. Monday means Monday.",
   },
   {
     q: "What happens on an RTO (returned order)?",
-    a: "Anyone who promises \"zero RTO\" is selling you a fantasy. COD naturally has return rates of 20–35% depending on niche and targeting. On Axiqen, every RTO shows in your dashboard the moment it's flagged, with the reverse shipping fee clearly stated (not hidden). Your account manager will actively help you cut your RTO rate — better ad targeting, address verification scripts, NDR follow-up calls — and you'll see the tactics working in your analytics week over week.",
+    a: "Anyone who promises \"zero RTO\" is selling you a fantasy. COD naturally has return rates of 20–35% depending on niche and targeting. On AXQEN, every RTO shows in your dashboard the moment it's flagged, with the reverse shipping fee clearly stated (not hidden). Your account manager will actively help you cut your RTO rate — better ad targeting, address verification scripts, NDR follow-up calls — and you'll see the tactics working in your analytics week over week.",
   },
   {
     q: "How much money do I need to start?",
@@ -30,7 +30,7 @@ const FAQS = [
   },
   {
     q: "Can I connect my existing Shopify store?",
-    a: "Yes — your existing store, products, and orders are completely untouched. Our team connects the Axiqen integration on your onboarding call (it takes under 5 minutes). From that point, new Shopify orders route automatically to our supplier network, and all your historical data stays exactly where it is. No need to start a new store, migrate anything, or pause your current operations during setup.",
+    a: "Yes — your existing store, products, and orders are completely untouched. Our team connects the AXQEN integration on your onboarding call (it takes under 5 minutes). From that point, new Shopify orders route automatically to our supplier network, and all your historical data stays exactly where it is. No need to start a new store, migrate anything, or pause your current operations during setup.",
   },
 ];
 

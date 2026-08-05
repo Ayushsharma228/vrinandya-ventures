@@ -105,7 +105,7 @@ export default function SellerSupportPage() {
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
       <PageHero
         title="Support Center"
-        subtitle="Get help from the Vrinandya team"
+        subtitle="Get help from the AXQEN team"
         filters={
           <button onClick={() => setShowCreate(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"

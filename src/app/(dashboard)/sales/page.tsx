@@ -65,7 +65,7 @@ export default function SalesDashboard() {
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
       <PageHero
         title={`Hey, ${data.name?.split(" ")[0] || "there"} 👋`}
-        subtitle={data.salesTitle || "Sales Team · Axiqen"}
+        subtitle={data.salesTitle || "Sales Team · AXQEN"}
         actions={
           <Link href="/sales/inbox"
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold"

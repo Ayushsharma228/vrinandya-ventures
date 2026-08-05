@@ -48,7 +48,7 @@ export function Hero() {
           className="text-lg md:text-xl leading-relaxed mb-10 max-w-2xl mx-auto"
           style={{ color: C.body, lineHeight: 1.75 }}
         >
-          Axiqen is India&apos;s done-for-you COD dropshipping platform. Connect your Shopify store, pick winning products from verified suppliers, and let our team handle fulfilment, tracking, RTOs, and payouts — while you focus only on ads and sales.
+          AXQEN is India&apos;s done-for-you COD dropshipping platform. Connect your Shopify store, pick winning products from verified suppliers, and let our team handle fulfilment, tracking, RTOs, and payouts — while you focus only on ads and sales.
         </p>
 
         {/* CTAs */}

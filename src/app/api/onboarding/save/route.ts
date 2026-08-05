@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
         const serviceLabel = user.plan === "MARKETPLACE" ? "Marketplace" : "Dropshipping";
         const html = `
           <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
-            <h2 style="color:#0D1F13;">Welcome to Axiqen, ${user.name}!</h2>
+            <h2 style="color:#0D1F13;">Welcome to AXQEN, ${user.name}!</h2>
             <p>Your onboarding is complete. Here's a summary:</p>
             <table style="width:100%;border-collapse:collapse;">
               <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Service</td><td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${serviceLabel}</td></tr>

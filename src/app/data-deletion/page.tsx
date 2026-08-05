@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Data Deletion — Vrinandya Ventures",
-  description: "Request deletion of your data from Vrinandya Ventures.",
+  title: "Data Deletion — AXQEN",
+  description: "Request deletion of your data from AXQEN.",
 };
 
 export default function DataDeletionPage() {
@@ -14,7 +14,7 @@ export default function DataDeletionPage() {
 
         <div className="space-y-6 text-gray-700 text-sm leading-7">
 
-          <p>If you have connected your Facebook / Meta account to Vrinandya Ventures and would like us to delete your data, you can request deletion using the methods below.</p>
+          <p>If you have connected your Facebook / Meta account to AXQEN and would like us to delete your data, you can request deletion using the methods below.</p>
 
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-3">
             <h2 className="text-base font-semibold text-gray-900">What data we hold from Meta</h2>

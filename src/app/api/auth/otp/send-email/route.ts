@@ -46,14 +46,14 @@ export async function POST() {
   await resend.emails.send({
     from:    FROM,
     to:      user.email,
-    subject: `${otp} — Your Axiqen verification code`,
+    subject: `${otp} — Your AXQEN verification code`,
     html: `<!DOCTYPE html>
 <html><body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif">
 <table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px">
 <tr><td align="center">
 <table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
 <tr><td style="background:#0048DF;padding:24px 32px;text-align:center">
-  <span style="color:#fff;font-weight:900;font-size:20px;letter-spacing:-0.5px">Axiqen</span>
+  <span style="color:#fff;font-weight:900;font-size:20px;letter-spacing:-0.5px">AXQEN</span>
 </td></tr>
 <tr><td style="padding:36px 32px;text-align:center">
   <p style="margin:0 0 8px;font-size:14px;color:#6b7280">Your email verification code is</p>

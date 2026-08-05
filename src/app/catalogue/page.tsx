@@ -241,7 +241,7 @@ export default function CataloguePage() {
               Want to sell these products?
             </h2>
             <p className="mb-6 text-sm" style={{ color: C.body }}>
-              Apply to join Axiqen and get full access to all products with supplier pricing.
+              Apply to join AXQEN and get full access to all products with supplier pricing.
             </p>
             <Link
               href="/#apply"

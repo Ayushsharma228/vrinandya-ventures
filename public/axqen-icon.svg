@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <rect width="100" height="100" rx="22" fill="#4361EE"/>
+  <!-- Left leg (behind at crossing) -->
+  <path d="M50 16 C47 13 42 14 40 20 L15 76 C12 84 15 91 23 91 C31 91 34 86 36 81 L50 58"
+        stroke="white" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Right leg (in front at crossing) -->
+  <path d="M50 16 C53 13 58 14 60 20 L85 76 C88 84 85 91 77 91 C69 91 66 86 64 81 L50 58"
+        stroke="white" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

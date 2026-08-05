@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — Vrinandya Ventures",
-  description: "Terms and conditions for using the Vrinandya Ventures platform.",
+  title: "Terms of Service — AXQEN",
+  description: "Terms and conditions for using the AXQEN platform.",
 };
 
 export default function TermsOfServicePage() {
@@ -16,12 +16,12 @@ export default function TermsOfServicePage() {
 
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-2">1. Acceptance of Terms</h2>
-            <p>By accessing or using the Vrinandya Ventures platform (&quot;Service&quot;) at <strong>app.vrinandyaventures.in</strong>, you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.</p>
+            <p>By accessing or using the AXQEN platform (&quot;Service&quot;) at <strong>app.vrinandyaventures.in</strong>, you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.</p>
           </div>
 
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-2">2. Description of Service</h2>
-            <p>Vrinandya Ventures provides a dropshipping SaaS platform connecting sellers with suppliers. The platform includes order management, inventory, delivery tracking, wallet and remittance management, and advertising performance tools.</p>
+            <p>AXQEN provides a dropshipping SaaS platform connecting sellers with suppliers. The platform includes order management, inventory, delivery tracking, wallet and remittance management, and advertising performance tools.</p>
           </div>
 
           <div>
@@ -61,17 +61,17 @@ export default function TermsOfServicePage() {
 
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-2">7. Meta Ads Integration</h2>
-            <p>When you connect your Meta Ads account, you authorize Vrinandya Ventures to access your ad spend data via the Meta Marketing API. This access is read-only. You can revoke this access at any time from your account settings or directly from your Meta Business settings.</p>
+            <p>When you connect your Meta Ads account, you authorize AXQEN to access your ad spend data via the Meta Marketing API. This access is read-only. You can revoke this access at any time from your account settings or directly from your Meta Business settings.</p>
           </div>
 
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-2">8. Intellectual Property</h2>
-            <p>All content, branding, and software on the platform is the property of Vrinandya Ventures. You may not copy, reproduce, or distribute any part of the platform without written permission.</p>
+            <p>All content, branding, and software on the platform is the property of AXQEN. You may not copy, reproduce, or distribute any part of the platform without written permission.</p>
           </div>
 
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-2">9. Limitation of Liability</h2>
-            <p>To the maximum extent permitted by law, Vrinandya Ventures is not liable for any indirect, incidental, or consequential damages arising from your use of the Service. Our total liability to you shall not exceed the fees paid by you in the last 3 months.</p>
+            <p>To the maximum extent permitted by law, AXQEN is not liable for any indirect, incidental, or consequential damages arising from your use of the Service. Our total liability to you shall not exceed the fees paid by you in the last 3 months.</p>
           </div>
 
           <div>
@@ -87,7 +87,7 @@ export default function TermsOfServicePage() {
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-2">12. Contact</h2>
             <p>For any questions about these Terms, contact us at:<br />
-            <strong>Vrinandya Ventures</strong><br />
+            <strong>AXQEN</strong><br />
             Email: <a href="mailto:vrinandyaventures@gmail.com" className="text-blue-600 underline">vrinandyaventures@gmail.com</a>
             </p>
           </div>

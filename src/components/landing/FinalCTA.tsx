@@ -21,7 +21,7 @@ export function FinalCTA() {
           <span style={{ color: C.gold }}>Are you?</span>
         </h2>
         <p className="text-base mb-10 leading-relaxed" style={{ color: C.body }}>
-          Join the sellers running their COD business on Axiqen — automation doing the work,
+          Join the sellers running their COD business on AXQEN — automation doing the work,
           a real team watching their back. Limited onboarding slots each week.
         </p>
         <a

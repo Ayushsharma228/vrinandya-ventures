@@ -124,9 +124,14 @@ export function SidebarV2({ role, userName, userEmail }: SidebarV2Props) {
     <div className="flex flex-col h-full" style={{ background: "var(--bg-sidebar)" }}>
       {/* Logo */}
       <div className="h-16 px-5 flex items-center gap-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
-        <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm flex-shrink-0 text-white"
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
           style={{ background: "var(--accent)" }}>
-          A
+          <svg viewBox="0 0 100 108" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5">
+            <path d="M50 10 C47 7 42 8 40 14 L13 80 C10 88 13 96 21 96 C29 96 32 91 34 86 L50 62"
+                  stroke="white" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M50 10 C53 7 58 8 60 14 L87 80 C90 88 87 96 79 96 C71 96 68 91 66 86 L50 62"
+                  stroke="white" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </div>
         <span className="font-bold text-sm tracking-wide" style={{ color: "var(--text-primary)" }}>AXQEN</span>
       </div>
@@ -204,7 +209,14 @@ export function SidebarV2({ role, userName, userEmail }: SidebarV2Props) {
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 flex items-center justify-between px-4"
         style={{ background: "var(--bg-sidebar)", borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs text-white" style={{ background: "var(--accent)" }}>A</div>
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: "var(--accent)" }}>
+            <svg viewBox="0 0 100 108" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4">
+              <path d="M50 10 C47 7 42 8 40 14 L13 80 C10 88 13 96 21 96 C29 96 32 91 34 86 L50 62"
+                    stroke="white" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M50 10 C53 7 58 8 60 14 L87 80 C90 88 87 96 79 96 C71 96 68 91 66 86 L50 62"
+                    stroke="white" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
           <span className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>AXQEN</span>
         </div>
         <button onClick={() => setMobileOpen(true)} className="p-2" style={{ color: "var(--text-secondary)" }}>

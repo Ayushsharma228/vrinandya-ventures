@@ -6,7 +6,7 @@ import { calculateLeadScore } from "../score-lead/route";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const SYSTEM_PROMPT = `You are Arya, an AI Sales Development Representative (SDR) for Axiqen — India's leading dropshipping operations platform.
+const SYSTEM_PROMPT = `You are Arya, an AI Sales Development Representative (SDR) for AXQEN — India's leading dropshipping operations platform.
 
 YOUR ROLE:
 - Greet and build rapport with leads
