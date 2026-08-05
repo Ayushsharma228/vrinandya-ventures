@@ -259,14 +259,7 @@ export default function SignupPage() {
         {/* Logo */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: BLUE }}>
-              <svg viewBox="0 0 100 108" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5">
-                <path d="M50 10 C47 7 42 8 40 14 L13 80 C10 88 13 96 21 96 C29 96 32 91 34 86 L50 62"
-                      stroke="white" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M50 10 C53 7 58 8 60 14 L87 80 C90 88 87 96 79 96 C71 96 68 91 66 86 L50 62"
-                      stroke="white" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
+            <img src="/axqen-icon.png" alt="AXQEN" className="w-8 h-8 rounded-lg object-cover" />
             <span className="font-black text-lg" style={{ color: "#0A0E1A" }}>AXQEN</span>
           </div>
           <p className="text-sm" style={{ color: "#6B7280" }}>Create your seller account</p>

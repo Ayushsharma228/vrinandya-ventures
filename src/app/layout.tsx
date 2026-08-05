@@ -26,7 +26,7 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "AXQEN",
   description: "AI Commerce Operating System",
-  icons: { icon: "/axqen-icon.svg" },
+  icons: { icon: "/axqen-icon.png" },
 };
 
 export default function RootLayout({
