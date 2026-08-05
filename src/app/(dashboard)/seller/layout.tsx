@@ -20,6 +20,7 @@ export default async function SellerLayout({ children }: { children: React.React
     <div className="flex min-h-screen" style={{ background: "var(--bg-page)" }}>
       <SidebarV2
         role="seller"
+        plan={session.user.plan ?? undefined}
         userName={session.user.name ?? ""}
         userEmail={session.user.email ?? ""}
       />

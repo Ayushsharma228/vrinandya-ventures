@@ -51,22 +51,40 @@ const adminNav: NavItem[] = [
   { label: "Notifications",     href: "/admin/notifications",     icon: Bell },
 ];
 
-const sellerNav: NavItem[] = [
-  { label: "Dashboard",      href: "/seller",                  icon: LayoutDashboard, section: "MAIN" },
-  { label: "Analytics",      href: "/seller/analytics",        icon: BarChart2 },
-  { label: "Orders",         href: "/seller/orders",           icon: ShoppingCart,    section: "FULFILMENT" },
-  { label: "Delivery",       href: "/seller/deliveries",       icon: Truck },
-  { label: "NDR",            href: "/seller/ndr",              icon: AlertTriangle },
-  { label: "My Listings",    href: "/seller/listings",         icon: ListChecks,      section: "PRODUCTS" },
-  { label: "Catalog",        href: "/seller/catalog",          icon: Package },
-  { label: "Wallet",         href: "/seller/wallet",           icon: Wallet,          section: "FINANCE" },
-  { label: "Settlements",    href: "/seller/settlements",      icon: Receipt },
-  { label: "Shopify Store",  href: "/seller/shopify",          icon: Store,           section: "SETTINGS" },
-  { label: "Amazon",         href: "/seller/amazon",           icon: ShoppingCart },
-  { label: "Activation",     href: "/seller/activation",       icon: Activity },
-  { label: "Support",        href: "/seller/support",          icon: HelpCircle },
-  { label: "Notifications",  href: "/seller/notifications",    icon: Bell },
-  { label: "Profile",        href: "/seller/profile",          icon: User },
+const dropshippingNav: NavItem[] = [
+  { label: "Dashboard",     href: "/seller",                  icon: LayoutDashboard, section: "MAIN" },
+  { label: "Analytics",     href: "/seller/analytics",        icon: BarChart2 },
+  { label: "Orders",        href: "/seller/orders",           icon: ShoppingCart,    section: "FULFILMENT" },
+  { label: "Delivery",      href: "/seller/deliveries",       icon: Truck },
+  { label: "NDR",           href: "/seller/ndr",              icon: AlertTriangle },
+  { label: "Listings",      href: "/seller/listings",         icon: ListChecks,      section: "PRODUCTS" },
+  { label: "Catalog",       href: "/seller/catalog",          icon: Package },
+  { label: "Wallet",        href: "/seller/wallet",           icon: Wallet,          section: "FINANCE" },
+  { label: "Settlements",   href: "/seller/settlements",      icon: Receipt },
+  { label: "Shopify Store", href: "/seller/shopify",          icon: Store,           section: "SETTINGS" },
+  { label: "Activation",    href: "/seller/activation",       icon: Activity,        section: "ACCOUNT" },
+  { label: "Support",       href: "/seller/support",          icon: HelpCircle },
+  { label: "Notifications", href: "/seller/notifications",    icon: Bell },
+  { label: "Profile",       href: "/seller/profile",          icon: User },
+];
+
+const marketplaceNav: NavItem[] = [
+  { label: "Dashboard",     href: "/seller",                  icon: LayoutDashboard, section: "MAIN" },
+  { label: "Analytics",     href: "/seller/analytics",        icon: BarChart2 },
+  { label: "Orders",        href: "/seller/orders",           icon: ShoppingCart,    section: "FULFILMENT" },
+  { label: "Delivery",      href: "/seller/deliveries",       icon: Truck },
+  { label: "Returns",       href: "/seller/ndr",              icon: AlertTriangle },
+  { label: "Listings",      href: "/seller/listings",         icon: ListChecks,      section: "PRODUCTS" },
+  { label: "Inventory",     href: "/seller/inventory",        icon: Boxes },
+  { label: "Wallet",        href: "/seller/wallet",           icon: Wallet,          section: "FINANCE" },
+  { label: "Settlements",   href: "/seller/settlements",      icon: Receipt },
+  { label: "Advertising",   href: "/seller/advertising",      icon: Megaphone },
+  { label: "Amazon",        href: "/seller/amazon",           icon: ShoppingCart,    section: "MARKETPLACES" },
+  { label: "Shopify Store", href: "/seller/shopify",          icon: Store },
+  { label: "Activation",    href: "/seller/activation",       icon: Activity,        section: "ACCOUNT" },
+  { label: "Support",       href: "/seller/support",          icon: HelpCircle },
+  { label: "Notifications", href: "/seller/notifications",    icon: Bell },
+  { label: "Profile",       href: "/seller/profile",          icon: User },
 ];
 
 const salesNav: NavItem[] = [
@@ -91,11 +109,12 @@ const supplierNav: NavItem[] = [
 
 interface SidebarV2Props {
   role: "admin" | "seller" | "supplier" | "sales";
+  plan?: string;
   userName?: string;
   userEmail?: string;
 }
 
-export function SidebarV2({ role, userName, userEmail }: SidebarV2Props) {
+export function SidebarV2({ role, plan, userName, userEmail }: SidebarV2Props) {
   const pathname = usePathname();
   const [unreadCount,  setUnreadCount]  = useState(0);
   const [waUnread,     setWaUnread]     = useState(0);
@@ -117,6 +136,7 @@ export function SidebarV2({ role, userName, userEmail }: SidebarV2Props) {
     return () => clearInterval(t);
   }, [role]);
 
+  const sellerNav = plan === "MARKETPLACE" ? marketplaceNav : dropshippingNav;
   const nav = role === "admin" ? adminNav : role === "seller" ? sellerNav : role === "sales" ? salesNav : supplierNav;
   const initial = userName?.[0]?.toUpperCase() || "U";
 
