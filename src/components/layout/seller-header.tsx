@@ -103,7 +103,7 @@ export function SellerHeader({ userName, userEmail }: {
         <div className="flex-1" />
 
         {/* ── Nav inside smoke rounded rectangle ── */}
-        <nav className="hidden md:flex items-center gap-1 px-2 py-2 rounded-2xl"
+        <nav className="hidden md:flex items-center gap-1 px-2 py-2 rounded-full"
           style={{ background: "#F0F2F8" }}>
           {sellerNav.map((group) => {
             const active = isGroupActive(group);
@@ -114,7 +114,7 @@ export function SellerHeader({ userName, userEmail }: {
                 <Link
                   key={group.label}
                   href={group.href!}
-                  className="px-4 py-1.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap"
+                  className="px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap"
                   style={{
                     background: active ? "#4361EE" : "transparent",
                     color: active ? "white" : "#6B7280",
@@ -130,7 +130,7 @@ export function SellerHeader({ userName, userEmail }: {
             return (
               <div key={group.label} className="relative">
                 <button
-                  className="flex items-center gap-1 px-4 py-1.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap"
+                  className="flex items-center gap-1 px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap"
                   style={{
                     background: active ? "#4361EE" : "transparent",
                     color: active ? "white" : "#6B7280",
