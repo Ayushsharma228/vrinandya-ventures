@@ -172,6 +172,8 @@ export default function SellerDashboard() {
     (best, d) => (d.total > (best?.total ?? 0) ? d : best), null
   );
 
+  const last7Delivered = last7.reduce((s, d) => s + d.delivered, 0);
+
   return (
     <div className="min-h-screen" style={{ background: "#F1F5FF" }}>
 
@@ -204,6 +206,123 @@ export default function SellerDashboard() {
                 )}
           </div>
         )}
+      </div>
+
+      {/* ── Stats Cards ──────────────────────────────── */}
+      <div className="px-4 md:px-8 pt-6 pb-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+          {/* Total Orders — featured blue gradient */}
+          <div className="rounded-3xl px-6 py-5"
+            style={{ background: "linear-gradient(135deg, #4361EE 0%, #3752D3 100%)" }}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold mb-3 uppercase tracking-wide"
+                  style={{ color: "rgba(255,255,255,0.65)" }}>Total Orders</p>
+                <div className="flex items-end gap-2.5 mb-1.5 flex-wrap">
+                  {loading ? (
+                    <div className="h-10 w-20 rounded-xl animate-pulse" style={{ background: "rgba(255,255,255,0.2)" }} />
+                  ) : (
+                    <>
+                      <p className="text-4xl font-black leading-none" style={{ color: "white" }}>
+                        {fmt(analytics?.totalOrders ?? 0)}
+                      </p>
+                      {weekOverWeek !== 0 && (
+                        <span className="mb-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                          style={{ background: "rgba(255,255,255,0.22)", color: "white" }}>
+                          {weekOverWeek >= 0 ? "+" : ""}{weekOverWeek}%
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+                <p className="text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
+                  Last week: {fmt(prior7Total)}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(255,255,255,0.2)" }}>
+                <ShoppingCart className="w-5 h-5" style={{ color: "white" }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Delivered Orders */}
+          <div className="rounded-3xl px-6 py-5"
+            style={{ background: "white", border: "1px solid #E5E7EB", boxShadow: "0 1px 12px rgba(0,0,0,0.04)" }}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold mb-3 uppercase tracking-wide" style={{ color: "#9CA3AF" }}>
+                  Delivered Orders
+                </p>
+                <div className="flex items-end gap-2.5 mb-1.5 flex-wrap">
+                  {loading ? (
+                    <div className="h-10 w-16 rounded-xl bg-gray-100 animate-pulse" />
+                  ) : (
+                    <>
+                      <p className="text-4xl font-black leading-none" style={{ color: "#1e1b4b" }}>
+                        {fmt(analytics?.deliveredCount ?? 0)}
+                      </p>
+                      {deliveryRate > 0 && (
+                        <span className="mb-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                          style={{
+                            background: deliveryRate >= 70 ? "rgba(67,97,238,0.1)" : "#FEF2F2",
+                            color: deliveryRate >= 70 ? "#4361EE" : "#EF4444",
+                          }}>
+                          {deliveryRate.toFixed(1)}%
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+                <p className="text-xs" style={{ color: "#9CA3AF" }}>
+                  This week: {fmt(last7Delivered)}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: "#F3F5FF" }}>
+                <CheckCircle2 className="w-5 h-5" style={{ color: "#4361EE" }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Ads Spent */}
+          <div className="rounded-3xl px-6 py-5"
+            style={{ background: "white", border: "1px solid #E5E7EB", boxShadow: "0 1px 12px rgba(0,0,0,0.04)" }}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold mb-3 uppercase tracking-wide" style={{ color: "#9CA3AF" }}>
+                  Ads Spent
+                </p>
+                <div className="flex items-end gap-2.5 mb-1.5 flex-wrap">
+                  {loading ? (
+                    <div className="h-10 w-24 rounded-xl bg-gray-100 animate-pulse" />
+                  ) : (
+                    <>
+                      <p className="text-4xl font-black leading-none" style={{ color: "#1e1b4b" }}>
+                        ₹{fmt(adSpend)}
+                      </p>
+                      {adRevenue > 0 && adSpend > 0 && (
+                        <span className="mb-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                          style={{ background: "rgba(67,97,238,0.1)", color: "#4361EE" }}>
+                          {(adRevenue / adSpend).toFixed(1)}x ROAS
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+                <p className="text-xs" style={{ color: "#9CA3AF" }}>
+                  {metaConnected ? `₹${fmt(adRevenue)} revenue tracked` : "Connect Meta to track"}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: "#F3F5FF" }}>
+                <Megaphone className="w-5 h-5" style={{ color: "#4361EE" }} />
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
 
       {/* ── Body ───────────────────────────────────────── */}
