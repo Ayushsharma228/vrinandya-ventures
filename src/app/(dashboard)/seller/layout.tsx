@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { SidebarV2 } from "@/components/layout/sidebar-v2";
+import { SellerHeader } from "@/components/layout/seller-header";
 
 export default async function SellerLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -9,22 +9,18 @@ export default async function SellerLayout({ children }: { children: React.React
   if (!session) redirect("/login");
   if (session.user.role !== "SELLER") redirect("/login");
 
-  // New sellers must complete onboarding and wait for activation
   const status = (session.user as { accountStatus?: string }).accountStatus;
   if (status && status !== "ACTIVE") redirect("/onboarding");
-
-  // Legacy: existing sellers without plan (before signup flow) still work
   if (!session.user.plan && status === undefined) redirect("/onboarding");
 
   return (
-    <div className="flex min-h-screen" style={{ background: "var(--bg-page)" }}>
-      <SidebarV2
-        role="seller"
+    <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
+      <SellerHeader
         plan={session.user.plan ?? undefined}
         userName={session.user.name ?? ""}
         userEmail={session.user.email ?? ""}
       />
-      <main className="flex-1 overflow-auto pt-14 md:pt-0">{children}</main>
+      <main className="pt-16">{children}</main>
     </div>
   );
 }
