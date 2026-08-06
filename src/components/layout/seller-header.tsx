@@ -7,13 +7,13 @@ import { signOut } from "next-auth/react";
 import {
   ShoppingCart, Truck, AlertTriangle, Wallet, Receipt,
   Store, Activity, HelpCircle, Bell, User, LogOut,
-  ChevronDown, Menu, X, Settings,
+  ChevronDown, Menu, X, Settings, Package, Layers,
 } from "lucide-react";
 
 interface NavItem  { label: string; href: string; icon: React.ElementType }
 interface NavGroup { label: string; href?: string; items?: NavItem[] }
 
-const sellerNav: NavGroup[] = [
+const dropshippingNav: NavGroup[] = [
   { label: "Dashboard", href: "/seller" },
   { label: "Analytics",  href: "/seller/analytics" },
   {
@@ -28,26 +28,62 @@ const sellerNav: NavGroup[] = [
   {
     label: "Finance",
     items: [
-      { label: "Wallet",      href: "/seller/wallet",     icon: Wallet },
-      { label: "Settlements", href: "/seller/settlements", icon: Receipt },
+      { label: "Wallet",      href: "/seller/wallet",      icon: Wallet },
+      { label: "Settlements", href: "/seller/settlements",  icon: Receipt },
     ],
   },
   {
     label: "Account",
     items: [
-      { label: "Shopify Store", href: "/seller/shopify",   icon: Store },
-      { label: "Activation",   href: "/seller/activation", icon: Activity },
-      { label: "Support",      href: "/seller/support",    icon: HelpCircle },
+      { label: "Shopify Store", href: "/seller/shopify",    icon: Store },
+      { label: "Activation",   href: "/seller/activation",  icon: Activity },
+      { label: "Support",      href: "/seller/support",     icon: HelpCircle },
     ],
   },
 ];
 
-export function SellerHeader({ userName, userEmail }: {
+const marketplaceNav: NavGroup[] = [
+  { label: "Dashboard", href: "/seller" },
+  { label: "Analytics",  href: "/seller/analytics" },
+  {
+    label: "Fulfilment",
+    items: [
+      { label: "Orders",   href: "/seller/orders",     icon: ShoppingCart },
+      { label: "Delivery", href: "/seller/deliveries", icon: Truck },
+      { label: "Returns",  href: "/seller/ndr",        icon: AlertTriangle },
+    ],
+  },
+  {
+    label: "Products",
+    items: [
+      { label: "Listings",   href: "/seller/listings",  icon: Layers },
+      { label: "Inventory",  href: "/seller/inventory", icon: Package },
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      { label: "Wallet",      href: "/seller/wallet",      icon: Wallet },
+      { label: "Settlements", href: "/seller/settlements",  icon: Receipt },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { label: "Amazon",     href: "/seller/amazon",      icon: ShoppingCart },
+      { label: "Activation", href: "/seller/activation",  icon: Activity },
+      { label: "Support",    href: "/seller/support",     icon: HelpCircle },
+    ],
+  },
+];
+
+export function SellerHeader({ plan, userName, userEmail }: {
   plan?: string;
   userName?: string;
   userEmail?: string;
 }) {
-  const pathname = usePathname();
+  const pathname    = usePathname();
+  const sellerNav   = plan === "MARKETPLACE" ? marketplaceNav : dropshippingNav;
   const [openGroup,   setOpenGroup]   = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileOpen,  setMobileOpen]  = useState(false);
