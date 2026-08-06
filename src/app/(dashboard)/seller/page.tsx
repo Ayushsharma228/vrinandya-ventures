@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import {
   ShoppingCart, Wallet, ArrowRight, Store, CheckCircle2,
-  ChevronDown, Megaphone, Clock,
+  ChevronDown, Megaphone, Clock, Package, Layers, IndianRupee,
 } from "lucide-react";
 
 interface Analytics {
@@ -116,25 +116,53 @@ export default function SellerDashboard() {
   const [chartDays, setChartDays]       = useState(14);
   const [showFinancials, setShowFinancials] = useState(false);
 
-  const name = session?.user?.name?.split(" ")[0] || "Seller";
+  // Marketplace-specific
+  const [listingStats, setListingStats] = useState<{
+    total: number; pending: number; inProgress: number; listed: number; failed: number;
+  } | null>(null);
+  const [amazonConnected, setAmazonConnected] = useState(false);
+  const [amazonSellerId, setAmazonSellerId]   = useState("");
+
+  const name         = session?.user?.name?.split(" ")[0] || "Seller";
+  const plan         = (session?.user as { plan?: string })?.plan ?? "DROPSHIPPING";
+  const isMarketplace = plan === "MARKETPLACE";
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/seller/analytics").then(r => r.json()),
-      fetch("/api/seller/wallet").then(r => r.json()),
-      fetch("/api/seller/ad-spend").then(r => r.json()),
-      fetch("/api/seller/ndr").then(r => r.json()),
-    ]).then(([a, w, ads, ndr]) => {
-      setAnalytics(a); setWallet(w);
-      setAdSpend(ads.total ?? 0);
-      setAdRevenue(ads.last30DaysRevenue ?? 0);
-      setMetaConnected(ads.metaConnected ?? false);
-      setOpenNdrs(ndr.pending?.length ?? 0);
-      setLoading(false);
-    });
+    if (isMarketplace) {
+      Promise.all([
+        fetch("/api/seller/analytics").then(r => r.json()),
+        fetch("/api/seller/wallet").then(r => r.json()),
+        fetch("/api/seller/listings").then(r => r.json()),
+        fetch("/api/seller/amazon/status").then(r => r.json()),
+        fetch("/api/seller/ad-spend").then(r => r.json()),
+      ]).then(([a, w, l, amz, ads]) => {
+        setAnalytics(a); setWallet(w);
+        setListingStats(l.stats ?? null);
+        setAmazonConnected(amz.connected ?? false);
+        setAmazonSellerId(amz.sellerId ?? "");
+        setAdSpend(ads.total ?? 0);
+        setAdRevenue(ads.last30DaysRevenue ?? 0);
+        setMetaConnected(ads.metaConnected ?? false);
+        setLoading(false);
+      });
+    } else {
+      Promise.all([
+        fetch("/api/seller/analytics").then(r => r.json()),
+        fetch("/api/seller/wallet").then(r => r.json()),
+        fetch("/api/seller/ad-spend").then(r => r.json()),
+        fetch("/api/seller/ndr").then(r => r.json()),
+      ]).then(([a, w, ads, ndr]) => {
+        setAnalytics(a); setWallet(w);
+        setAdSpend(ads.total ?? 0);
+        setAdRevenue(ads.last30DaysRevenue ?? 0);
+        setMetaConnected(ads.metaConnected ?? false);
+        setOpenNdrs(ndr.pending?.length ?? 0);
+        setLoading(false);
+      });
+    }
     fetch("/api/seller/orders?status=NEW&limit=1")
       .then(r => r.json()).then(d => setNewOrdersCount(d.total ?? 0)).catch(() => {});
-  }, []);
+  }, [isMarketplace]);
 
   useEffect(() => {
     setOrdersLoading(true);
@@ -208,7 +236,123 @@ export default function SellerDashboard() {
 
       {/* ── Stats Cards ──────────────────────────────── */}
       <div className="px-4 md:px-8 pt-6 pb-2">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {isMarketplace ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+            {/* Total Listings — featured */}
+            <div className="rounded-3xl px-6 py-5"
+              style={{ background: "linear-gradient(135deg, #4361EE 0%, #3752D3 100%)" }}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold mb-3 uppercase tracking-wide"
+                    style={{ color: "rgba(255,255,255,0.65)" }}>Total Listings</p>
+                  <div className="flex items-end gap-2.5 mb-1.5 flex-wrap">
+                    {loading ? (
+                      <div className="h-10 w-20 rounded-xl animate-pulse" style={{ background: "rgba(255,255,255,0.2)" }} />
+                    ) : (
+                      <>
+                        <p className="text-4xl font-black leading-none" style={{ color: "white" }}>
+                          {fmt(listingStats?.total ?? 0)}
+                        </p>
+                        {(listingStats?.listed ?? 0) > 0 && (
+                          <span className="mb-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: "rgba(255,255,255,0.22)", color: "white" }}>
+                            {listingStats?.listed} Live
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <p className="text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
+                    {fmt(listingStats?.pending ?? 0)} pending approval
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(255,255,255,0.2)" }}>
+                  <Layers className="w-5 h-5" style={{ color: "white" }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Amazon Orders */}
+            <div className="rounded-3xl px-6 py-5"
+              style={{ background: "white", border: "1px solid #E5E7EB", boxShadow: "0 1px 12px rgba(0,0,0,0.04)" }}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold mb-3 uppercase tracking-wide" style={{ color: "#9CA3AF" }}>
+                    Amazon Orders
+                  </p>
+                  <div className="flex items-end gap-2.5 mb-1.5 flex-wrap">
+                    {loading ? (
+                      <div className="h-10 w-16 rounded-xl bg-gray-100 animate-pulse" />
+                    ) : (
+                      <>
+                        <p className="text-4xl font-black leading-none" style={{ color: "#1e1b4b" }}>
+                          {fmt(analytics?.totalOrders ?? 0)}
+                        </p>
+                        {deliveryRate > 0 && (
+                          <span className="mb-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                            style={{
+                              background: deliveryRate >= 70 ? "rgba(67,97,238,0.1)" : "#FEF2F2",
+                              color: deliveryRate >= 70 ? "#4361EE" : "#EF4444",
+                            }}>
+                            {deliveryRate.toFixed(1)}% delivered
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <p className="text-xs" style={{ color: "#9CA3AF" }}>
+                    {amazonConnected ? `Seller ID: ${amazonSellerId}` : "Connect Amazon to sync"}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: "#F3F5FF" }}>
+                  <ShoppingCart className="w-5 h-5" style={{ color: "#4361EE" }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Revenue */}
+            <div className="rounded-3xl px-6 py-5"
+              style={{ background: "white", border: "1px solid #E5E7EB", boxShadow: "0 1px 12px rgba(0,0,0,0.04)" }}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold mb-3 uppercase tracking-wide" style={{ color: "#9CA3AF" }}>
+                    Total Revenue
+                  </p>
+                  <div className="flex items-end gap-2.5 mb-1.5 flex-wrap">
+                    {loading ? (
+                      <div className="h-10 w-24 rounded-xl bg-gray-100 animate-pulse" />
+                    ) : (
+                      <>
+                        <p className="text-4xl font-black leading-none" style={{ color: "#1e1b4b" }}>
+                          ₹{fmt(analytics?.totalRevenue ?? 0)}
+                        </p>
+                        {weekOverWeek !== 0 && (
+                          <span className="mb-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: weekOverWeek >= 0 ? "rgba(67,97,238,0.1)" : "#FEF2F2", color: weekOverWeek >= 0 ? "#4361EE" : "#EF4444" }}>
+                            {weekOverWeek >= 0 ? "+" : ""}{weekOverWeek}% WoW
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <p className="text-xs" style={{ color: "#9CA3AF" }}>
+                    Wallet: ₹{fmt(wallet?.balance ?? 0)}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: "#F3F5FF" }}>
+                  <IndianRupee className="w-5 h-5" style={{ color: "#4361EE" }} />
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
           {/* Total Orders — featured blue gradient */}
           <div className="rounded-3xl px-6 py-5"
@@ -320,7 +464,8 @@ export default function SellerDashboard() {
             </div>
           </div>
 
-        </div>
+          </div>
+        )}
       </div>
 
       {/* ── Body ───────────────────────────────────────── */}
@@ -384,41 +529,77 @@ export default function SellerDashboard() {
             style={{ borderTop: "1px solid #F3F4F6", borderColor: "#F3F4F6" }}>
 
             <div className="px-6 py-5">
-              <p className="text-xs font-semibold uppercase tracking-wide mb-4" style={{ color: "#9CA3AF" }}>Delivery Breakdown</p>
-              <div className="space-y-3">
-                {[
-                  { label: "Delivered",  count: analytics?.deliveredCount ?? 0, color: "#4361EE" },
-                  { label: "In Transit", count: analytics?.inTransitCount ?? 0, color: "#7C3AED" },
-                  { label: "Cancelled",  count: analytics?.cancelledCount ?? 0, color: "#9CA3AF" },
-                ].map(item => {
-                  const total = analytics?.totalOrders || 1;
-                  const pct   = Math.round((item.count / total) * 100);
-                  return (
-                    <div key={item.label}>
-                      <div className="flex justify-between mb-1.5">
-                        <span className="text-xs font-medium" style={{ color: "#6B7280" }}>{item.label}</span>
-                        <span className="text-xs font-bold" style={{ color: "#1e1b4b" }}>
-                          {item.count} <span style={{ color: "#9CA3AF" }}>({pct}%)</span>
-                        </span>
-                      </div>
-                      <div className="w-full h-2 rounded-full" style={{ background: "#F3F4F6" }}>
-                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: item.color }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              {isMarketplace ? (
+                <>
+                  <p className="text-xs font-semibold uppercase tracking-wide mb-4" style={{ color: "#9CA3AF" }}>Listing Breakdown</p>
+                  <div className="space-y-3">
+                    {[
+                      { label: "Live",        count: listingStats?.listed     ?? 0, color: "#4361EE" },
+                      { label: "In Progress", count: listingStats?.inProgress ?? 0, color: "#7C3AED" },
+                      { label: "Pending",     count: listingStats?.pending    ?? 0, color: "#F59E0B" },
+                      { label: "Failed",      count: listingStats?.failed     ?? 0, color: "#EF4444" },
+                    ].map(item => {
+                      const total = listingStats?.total || 1;
+                      const pct   = Math.round((item.count / total) * 100);
+                      return (
+                        <div key={item.label}>
+                          <div className="flex justify-between mb-1.5">
+                            <span className="text-xs font-medium" style={{ color: "#6B7280" }}>{item.label}</span>
+                            <span className="text-xs font-bold" style={{ color: "#1e1b4b" }}>
+                              {item.count} <span style={{ color: "#9CA3AF" }}>({pct}%)</span>
+                            </span>
+                          </div>
+                          <div className="w-full h-2 rounded-full" style={{ background: "#F3F4F6" }}>
+                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: item.color }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs font-semibold uppercase tracking-wide mb-4" style={{ color: "#9CA3AF" }}>Delivery Breakdown</p>
+                  <div className="space-y-3">
+                    {[
+                      { label: "Delivered",  count: analytics?.deliveredCount ?? 0, color: "#4361EE" },
+                      { label: "In Transit", count: analytics?.inTransitCount ?? 0, color: "#7C3AED" },
+                      { label: "Cancelled",  count: analytics?.cancelledCount ?? 0, color: "#9CA3AF" },
+                    ].map(item => {
+                      const total = analytics?.totalOrders || 1;
+                      const pct   = Math.round((item.count / total) * 100);
+                      return (
+                        <div key={item.label}>
+                          <div className="flex justify-between mb-1.5">
+                            <span className="text-xs font-medium" style={{ color: "#6B7280" }}>{item.label}</span>
+                            <span className="text-xs font-bold" style={{ color: "#1e1b4b" }}>
+                              {item.count} <span style={{ color: "#9CA3AF" }}>({pct}%)</span>
+                            </span>
+                          </div>
+                          <div className="w-full h-2 rounded-full" style={{ background: "#F3F4F6" }}>
+                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: item.color }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
 
             {last7.length >= 3 && (
               <div className="px-6 py-5">
                 <p className="text-xs font-semibold uppercase tracking-wide mb-4" style={{ color: "#9CA3AF" }}>Last 7 Days</p>
                 <div className="space-y-1">
-                  {[
+                  {(isMarketplace ? [
+                    { label: "Orders",    value: last7Total,                                 icon: ShoppingCart, color: "#4361EE", delta: weekOverWeek },
+                    { label: "Delivered", value: last7.reduce((s, d) => s + d.delivered, 0), icon: CheckCircle2, color: "#059669", delta: null },
+                    { label: "Listings",  value: listingStats?.total ?? 0,                   icon: Layers,       color: "#7C3AED", delta: null },
+                  ] : [
                     { label: "Orders",    value: last7Total,                                        icon: ShoppingCart, color: "#4361EE", delta: weekOverWeek },
                     { label: "Delivered", value: last7.reduce((s, d) => s + d.delivered, 0),        icon: CheckCircle2, color: "#059669", delta: null },
                     { label: "Avg/day",   value: +(last7Total / 7).toFixed(1),                      icon: Clock,        color: "#6366F1", delta: null },
-                  ].map(row => {
+                  ]).map(row => {
                     const Icon = row.icon;
                     return (
                       <div key={row.label} className="flex items-center justify-between py-2.5"
