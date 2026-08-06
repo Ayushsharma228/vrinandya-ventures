@@ -92,27 +92,33 @@ export async function GET(req: NextRequest) {
       tsvText = Buffer.from(raw).toString("utf8");
     }
 
-    // Parse TSV
-    const lines = tsvText.trim().split("\n").filter(l => l.trim());
-    if (lines.length < 2) return NextResponse.json({ status: "DONE", listings: [] });
+    // Parse TSV — strip BOM if present
+    const cleanText = tsvText.replace(/^﻿/, "").replace(/\r/g, "");
+    const lines = cleanText.trim().split("\n").filter(l => l.trim());
 
-    const headers = lines[0].split("\t").map(h => h.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-"));
-    const col     = (...names: string[]) => names.map(n => headers.indexOf(n)).find(i => i >= 0) ?? -1;
+    // Debug: return raw headers + first row so we can see the actual format
+    if (lines.length < 2) {
+      return NextResponse.json({
+        status: "DONE", listings: [],
+        _debug: { lineCount: lines.length, first200: tsvText.slice(0, 200), compressed: docRes.compressionAlgorithm },
+      });
+    }
+
+    const rawHeaders = lines[0].split("\t");
+    const headers    = rawHeaders.map(h => h.trim().toLowerCase());
+    const col        = (...names: string[]) => names.map(n => headers.findIndex(h => h === n || h.replace(/[^a-z0-9]/g, "-") === n)).find(i => i >= 0) ?? -1;
 
     const listings = lines.slice(1).map((line) => {
       const cells = line.split("\t");
-      const get   = (...names: string[]) => {
-        const idx = col(...names);
-        return idx >= 0 ? (cells[idx]?.trim() ?? "") : "";
-      };
+      const get   = (...names: string[]) => { const i = col(...names); return i >= 0 ? (cells[i]?.trim() ?? "") : ""; };
 
-      const sku      = get("seller-sku", "listing-id");
-      const title    = get("item-name");
-      const asin     = get("asin1", "asin");
-      const priceRaw = parseFloat(get("price", "standard-price") || "0");
-      const qtyRaw   = parseInt(get("quantity", "available-quantity") || "0", 10);
+      const sku       = get("seller-sku", "listing-id", "sku");
+      const title     = get("item-name", "title");
+      const asin      = get("asin1", "asin");
+      const priceRaw  = parseFloat(get("price", "standard-price") || "0");
+      const qtyRaw    = parseInt(get("quantity", "available-quantity", "fulfillment-channel-units") || "0", 10);
       const rawStatus = get("status") || "active";
-      const image    = get("image-url");
+      const image     = get("image-url");
 
       return {
         sku,
@@ -125,7 +131,10 @@ export async function GET(req: NextRequest) {
       };
     }).filter(l => l.sku && l.sku.length > 0);
 
-    return NextResponse.json({ status: "DONE", listings });
+    return NextResponse.json({
+      status: "DONE", listings,
+      _debug: { lineCount: lines.length, headers: rawHeaders, sampleRow: lines[1]?.split("\t"), compressed: docRes.compressionAlgorithm },
+    });
   } catch (err) {
     console.error("[amazon/listings GET]", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
