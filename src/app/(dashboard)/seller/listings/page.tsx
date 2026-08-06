@@ -34,9 +34,10 @@ function HealthBadge({ score }: { score: number }) {
 }
 
 function AmazonListingsTab() {
-  const [listings,   setListings]   = useState<AmazonListing[]>([]);
-  const [syncing,    setSyncing]    = useState(false);
-  const [syncError,  setSyncError]  = useState<string | null>(null);
+  const [listings,    setListings]    = useState<AmazonListing[]>([]);
+  const [syncing,     setSyncing]     = useState(false);
+  const [syncStatus,  setSyncStatus]  = useState<string | null>(null);
+  const [syncError,   setSyncError]   = useState<string | null>(null);
   const [analyses,   setAnalyses]   = useState<Record<string, Analysis>>({});
   const [analyzing,  setAnalyzing]  = useState<Record<string, boolean>>({});
   const [expanded,   setExpanded]   = useState<Record<string, boolean>>({});
@@ -45,7 +46,7 @@ function AmazonListingsTab() {
   const [copied,     setCopied]     = useState<string | null>(null);
 
   const syncListings = useCallback(async () => {
-    setSyncing(true); setSyncError(null);
+    setSyncing(true); setSyncError(null); setSyncStatus("Requesting report from Amazon…");
     try {
       // Step 1: request report
       const startRes  = await fetch("/api/seller/amazon/listings", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
@@ -53,17 +54,25 @@ function AmazonListingsTab() {
       if (!startRes.ok || startData.error) throw new Error(startData.error ?? "Failed to start report");
       const reportId = startData.reportId!;
 
+      setSyncStatus("Amazon is generating report… (this takes 1–2 minutes)");
+
       // Step 2: poll until DONE (frontend polling, 4s interval, max 3 minutes)
       for (let i = 0; i < 45; i++) {
         await new Promise(r => setTimeout(r, 4000));
+        setSyncStatus(`Checking report status… (${(i + 1) * 4}s)`);
         const pollRes  = await fetch(`/api/seller/amazon/listings?reportId=${reportId}`);
         const pollData = await pollRes.json() as { status?: string; listings?: AmazonListing[]; error?: string };
         if (pollData.error) throw new Error(pollData.error);
-        if (pollData.status === "DONE") { setListings(pollData.listings ?? []); return; }
+        if (pollData.status === "DONE") {
+          setSyncStatus(null);
+          setListings(pollData.listings ?? []);
+          if ((pollData.listings ?? []).length === 0) setSyncError("No active listings found on this Amazon account.");
+          return;
+        }
         if (pollData.status === "FATAL" || pollData.status === "CANCELLED") throw new Error("Report failed on Amazon side");
       }
       throw new Error("Sync timed out — Amazon report took too long");
-    } catch (e) { setSyncError(String(e)); }
+    } catch (e) { setSyncError(String(e)); setSyncStatus(null); }
     finally { setSyncing(false); }
   }, []);
 
@@ -116,6 +125,13 @@ function AmazonListingsTab() {
           {syncing ? "Syncing…" : "Sync from Amazon"}
         </button>
       </div>
+
+      {syncStatus && (
+        <div className="px-4 py-3 rounded-xl flex items-center gap-2 text-sm"
+          style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}>
+          <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin" />{syncStatus}
+        </div>
+      )}
 
       {syncError && (
         <div className="px-4 py-3 rounded-xl flex items-center gap-2 text-sm"
