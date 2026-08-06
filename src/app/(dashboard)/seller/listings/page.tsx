@@ -47,10 +47,22 @@ function AmazonListingsTab() {
   const syncListings = useCallback(async () => {
     setSyncing(true); setSyncError(null);
     try {
-      const res  = await fetch("/api/seller/amazon/listings");
-      const data = await res.json() as { listings?: AmazonListing[]; error?: string };
-      if (!res.ok || data.error) throw new Error(data.error ?? "Sync failed");
-      setListings(data.listings ?? []);
+      // Step 1: request report
+      const startRes  = await fetch("/api/seller/amazon/listings", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      const startData = await startRes.json() as { reportId?: string; error?: string };
+      if (!startRes.ok || startData.error) throw new Error(startData.error ?? "Failed to start report");
+      const reportId = startData.reportId!;
+
+      // Step 2: poll until DONE (frontend polling, 4s interval, max 3 minutes)
+      for (let i = 0; i < 45; i++) {
+        await new Promise(r => setTimeout(r, 4000));
+        const pollRes  = await fetch(`/api/seller/amazon/listings?reportId=${reportId}`);
+        const pollData = await pollRes.json() as { status?: string; listings?: AmazonListing[]; error?: string };
+        if (pollData.error) throw new Error(pollData.error);
+        if (pollData.status === "DONE") { setListings(pollData.listings ?? []); return; }
+        if (pollData.status === "FATAL" || pollData.status === "CANCELLED") throw new Error("Report failed on Amazon side");
+      }
+      throw new Error("Sync timed out — Amazon report took too long");
     } catch (e) { setSyncError(String(e)); }
     finally { setSyncing(false); }
   }, []);
