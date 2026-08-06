@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const res = await spApiRequest<{ reportId: string }>({
       method: "POST",
       path:   "/reports/2021-06-30/reports",
-      body:   { reportType: "GET_FLAT_FILE_OPEN_LISTINGS_DATA", marketplaceIds: [creds.marketplaceId] },
+      body:   { reportType: "GET_MERCHANT_LISTINGS_ALL_DATA", marketplaceIds: [creds.marketplaceId] },
       accessToken,
       region,
     });
