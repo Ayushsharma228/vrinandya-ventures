@@ -251,39 +251,69 @@ export interface SellerListing {
 
 export async function getSellerListings(
   accessToken: string,
-  sellerId: string,
+  _sellerId: string,
   marketplaceId: string,
   region: keyof typeof SP_API_BASE,
 ): Promise<SellerListing[]> {
-  type RawItem = {
-    sku: string;
-    summaries?: { asin?: string; itemName?: string; productType?: string; status?: string[]; mainImage?: { link: string }; lastUpdatedDate?: string }[];
-    offers?: { price?: { amount: string; currency: string } }[];
-    fulfillmentAvailability?: { quantity?: number }[];
-  };
-  const data = await spApiRequest<{ items?: RawItem[] }>({
-    path:   `/listings/2021-08-01/items/${sellerId}`,
-    params: { marketplaceIds: marketplaceId, includedData: "summaries,offers,fulfillmentAvailability" },
+  // Request the flat-file open-listings report (synchronous alternative via Reports API)
+  const reportRes = await spApiRequest<{ reportId: string }>({
+    method: "POST",
+    path:   "/reports/2021-06-30/reports",
+    body:   { reportType: "GET_FLAT_FILE_OPEN_LISTINGS_DATA", marketplaceIds: [marketplaceId] },
     accessToken,
     region,
   });
-  return (data.items ?? []).map((item) => {
-    const summary = item.summaries?.[0];
-    const offer   = item.offers?.[0];
-    const fa      = item.fulfillmentAvailability?.[0];
-    return {
-      sku:         item.sku,
-      asin:        summary?.asin,
-      title:       summary?.itemName,
-      productType: summary?.productType,
-      status:      summary?.status,
-      price:       offer?.price?.amount ? parseFloat(offer.price.amount) : undefined,
-      currency:    offer?.price?.currency,
-      quantity:    fa?.quantity,
-      image:       summary?.mainImage?.link,
-      lastUpdated: summary?.lastUpdatedDate,
-    };
+  const reportId = reportRes.reportId;
+
+  // Poll until done (max 45 seconds)
+  let docId: string | undefined;
+  for (let i = 0; i < 15; i++) {
+    await new Promise(r => setTimeout(r, 3000));
+    const status = await spApiRequest<{ processingStatus: string; reportDocumentId?: string }>({
+      path:   `/reports/2021-06-30/reports/${reportId}`,
+      accessToken,
+      region,
+    });
+    if (status.processingStatus === "DONE" && status.reportDocumentId) {
+      docId = status.reportDocumentId;
+      break;
+    }
+    if (status.processingStatus === "FATAL" || status.processingStatus === "CANCELLED") {
+      throw new Error(`Report ${reportId} ended with status: ${status.processingStatus}`);
+    }
+  }
+  if (!docId) throw new Error("Listings report timed out — try again");
+
+  // Get download URL
+  const docRes = await spApiRequest<{ url: string }>({
+    path:   `/reports/2021-06-30/documents/${docId}`,
+    accessToken,
+    region,
   });
+  const tsvText = await fetch(docRes.url).then(r => r.text());
+
+  // Parse TSV — first row is headers
+  const lines   = tsvText.trim().split("\n");
+  if (lines.length < 2) return [];
+  const headers = lines[0].split("\t").map(h => h.trim().toLowerCase());
+  const col     = (name: string) => headers.indexOf(name);
+
+  return lines.slice(1).map((line) => {
+    const cells = line.split("\t");
+    const get   = (name: string) => cells[col(name)]?.trim() ?? "";
+    const price = parseFloat(get("price") || get("standard-price") || "0");
+    const qty   = parseInt(get("quantity") || get("fulfillment-channel-units") || "0", 10);
+    const status = get("status") || "ACTIVE";
+    return {
+      sku:      get("seller-sku") || get("listing-id"),
+      asin:     get("asin1") || get("asin") || undefined,
+      title:    get("item-name") || undefined,
+      status:   [status.toUpperCase() === "ACTIVE" ? "BUYABLE" : status.toUpperCase()],
+      price:    isNaN(price) ? undefined : price,
+      quantity: isNaN(qty)   ? undefined : qty,
+      image:    get("image-url") || undefined,
+    };
+  }).filter(l => l.sku);
 }
 
 export async function patchListingTitle(
