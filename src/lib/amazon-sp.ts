@@ -236,19 +236,84 @@ export async function searchCatalog(
   return data.items ?? [];
 }
 
+export interface SellerListing {
+  sku:          string;
+  asin?:        string;
+  title?:       string;
+  productType?: string;
+  status?:      string[];
+  price?:       number;
+  currency?:    string;
+  quantity?:    number;
+  image?:       string;
+  lastUpdated?: string;
+}
+
 export async function getSellerListings(
   accessToken: string,
   sellerId: string,
   marketplaceId: string,
   region: keyof typeof SP_API_BASE,
-): Promise<unknown[]> {
-  const data = await spApiRequest<{ items?: unknown[] }>({
+): Promise<SellerListing[]> {
+  type RawItem = {
+    sku: string;
+    summaries?: { asin?: string; itemName?: string; productType?: string; status?: string[]; mainImage?: { link: string }; lastUpdatedDate?: string }[];
+    offers?: { price?: { amount: string; currency: string } }[];
+    fulfillmentAvailability?: { quantity?: number }[];
+  };
+  const data = await spApiRequest<{ items?: RawItem[] }>({
     path:   `/listings/2021-08-01/items/${sellerId}`,
-    params: { marketplaceIds: marketplaceId },
+    params: { marketplaceIds: marketplaceId, includedData: "summaries,offers,fulfillmentAvailability" },
     accessToken,
     region,
   });
-  return data.items ?? [];
+  return (data.items ?? []).map((item) => {
+    const summary = item.summaries?.[0];
+    const offer   = item.offers?.[0];
+    const fa      = item.fulfillmentAvailability?.[0];
+    return {
+      sku:         item.sku,
+      asin:        summary?.asin,
+      title:       summary?.itemName,
+      productType: summary?.productType,
+      status:      summary?.status,
+      price:       offer?.price?.amount ? parseFloat(offer.price.amount) : undefined,
+      currency:    offer?.price?.currency,
+      quantity:    fa?.quantity,
+      image:       summary?.mainImage?.link,
+      lastUpdated: summary?.lastUpdatedDate,
+    };
+  });
+}
+
+export async function patchListingTitle(
+  accessToken: string,
+  sellerId: string,
+  sku: string,
+  productType: string,
+  newTitle: string,
+  marketplaceId: string,
+  region: keyof typeof SP_API_BASE,
+): Promise<{ status: string; submissionId?: string }> {
+  const langTag = region === "na" ? "en_US" : region === "fe" ? "ja_JP" : "en_IN";
+  const data = await spApiRequest<{ status: string; submissionId?: string }>({
+    method: "PATCH",
+    path:   `/listings/2021-08-01/items/${sellerId}/${encodeURIComponent(sku)}`,
+    params: { marketplaceIds: marketplaceId },
+    body: {
+      productType,
+      patches: [
+        {
+          op:    "replace",
+          path:  "/attributes/item_name",
+          value: [{ value: newTitle, marketplace_id: marketplaceId, language_tag: langTag }],
+        },
+      ],
+    },
+    accessToken,
+    region,
+  });
+  return data;
 }
 
 // ─── Reports API (Settlements) ────────────────────────────────────────────────
