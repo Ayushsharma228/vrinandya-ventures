@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { RefreshCw, Link2, Link2Off, ShoppingCart, Package, CheckCircle, AlertCircle, Loader2, ExternalLink, HelpCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { RefreshCw, Link2, Link2Off, ShoppingCart, Package, CheckCircle, AlertCircle, Loader2, ExternalLink, HelpCircle, Zap } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 import { MARKETPLACE_IDS } from "@/lib/amazon-sp";
 
@@ -36,14 +36,37 @@ export default function AmazonConnectPage() {
   const [error, setError]             = useState("");
   const [success, setSuccess]         = useState("");
 
-  // Connect form
-  const [sellerId, setSellerId]               = useState("");
-  const [marketplaceCountry, setMarketplace]  = useState("IN");
-  const [refreshToken, setRefreshToken]       = useState("");
-  const [connecting, setConnecting]           = useState(false);
-  const [showHelp, setShowHelp]               = useState(false);
+  // OAuth connect
+  const [marketplace, setMarketplace] = useState("IN");
+  const [showHelp, setShowHelp]       = useState(false);
+  const didReadParams                 = useRef(false);
 
-  useEffect(() => { fetchStatus(); }, []);
+  useEffect(() => {
+    fetchStatus();
+    if (!didReadParams.current) {
+      didReadParams.current = true;
+      const params = new URLSearchParams(window.location.search);
+      const conn   = params.get("connected");
+      const err    = params.get("error");
+      if (conn === "oauth") setSuccess("Amazon account connected successfully!");
+      else if (err) {
+        const MAP: Record<string, string> = {
+          missing_params:       "Authorization was cancelled or parameters were missing.",
+          no_state_cookie:      "Session expired. Please try again.",
+          state_mismatch:       "Security check failed. Please try again.",
+          token_exchange_failed:"Amazon rejected the authorization. Please try again.",
+          no_refresh_token:     "Amazon did not return a refresh token.",
+        };
+        setError(MAP[err] ?? `Connection failed: ${err}`);
+      }
+      if (conn || err) {
+        const clean = new URL(window.location.href);
+        clean.searchParams.delete("connected");
+        clean.searchParams.delete("error");
+        window.history.replaceState({}, "", clean.toString());
+      }
+    }
+  }, []);
 
   async function fetchStatus() {
     setLoading(true);
@@ -53,26 +76,8 @@ export default function AmazonConnectPage() {
     setLoading(false);
   }
 
-  async function handleConnect(e: React.FormEvent) {
-    e.preventDefault();
-    setError(""); setSuccess("");
-    if (!sellerId.trim() || !refreshToken.trim()) {
-      setError("All fields are required."); return;
-    }
-    setConnecting(true);
-    const res  = await fetch("/api/seller/amazon/connect", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sellerId: sellerId.trim(), marketplaceCountry, refreshToken: refreshToken.trim() }),
-    });
-    const data = await res.json() as { ok?: boolean; error?: string; orderCount?: number };
-    if (!res.ok || !data.ok) {
-      setError(data.error || "Connection failed"); setConnecting(false); return;
-    }
-    setSuccess(`Connected! Found ${data.orderCount ?? 0} recent orders.`);
-    setConnecting(false);
-    setSellerId(""); setRefreshToken("");
-    await fetchStatus();
+  function handleOAuthConnect() {
+    window.location.href = `/api/seller/amazon/auth?marketplace=${marketplace}`;
   }
 
   async function handleSync() {
@@ -209,23 +214,23 @@ export default function AmazonConnectPage() {
           </>
         ) : (
           <>
-            {/* Connect form */}
+            {/* OAuth connect card */}
             <div className="rounded-2xl p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-base font-bold"
                   style={{ background: "#FF9900" }}>A</div>
                 <div>
                   <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>Connect Amazon Seller Central</p>
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Enter your SP-API credentials to sync orders automatically</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Authorize with Amazon to sync orders, listings &amp; settlements</p>
                 </div>
               </div>
 
-              <form onSubmit={handleConnect} className="space-y-4">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>
                     Marketplace
                   </label>
-                  <select value={marketplaceCountry} onChange={(e) => setMarketplace(e.target.value)}
+                  <select value={marketplace} onChange={(e) => setMarketplace(e.target.value)}
                     className="w-full px-3 py-2.5 text-sm rounded-xl outline-none"
                     style={{ background: "var(--bg-muted)", border: "1px solid var(--border)", color: "var(--text-primary)" }}>
                     {Object.entries(MARKETPLACE_IDS).map(([code, mp]) => (
@@ -234,51 +239,20 @@ export default function AmazonConnectPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>
-                    Amazon Seller ID
-                  </label>
-                  <input value={sellerId} onChange={(e) => setSellerId(e.target.value)}
-                    placeholder="e.g. A1B2C3D4E5F6G7"
-                    className="w-full px-3 py-2.5 text-sm rounded-xl outline-none"
-                    style={{ background: "var(--bg-muted)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-                    onFocus={(e) => { e.currentTarget.style.border = "1px solid var(--accent)"; }}
-                    onBlur={(e) => { e.currentTarget.style.border = "1px solid var(--border)"; }}
-                  />
-                  <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-                    Found in Seller Central → Settings → Account Info → Merchant Token
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>
-                    LWA Refresh Token
-                  </label>
-                  <textarea value={refreshToken} onChange={(e) => setRefreshToken(e.target.value)}
-                    rows={3}
-                    placeholder="Atzr|IwEB..."
-                    className="w-full px-3 py-2.5 text-sm rounded-xl outline-none resize-none font-mono"
-                    style={{ background: "var(--bg-muted)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-                    onFocus={(e) => { e.currentTarget.style.border = "1px solid var(--accent)"; }}
-                    onBlur={(e) => { e.currentTarget.style.border = "1px solid var(--border)"; }}
-                  />
-                  <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-                    Generated after authorizing your SP-API app in Seller Central
-                  </p>
-                </div>
-
-                <button type="submit" disabled={connecting}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
-                  style={{ background: "var(--accent)" }}>
-                  {connecting
-                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifying & Connecting...</>
-                    : <><Link2 className="w-4 h-4" /> Connect Amazon Account</>
-                  }
+                <button onClick={handleOAuthConnect}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white"
+                  style={{ background: "#FF9900" }}>
+                  <Zap className="w-4 h-4" />
+                  Connect with Amazon
                 </button>
-              </form>
+
+                <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>
+                  You&apos;ll be redirected to Amazon Seller Central to authorize access. No passwords stored.
+                </p>
+              </div>
             </div>
 
-            {/* Help accordion */}
+            {/* How it works */}
             <div className="rounded-2xl overflow-hidden" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
               <button
                 onClick={() => setShowHelp((p) => !p)}
@@ -286,32 +260,23 @@ export default function AmazonConnectPage() {
                 style={{ color: "var(--text-primary)" }}>
                 <span className="flex items-center gap-2">
                   <HelpCircle className="w-4 h-4" style={{ color: "var(--accent)" }} />
-                  How to get your SP-API credentials
+                  How the connection works
                 </span>
                 <span style={{ color: "var(--text-muted)" }}>{showHelp ? "▲" : "▼"}</span>
               </button>
               {showHelp && (
                 <div className="px-5 pb-5 space-y-3 text-sm" style={{ color: "var(--text-secondary)", borderTop: "1px solid var(--border)" }}>
-                  <p className="pt-3 font-semibold" style={{ color: "var(--text-primary)" }}>Step-by-step setup:</p>
                   {[
-                    ["1. Register as SP-API Developer", "Go to Seller Central → Apps & Services → Develop Apps and create a new app."],
-                    ["2. Create a Self-Authorized App", "In your app settings, choose 'Self-authorized' and grant the Orders, Listings, and Reports permissions."],
-                    ["3. Generate Refresh Token", "After authorizing the app, you'll receive an LWA Refresh Token starting with 'Atzr|'."],
-                    ["4. Find Your Seller ID", "Go to Settings → Account Info → Merchant Token in Seller Central."],
-                    ["5. Enter credentials above", "Paste the Seller ID and Refresh Token into the form and click Connect."],
+                    ["1. Click Connect with Amazon", "You'll be redirected to your Amazon Seller Central account."],
+                    ["2. Authorize the AXQEN app", "Click 'Confirm' on the Amazon authorization page."],
+                    ["3. Automatic redirect", "Amazon sends you back here with a secure token — no copying needed."],
+                    ["4. Start syncing", "Your orders and listings are now accessible from the dashboard."],
                   ].map(([title, desc]) => (
-                    <div key={title as string} className="flex gap-3">
-                      <p className="font-semibold flex-shrink-0" style={{ color: "var(--text-primary)" }}>{title as string}</p>
-                      <p>{desc as string}</p>
+                    <div key={title as string} className="flex gap-3 pt-2">
+                      <p className="font-semibold flex-shrink-0 text-xs" style={{ color: "var(--text-primary)" }}>{title as string}</p>
+                      <p className="text-xs">{desc as string}</p>
                     </div>
                   ))}
-                  <a href="https://developer-docs.amazon.com/sp-api/docs/tutorial-step-by-step-guide-to-building-a-sp-api-application"
-                    target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs font-medium mt-2"
-                    style={{ color: "var(--accent)" }}>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Official SP-API documentation
-                  </a>
                 </div>
               )}
             </div>
