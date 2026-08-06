@@ -37,7 +37,7 @@ function lwaCredentials() {
 function awsCredentials() {
   const accessKey = process.env.AMAZON_AWS_ACCESS_KEY;
   const secretKey = process.env.AMAZON_AWS_SECRET_KEY;
-  if (!accessKey || !secretKey) throw new Error("AMAZON_AWS_ACCESS_KEY / AMAZON_AWS_SECRET_KEY not set");
+  if (!accessKey || !secretKey) return null;
   return { accessKey, secretKey };
 }
 
@@ -93,7 +93,7 @@ export interface SpApiOptions {
 
 export async function spApiRequest<T = unknown>(opts: SpApiOptions): Promise<T> {
   const { method = "GET", path, params = {}, body, accessToken, region } = opts;
-  const { accessKey, secretKey } = awsCredentials();
+  const aws = awsCredentials();
 
   const baseUrl     = SP_API_BASE[region];
   const awsRegion   = AWS_REGIONS[region];
@@ -104,41 +104,32 @@ export async function spApiRequest<T = unknown>(opts: SpApiOptions): Promise<T> 
 
   const now       = new Date();
   const dateTime  = now.toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "").slice(0, 15) + "Z";
-  const dateStamp = dateTime.slice(0, 8);
-
-  const rawHeaders: Record<string, string> = {
-    "host":               parsedUrl.hostname,
-    "x-amz-access-token": accessToken,
-    "x-amz-date":         dateTime,
-  };
-  if (bodyStr) rawHeaders["content-type"] = "application/json";
-
-  const sortedKeys      = Object.keys(rawHeaders).sort();
-  const signedHeaders   = sortedKeys.join(";");
-  const canonicalHeaders = sortedKeys.map((k) => `${k}:${rawHeaders[k]}\n`).join("");
-
-  const canonicalRequest = [
-    method.toUpperCase(),
-    parsedUrl.pathname,
-    queryString,
-    canonicalHeaders,
-    signedHeaders,
-    sha256hex(bodyStr),
-  ].join("\n");
-
-  const credentialScope = `${dateStamp}/${awsRegion}/execute-api/aws4_request`;
-  const stringToSign    = ["AWS4-HMAC-SHA256", dateTime, credentialScope, sha256hex(canonicalRequest)].join("\n");
-
-  const signingKey  = getSigningKey(secretKey, dateStamp, awsRegion);
-  const signature   = crypto.createHmac("sha256", signingKey).update(stringToSign, "utf8").digest("hex");
-  const authorization = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
   const requestHeaders: HeadersInit = {
     "x-amz-access-token": accessToken,
     "x-amz-date":         dateTime,
-    "Authorization":      authorization,
     ...(bodyStr ? { "Content-Type": "application/json" } : {}),
   };
+
+  if (aws) {
+    const dateStamp = dateTime.slice(0, 8);
+    const rawHeaders: Record<string, string> = {
+      "host":               parsedUrl.hostname,
+      "x-amz-access-token": accessToken,
+      "x-amz-date":         dateTime,
+    };
+    if (bodyStr) rawHeaders["content-type"] = "application/json";
+
+    const sortedKeys       = Object.keys(rawHeaders).sort();
+    const signedHeaders    = sortedKeys.join(";");
+    const canonicalHeaders = sortedKeys.map((k) => `${k}:${rawHeaders[k]}\n`).join("");
+    const canonicalRequest = [method.toUpperCase(), parsedUrl.pathname, queryString, canonicalHeaders, signedHeaders, sha256hex(bodyStr)].join("\n");
+    const credentialScope  = `${dateStamp}/${awsRegion}/execute-api/aws4_request`;
+    const stringToSign     = ["AWS4-HMAC-SHA256", dateTime, credentialScope, sha256hex(canonicalRequest)].join("\n");
+    const signingKey       = getSigningKey(aws.secretKey, dateStamp, awsRegion);
+    const signature        = crypto.createHmac("sha256", signingKey).update(stringToSign, "utf8").digest("hex");
+    (requestHeaders as Record<string, string>)["Authorization"] = `AWS4-HMAC-SHA256 Credential=${aws.accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  }
 
   const res = await fetch(url, {
     method: method.toUpperCase(),
