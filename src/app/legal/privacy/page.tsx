@@ -10,7 +10,7 @@ export default function PrivacyPolicyPage() {
     <div className="min-h-screen bg-white">
       <div className="max-w-3xl mx-auto px-6 py-16">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
-        <p className="text-sm text-gray-500 mb-10">Last updated: July 22, 2026</p>
+        <p className="text-sm text-gray-500 mb-10">Last updated: August 7, 2026</p>
 
         <section className="space-y-8 text-gray-700 text-sm leading-7">
 
@@ -42,7 +42,25 @@ export default function PrivacyPolicyPage() {
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">4. Meta Ads Integration</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">4. Amazon Seller Central Integration</h2>
+            <p>If you connect your Amazon Seller Central account, we access your seller data via the <strong>Amazon Selling Partner API (SP-API)</strong> using OAuth 2.0 authorization that you explicitly grant. The data we access includes:</p>
+            <ul className="list-disc pl-5 space-y-1 mt-2">
+              <li><strong>Orders:</strong> Order IDs, statuses, item details, and fulfillment information — used to display and manage your orders on the AXQEN dashboard.</li>
+              <li><strong>Listings:</strong> Product SKUs, ASINs, titles, prices, quantities, and inventory status — used to display your Amazon catalogue and provide AI-powered listing health analysis.</li>
+              <li><strong>Reports:</strong> Merchant listing reports — used solely to retrieve listing data in bulk.</li>
+            </ul>
+            <p className="mt-2">We store only your encrypted OAuth refresh token and Selling Partner ID. We do not store order-level customer PII (names, addresses, phone numbers) beyond what is necessary to fulfil and display orders within your account.</p>
+            <p className="mt-2">We do not:</p>
+            <ul className="list-disc pl-5 space-y-1 mt-1">
+              <li>Share your Amazon data with any third party.</li>
+              <li>Use your Amazon data to train AI models.</li>
+              <li>Access any data beyond what is required for the features described above.</li>
+            </ul>
+            <p className="mt-2">You can disconnect your Amazon account at any time from <strong>Dashboard → Amazon Seller Central → Disconnect</strong>. Upon disconnection we immediately delete your stored refresh token and cease all SP-API calls.</p>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">5. Meta Ads Integration</h2>
             <p>If you choose to connect your Meta Ads account, we request the <strong>ads_read</strong> permission to retrieve your ad spend data. We use this data solely to display your advertising costs on your dashboard. We do not:</p>
             <ul className="list-disc pl-5 space-y-1 mt-2">
               <li>Create, edit, or delete any ads on your behalf.</li>
@@ -53,7 +71,7 @@ export default function PrivacyPolicyPage() {
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">5. Data Sharing</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">6. Data Sharing</h2>
             <p>We do not sell your personal data. We share data only with:</p>
             <ul className="list-disc pl-5 space-y-1 mt-2">
               <li><strong>Suppliers:</strong> Order and customer delivery details needed to fulfill shipments.</li>
@@ -64,12 +82,12 @@ export default function PrivacyPolicyPage() {
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">6. Data Retention</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">7. Data Retention</h2>
             <p>We retain your data for as long as your account is active. If you close your account, we delete your personal data within 30 days, except where we are required to retain it for legal or financial compliance purposes.</p>
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">7. Your Rights</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">8. Your Rights</h2>
             <ul className="list-disc pl-5 space-y-1">
               <li>Access the personal data we hold about you.</li>
               <li>Request correction of inaccurate data.</li>
@@ -80,22 +98,22 @@ export default function PrivacyPolicyPage() {
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">8. Cookies</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">9. Cookies</h2>
             <p>We use essential cookies for authentication (session management). We use the Meta Pixel for tracking page views on our marketing website. You can disable cookies in your browser settings.</p>
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">9. Security</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">10. Security</h2>
             <p>We use industry-standard encryption (HTTPS/TLS) for all data in transit. Sensitive credentials such as API keys are encrypted at rest. We conduct regular security reviews.</p>
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">10. Changes to This Policy</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">11. Changes to This Policy</h2>
             <p>We may update this policy from time to time. We will notify you via email for material changes. Continued use of the platform after changes constitutes acceptance.</p>
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">11. Contact Us</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">12. Contact Us</h2>
             <p>For any privacy-related questions, contact us at:<br />
             <strong>AXQEN</strong><br />
             Email: <a href="mailto:vrinandyaventures@gmail.com" className="text-blue-600 underline">vrinandyaventures@gmail.com</a><br />

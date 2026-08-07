@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { RefreshCw, Link2, Link2Off, ShoppingCart, Package, CheckCircle, AlertCircle, Loader2, ExternalLink, HelpCircle, Zap } from "lucide-react";
+import { RefreshCw, Link2, Link2Off, ShoppingCart, Package, CheckCircle, AlertCircle, Loader2, ExternalLink, HelpCircle, Zap, ChevronDown } from "lucide-react";
 import { PageHero } from "@/components/layout/page-hero";
 import { MARKETPLACE_IDS } from "@/lib/amazon-sp";
 
@@ -37,8 +37,15 @@ export default function AmazonConnectPage() {
   const [success, setSuccess]         = useState("");
 
   // OAuth connect
-  const [marketplace, setMarketplace] = useState("IN");
-  const [showHelp, setShowHelp]       = useState(false);
+  const [marketplace, setMarketplace]   = useState("IN");
+  const [showHelp, setShowHelp]         = useState(false);
+  const [showManual, setShowManual]     = useState(false);
+
+  // Manual fallback form
+  const [manualSellerId, setManualSellerId]     = useState("");
+  const [manualToken, setManualToken]           = useState("");
+  const [manualMarket, setManualMarket]         = useState("IN");
+  const [connecting, setConnecting]             = useState(false);
   const didReadParams                 = useRef(false);
 
   useEffect(() => {
@@ -78,6 +85,24 @@ export default function AmazonConnectPage() {
 
   function handleOAuthConnect() {
     window.location.href = `/api/seller/amazon/auth?marketplace=${marketplace}`;
+  }
+
+  async function handleManualConnect(e: React.FormEvent) {
+    e.preventDefault();
+    setError(""); setSuccess("");
+    if (!manualSellerId.trim() || !manualToken.trim()) { setError("All fields are required."); return; }
+    setConnecting(true);
+    const res  = await fetch("/api/seller/amazon/connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sellerId: manualSellerId.trim(), marketplaceCountry: manualMarket, refreshToken: manualToken.trim() }),
+    });
+    const data = await res.json() as { ok?: boolean; error?: string; orderCount?: number };
+    if (!res.ok || !data.ok) { setError(data.error || "Connection failed"); setConnecting(false); return; }
+    setSuccess(`Connected! Found ${data.orderCount ?? 0} recent orders.`);
+    setConnecting(false);
+    setManualSellerId(""); setManualToken(""); setShowManual(false);
+    await fetchStatus();
   }
 
   async function handleSync() {
@@ -250,6 +275,54 @@ export default function AmazonConnectPage() {
                   You&apos;ll be redirected to Amazon Seller Central to authorize access. No passwords stored.
                 </p>
               </div>
+            </div>
+
+            {/* Manual fallback */}
+            <div className="rounded-2xl overflow-hidden" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+              <button onClick={() => setShowManual(p => !p)}
+                className="w-full flex items-center justify-between px-5 py-3.5 text-xs font-medium text-left"
+                style={{ color: "var(--text-muted)" }}>
+                <span>Connect manually with refresh token</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showManual ? "rotate-180" : ""}`} />
+              </button>
+              {showManual && (
+                <form onSubmit={handleManualConnect} className="px-5 pb-5 space-y-3"
+                  style={{ borderTop: "1px solid var(--border)" }}>
+                  <p className="text-xs pt-3" style={{ color: "var(--text-muted)" }}>
+                    Use this if you have a refresh token from self-authorization in Seller Central.
+                  </p>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>Marketplace</label>
+                    <select value={manualMarket} onChange={e => setManualMarket(e.target.value)}
+                      className="w-full px-3 py-2 text-sm rounded-xl outline-none"
+                      style={{ background: "var(--bg-muted)", border: "1px solid var(--border)", color: "var(--text-primary)" }}>
+                      {Object.entries(MARKETPLACE_IDS).map(([code, mp]) => (
+                        <option key={code} value={code}>{mp.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>Amazon Seller ID</label>
+                    <input value={manualSellerId} onChange={e => setManualSellerId(e.target.value)}
+                      placeholder="e.g. A39NXH3LQVCZIK"
+                      className="w-full px-3 py-2 text-sm rounded-xl outline-none"
+                      style={{ background: "var(--bg-muted)", border: "1px solid var(--border)", color: "var(--text-primary)" }} />
+                    <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Seller Central → Settings → Account Info → Merchant Token</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>LWA Refresh Token</label>
+                    <textarea value={manualToken} onChange={e => setManualToken(e.target.value)}
+                      rows={3} placeholder="Atzr|IwEB..."
+                      className="w-full px-3 py-2 text-sm rounded-xl outline-none resize-none font-mono"
+                      style={{ background: "var(--bg-muted)", border: "1px solid var(--border)", color: "var(--text-primary)" }} />
+                  </div>
+                  <button type="submit" disabled={connecting}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+                    style={{ background: "var(--accent)" }}>
+                    {connecting ? <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</> : <><Link2 className="w-4 h-4" /> Connect Manually</>}
+                  </button>
+                </form>
+              )}
             </div>
 
             {/* How it works */}
