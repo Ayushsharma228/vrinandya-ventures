@@ -4,10 +4,11 @@ import Link from "next/link";
 import { C } from "./constants";
 
 const NAV_LINKS = [
-  { label: "Products",    href: "#products" },
+  { label: "Products",     href: "#products" },
   { label: "How It Works", href: "#how-it-works" },
-  { label: "Plans",       href: "#plans" },
-  { label: "FAQs",        href: "#faqs" },
+  { label: "Case Studies", href: "/case-studies" },
+  { label: "Plans",        href: "#plans" },
+  { label: "FAQs",         href: "#faqs" },
 ];
 
 export function Navbar() {
