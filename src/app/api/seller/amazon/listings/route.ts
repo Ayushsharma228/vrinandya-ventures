@@ -98,10 +98,7 @@ export async function GET(req: NextRequest) {
 
     // Debug: return raw headers + first row so we can see the actual format
     if (lines.length < 2) {
-      return NextResponse.json({
-        status: "DONE", listings: [],
-        _debug: { lineCount: lines.length, first200: tsvText.slice(0, 200), compressed: docRes.compressionAlgorithm },
-      });
+      return NextResponse.json({ status: "DONE", listings: [] });
     }
 
     const rawHeaders = lines[0].split("\t");
@@ -131,10 +128,7 @@ export async function GET(req: NextRequest) {
       };
     }).filter(l => l.sku && l.sku.length > 0);
 
-    return NextResponse.json({
-      status: "DONE", listings,
-      _debug: { lineCount: lines.length, headers: rawHeaders, sampleRow: lines[1]?.split("\t"), compressed: docRes.compressionAlgorithm },
-    });
+    return NextResponse.json({ status: "DONE", listings });
   } catch (err) {
     console.error("[amazon/listings GET]", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
