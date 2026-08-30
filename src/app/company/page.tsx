@@ -20,7 +20,7 @@ const DOCS = [
     dim:   "rgba(29,158,117,0.1)",
     title: "GST Registration Certificate",
     desc:  "Goods & Services Tax registration issued by the Government of India.",
-    number: "07AAKCV0598R1ZP",
+    number: "09AALCV7054P1ZD",
     label: "GSTIN",
     file:  null as string | null,
   },
@@ -30,7 +30,7 @@ const DOCS = [
     dim:   "rgba(0,72,223,0.08)",
     title: "Certificate of Incorporation (CIN)",
     desc:  "Incorporation certificate issued by the Ministry of Corporate Affairs confirming the company's legal existence.",
-    number: "U74999DL2024PTC000000",
+    number: "U63112UP2025PTC239392",
     label: "CIN",
     file:  null as string | null,
   },
@@ -40,7 +40,7 @@ const DOCS = [
     dim:   "rgba(239,159,39,0.1)",
     title: "Udyam Registration Certificate",
     desc:  "MSME Udyam registration issued by the Ministry of MSME, Government of India.",
-    number: "UDYAM-DL-00-0000000",
+    number: "UDYAM-UP-01-0192301",
     label: "Udyam No.",
     file:  null as string | null,
   },
@@ -50,7 +50,7 @@ const DOCS = [
     dim:   "rgba(124,111,240,0.1)",
     title: "DPIIT Startup India Recognition",
     desc:  "Startup India recognition certificate issued by the Department for Promotion of Industry and Internal Trade.",
-    number: "DIPP00000",
+    number: "DIPP239200",
     label: "DPIIT Ref.",
     file:  null as string | null,
   },
@@ -105,12 +105,14 @@ export default function CompanyPage() {
           <p className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: C.muted }}>Company Details</p>
           <div className="grid sm:grid-cols-2 gap-4">
             {[
-              { label: "Legal Name",     value: "Vrinandya Ventures Private Limited" },
-              { label: "Brand",          value: "AXQEN"                               },
-              { label: "Type",           value: "Private Limited Company"             },
-              { label: "Country",        value: "India"                               },
-              { label: "Email",          value: "connect@vrinandyaventures.in"        },
-              { label: "Website",        value: "app.vrinandyaventures.in"            },
+              { label: "Legal Name",     value: "Vrinandya Ventures Private Limited"                   },
+              { label: "Brand",          value: "AXQEN"                                                   },
+              { label: "Type",           value: "Private Limited Company"                                 },
+              { label: "Incorporated",   value: "23 December 2025"                                        },
+              { label: "PAN",            value: "AALCV7054P"                                              },
+              { label: "Address",        value: "4/210 Unt Gali, Kacheri Ghat, Agra, UP – 282004"        },
+              { label: "Email",          value: "connect@vrinandyaventures.in"                            },
+              { label: "Website",        value: "app.vrinandyaventures.in"                                },
             ].map((r) => (
               <div key={r.label} className="flex flex-col gap-0.5">
                 <span className="text-xs font-semibold" style={{ color: C.muted }}>{r.label}</span>
