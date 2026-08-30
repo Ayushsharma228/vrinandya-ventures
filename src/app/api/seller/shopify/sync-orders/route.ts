@@ -48,14 +48,16 @@ export async function POST(req: NextRequest) {
 
   if (!shopifyRes.ok) {
     const statusCode = shopifyRes.status;
+    const body = await shopifyRes.text();
+    console.error(`[shopify/sync] ${statusCode} for ${store.storeUrl}:`, body);
     if (statusCode === 401 || statusCode === 403) {
       return NextResponse.json(
-        { error: "Access token is invalid or expired. Please reconnect your Shopify store." },
+        { error: `Shopify auth failed (${statusCode}): ${body}` },
         { status: 400 }
       );
     }
     return NextResponse.json(
-      { error: `Shopify returned error ${statusCode}. Please check your store connection.` },
+      { error: `Shopify error ${statusCode}: ${body}` },
       { status: 400 }
     );
   }
