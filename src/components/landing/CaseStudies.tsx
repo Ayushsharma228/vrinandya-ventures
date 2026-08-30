@@ -68,17 +68,14 @@ const CASES = [
 
 export function CaseStudies() {
   const [active, setActive] = useState(0);
-  const [ref, inView] = useInView();
+  const { ref, inView } = useInView();
 
   const cs = CASES[active];
 
   return (
-    <section
-      className="py-24 px-6"
-      style={{ background: "#f8f9fb" }}
-      ref={ref as React.RefObject<HTMLElement>}
-    >
+    <section className="py-24 px-6" style={{ background: "#f8f9fb" }}>
       <div
+        ref={ref}
         className="max-w-6xl mx-auto"
         style={{
           opacity:    inView ? 1 : 0,
