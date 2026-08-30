@@ -39,6 +39,8 @@ export default function SellerProfilePage() {
   const [shopifyStore, setShopifyStore] = useState<{ storeUrl: string; storeName: string } | null>(null);
   const [shopifyLoading, setShopifyLoading] = useState(false);
   const [shopifyInput, setShopifyInput] = useState("");
+  const [shopifyToken, setShopifyToken] = useState("");
+  const [shopifyError, setShopifyError] = useState("");
   const [showShopifyInput, setShowShopifyInput] = useState(false);
 
   useEffect(() => {
@@ -71,10 +73,23 @@ export default function SellerProfilePage() {
     setShopifyLoading(false);
   }
 
-  function handleShopifyConnect() {
+  async function handleShopifyConnect() {
     const domain = shopifyInput.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "");
-    if (!domain) return;
-    window.location.href = `/api/shopify/connect?shop=${encodeURIComponent(domain)}`;
+    const token  = shopifyToken.trim();
+    if (!domain || !token) { setShopifyError("Enter both store URL and access token."); return; }
+    setShopifyLoading(true); setShopifyError("");
+    const res  = await fetch("/api/seller/shopify/connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ storeUrl: domain, accessToken: token }),
+    });
+    const data = await res.json();
+    setShopifyLoading(false);
+    if (!res.ok) { setShopifyError(data.error || "Connection failed. Please check your credentials."); return; }
+    setShopifyConnected(true);
+    setShopifyStore({ storeUrl: data.store.storeUrl, storeName: data.store.storeName });
+    setShowShopifyInput(false);
+    setShopifyInput(""); setShopifyToken("");
   }
 
   async function handleSave() {
@@ -296,23 +311,43 @@ export default function SellerProfilePage() {
                   </div>
 
                   {showShopifyInput && !shopifyConnected && (
-                    <div className="flex gap-2">
+                    <div className="space-y-2">
+                      {shopifyError && (
+                        <p className="text-xs px-3 py-2 rounded-lg" style={{ background: "#FEF2F2", color: "#EF4444" }}>
+                          {shopifyError}
+                        </p>
+                      )}
                       <input
                         type="text"
                         placeholder="yourstore.myshopify.com"
                         value={shopifyInput}
                         onChange={e => setShopifyInput(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && handleShopifyConnect()}
-                        className="flex-1 px-3 py-2 text-sm rounded-xl outline-none"
+                        className="w-full px-3 py-2 text-sm rounded-xl outline-none"
                         style={{ border: "1px solid var(--border)", background: "white", color: "var(--text-900)" }}
                         onFocus={e => e.currentTarget.style.border = "1px solid #96BF48"}
                         onBlur={e => e.currentTarget.style.border = "1px solid var(--border)"}
                       />
-                      <button onClick={handleShopifyConnect}
-                        className="px-4 py-2 text-xs font-semibold rounded-xl text-white"
-                        style={{ background: "#96BF48" }}>
-                        Authorize
-                      </button>
+                      <div className="flex gap-2">
+                        <input
+                          type="password"
+                          placeholder="Admin API access token (shpat_...)"
+                          value={shopifyToken}
+                          onChange={e => setShopifyToken(e.target.value)}
+                          onKeyDown={e => e.key === "Enter" && handleShopifyConnect()}
+                          className="flex-1 px-3 py-2 text-sm rounded-xl outline-none font-mono"
+                          style={{ border: "1px solid var(--border)", background: "white", color: "var(--text-900)" }}
+                          onFocus={e => e.currentTarget.style.border = "1px solid #96BF48"}
+                          onBlur={e => e.currentTarget.style.border = "1px solid var(--border)"}
+                        />
+                        <button onClick={handleShopifyConnect} disabled={shopifyLoading}
+                          className="px-4 py-2 text-xs font-semibold rounded-xl text-white disabled:opacity-60 flex-shrink-0"
+                          style={{ background: "#96BF48" }}>
+                          {shopifyLoading ? "Connecting..." : "Connect"}
+                        </button>
+                      </div>
+                      <p className="text-xs" style={{ color: "var(--text-400)" }}>
+                        Get your token: Shopify Admin → Settings → Apps → Develop apps → create app → API credentials
+                      </p>
                     </div>
                   )}
                 </div>
