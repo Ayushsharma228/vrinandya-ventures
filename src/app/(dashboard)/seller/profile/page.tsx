@@ -38,9 +38,12 @@ export default function SellerProfilePage() {
   const [shopifyConnected, setShopifyConnected] = useState(false);
   const [shopifyStore, setShopifyStore] = useState<{ storeUrl: string; storeName: string } | null>(null);
   const [shopifyLoading, setShopifyLoading] = useState(false);
-  const [shopifyInput, setShopifyInput] = useState("");
-  const [shopifyToken, setShopifyToken] = useState("");
-  const [shopifyError, setShopifyError] = useState("");
+  const [shopifyInput, setShopifyInput]   = useState("");
+  const [shopifyToken, setShopifyToken]   = useState("");
+  const [shopifyClientId, setShopifyClientId]     = useState("");
+  const [shopifyClientSecret, setShopifyClientSecret] = useState("");
+  const [shopifyMode, setShopifyMode]     = useState<"token" | "oauth">("token");
+  const [shopifyError, setShopifyError]   = useState("");
   const [showShopifyInput, setShowShopifyInput] = useState(false);
 
   useEffect(() => {
@@ -75,22 +78,41 @@ export default function SellerProfilePage() {
 
   async function handleShopifyConnect() {
     const domain = shopifyInput.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "");
-    const token  = shopifyToken.trim();
-    if (!domain || !token) { setShopifyError("Enter both store URL and access token."); return; }
+    if (!domain) { setShopifyError("Enter your store URL."); return; }
     const shopDomain = domain.includes(".myshopify.com") ? domain : `${domain}.myshopify.com`;
     setShopifyLoading(true); setShopifyError("");
-    const res  = await fetch("/api/seller/shopify/connect", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ storeUrl: shopDomain, accessToken: token }),
-    });
-    const data = await res.json();
-    setShopifyLoading(false);
-    if (!res.ok) { setShopifyError(data.error || "Connection failed."); return; }
-    setShopifyConnected(true);
-    setShopifyStore({ storeUrl: data.store.storeUrl, storeName: data.store.storeName });
-    setShowShopifyInput(false);
-    setShopifyInput(""); setShopifyToken("");
+
+    if (shopifyMode === "oauth") {
+      // OAuth with seller's own Client ID + Secret
+      const cid = shopifyClientId.trim();
+      const sec = shopifyClientSecret.trim();
+      if (!cid || !sec) { setShopifyError("Enter Client ID and Secret."); setShopifyLoading(false); return; }
+      const res  = await fetch("/api/seller/shopify/oauth-init", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storeUrl: shopDomain, clientId: cid, clientSecret: sec }),
+      });
+      const data = await res.json() as { authUrl?: string; error?: string };
+      setShopifyLoading(false);
+      if (!res.ok || !data.authUrl) { setShopifyError(data.error || "Failed to initiate OAuth."); return; }
+      window.location.href = data.authUrl;
+    } else {
+      // Direct token
+      const token = shopifyToken.trim();
+      if (!token) { setShopifyError("Enter your access token."); setShopifyLoading(false); return; }
+      const res  = await fetch("/api/seller/shopify/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storeUrl: shopDomain, accessToken: token }),
+      });
+      const data = await res.json() as { store?: { storeUrl: string; storeName: string }; error?: string };
+      setShopifyLoading(false);
+      if (!res.ok) { setShopifyError(data.error || "Connection failed."); return; }
+      setShopifyConnected(true);
+      setShopifyStore({ storeUrl: data.store!.storeUrl, storeName: data.store!.storeName });
+      setShowShopifyInput(false);
+      setShopifyInput(""); setShopifyToken("");
+    }
   }
 
   async function handleSave() {
@@ -312,12 +334,22 @@ export default function SellerProfilePage() {
                   </div>
 
                   {showShopifyInput && !shopifyConnected && (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {shopifyError && (
-                        <p className="text-xs px-3 py-2 rounded-lg" style={{ background: "#FEF2F2", color: "#EF4444" }}>
-                          {shopifyError}
-                        </p>
+                        <p className="text-xs px-3 py-2 rounded-lg" style={{ background: "#FEF2F2", color: "#EF4444" }}>{shopifyError}</p>
                       )}
+
+                      {/* Mode toggle */}
+                      <div className="flex rounded-xl overflow-hidden text-xs font-semibold" style={{ border: "1px solid var(--border)" }}>
+                        {(["token", "oauth"] as const).map(m => (
+                          <button key={m} onClick={() => { setShopifyMode(m); setShopifyError(""); }}
+                            className="flex-1 py-2 transition-colors"
+                            style={{ background: shopifyMode === m ? "#96BF48" : "white", color: shopifyMode === m ? "white" : "var(--text-400)" }}>
+                            {m === "token" ? "Access Token (shpat_)" : "Client ID + Secret"}
+                          </button>
+                        ))}
+                      </div>
+
                       <input type="text" placeholder="yourstore.myshopify.com"
                         value={shopifyInput} onChange={e => { setShopifyInput(e.target.value); setShopifyError(""); }}
                         className="w-full px-3 py-2 text-sm rounded-xl outline-none"
@@ -325,24 +357,44 @@ export default function SellerProfilePage() {
                         onFocus={e => e.currentTarget.style.border = "1px solid #96BF48"}
                         onBlur={e => e.currentTarget.style.border = "1px solid var(--border)"}
                       />
-                      <div className="flex gap-2">
+
+                      {shopifyMode === "token" ? (
                         <input type="password" placeholder="Admin API access token (shpat_...)"
                           value={shopifyToken} onChange={e => setShopifyToken(e.target.value)}
                           onKeyDown={e => e.key === "Enter" && handleShopifyConnect()}
-                          className="flex-1 px-3 py-2 text-sm rounded-xl outline-none font-mono"
+                          className="w-full px-3 py-2 text-sm rounded-xl outline-none font-mono"
                           style={{ border: "1px solid var(--border)", background: "white", color: "var(--text-900)" }}
                           onFocus={e => e.currentTarget.style.border = "1px solid #96BF48"}
                           onBlur={e => e.currentTarget.style.border = "1px solid var(--border)"}
                         />
-                        <button onClick={handleShopifyConnect} disabled={shopifyLoading}
-                          className="px-4 py-2 text-xs font-semibold rounded-xl text-white disabled:opacity-60 flex-shrink-0"
-                          style={{ background: "#96BF48" }}>
-                          {shopifyLoading ? "Connecting..." : "Connect"}
-                        </button>
-                      </div>
-                      <p className="text-xs" style={{ color: "var(--text-400)" }}>
-                        Shopify Admin → Settings → Apps → Develop apps → your app → API credentials → Admin API access token
-                      </p>
+                      ) : (
+                        <>
+                          <input type="text" placeholder="Client ID"
+                            value={shopifyClientId} onChange={e => setShopifyClientId(e.target.value)}
+                            className="w-full px-3 py-2 text-sm rounded-xl outline-none font-mono"
+                            style={{ border: "1px solid var(--border)", background: "white", color: "var(--text-900)" }}
+                            onFocus={e => e.currentTarget.style.border = "1px solid #96BF48"}
+                            onBlur={e => e.currentTarget.style.border = "1px solid var(--border)"}
+                          />
+                          <input type="password" placeholder="Client Secret (shpss_...)"
+                            value={shopifyClientSecret} onChange={e => setShopifyClientSecret(e.target.value)}
+                            onKeyDown={e => e.key === "Enter" && handleShopifyConnect()}
+                            className="w-full px-3 py-2 text-sm rounded-xl outline-none font-mono"
+                            style={{ border: "1px solid var(--border)", background: "white", color: "var(--text-900)" }}
+                            onFocus={e => e.currentTarget.style.border = "1px solid #96BF48"}
+                            onBlur={e => e.currentTarget.style.border = "1px solid var(--border)"}
+                          />
+                          <p className="text-xs" style={{ color: "var(--text-400)" }}>
+                            You&apos;ll be redirected to Shopify to approve the connection.
+                          </p>
+                        </>
+                      )}
+
+                      <button onClick={handleShopifyConnect} disabled={shopifyLoading}
+                        className="w-full py-2.5 text-xs font-semibold rounded-xl text-white disabled:opacity-60"
+                        style={{ background: "#96BF48" }}>
+                        {shopifyLoading ? "Connecting..." : shopifyMode === "oauth" ? "Authorize with Shopify" : "Connect"}
+                      </button>
                     </div>
                   )}
                 </div>
