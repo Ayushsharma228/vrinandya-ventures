@@ -49,7 +49,7 @@ const inputStyle = { background: "#fff", borderColor: "#e5e7eb", color: "#0A0E1A
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function OnboardingPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
 
   const [step,   setStep]   = useState(0);
@@ -219,7 +219,7 @@ export default function OnboardingPage() {
             })}
           </div>
 
-          <button onClick={() => router.push("/seller")}
+          <button onClick={async () => { await update({ onboardingDone: true }); router.push("/seller"); }}
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold text-white"
             style={{ background: "#0048DF" }}>
             Go to Dashboard <ArrowRight className="w-4 h-4" />
