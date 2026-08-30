@@ -27,6 +27,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Also verify read_orders scope — the sync will fail without it
+  const ordersRes = await fetch(`https://${storeUrl}/admin/api/2025-01/orders.json?limit=1&status=any`, {
+    headers: { "X-Shopify-Access-Token": accessToken },
+  });
+  if (!ordersRes.ok) {
+    return NextResponse.json(
+      { error: "This access token is missing the 'read_orders' permission. In your Shopify app, enable Orders → Read access, then generate a new token." },
+      { status: 400 }
+    );
+  }
+
   const shopData = await shopRes.json();
   const storeName = shopData.shop?.name ?? storeUrl;
 
