@@ -8,6 +8,7 @@ import { ProductCatalogue } from "./ProductCatalogue";
 import { HowItWorks }       from "./HowItWorks";
 import { Features }         from "./Features";
 import { Testimonials }     from "./Testimonials";
+import { CaseStudies }      from "./CaseStudies";
 import { Plans }            from "./Plans";
 import { FAQ }              from "./FAQ";
 import { ApplyForm }        from "./ApplyForm";
@@ -31,6 +32,7 @@ export default function LandingPage() {
         <HowItWorks />
         <Features />
         <Testimonials />
+        <CaseStudies />
         <Plans />
         <FAQ />
         <ApplyForm />
