@@ -82,6 +82,7 @@ export default function SupplierOrdersPage() {
   const [selectedProviderId, setSelectedProviderId] = useState("");
   const [autoDispatching, setAutoDispatching]       = useState(false);
   const [autoDispatchError, setAutoDispatchError]   = useState("");
+  const [shipmentMode, setShipmentMode]             = useState<"Surface" | "Air">("Surface");
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -173,7 +174,7 @@ export default function SupplierOrdersPage() {
       const res = await fetch(`/api/supplier/orders/${showDispatch}/create-shipment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ providerId: selectedProviderId }),
+        body: JSON.stringify({ providerId: selectedProviderId, shipmentMode }),
       });
       const d = await res.json();
       if (!res.ok) { setAutoDispatchError(d.error || "Shipment creation failed"); return; }
@@ -558,6 +559,29 @@ export default function SupplierOrdersPage() {
                         <option key={p.id} value={p.id}>{p.label} ({p.provider})</option>
                       ))}
                     </select>
+
+                    {/* Shipment mode toggle */}
+                    <div>
+                      <p className="text-xs font-semibold text-green-800 mb-1.5">Shipment Mode</p>
+                      <div className="flex gap-2">
+                        {(["Surface", "Air"] as const).map((mode) => (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => setShipmentMode(mode)}
+                            className="flex-1 py-2 rounded-xl text-sm font-semibold border transition-all"
+                            style={{
+                              background:   shipmentMode === mode ? "#16A34A" : "#fff",
+                              color:        shipmentMode === mode ? "#fff" : "#15803D",
+                              borderColor:  shipmentMode === mode ? "#16A34A" : "#BBF7D0",
+                            }}
+                          >
+                            {mode === "Surface" ? "🚚 Surface" : "✈️ Air"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     <button onClick={handleAutoDispatch} disabled={autoDispatching || !selectedProviderId}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
                       style={{ background: "#16A34A" }}>

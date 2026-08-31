@@ -19,8 +19,9 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const { providerId } = await req.json();
+  const { providerId, shipmentMode } = await req.json();
   if (!providerId) return NextResponse.json({ error: "providerId required" }, { status: 400 });
+  const resolvedMode: "Surface" | "Air" = shipmentMode === "Air" ? "Air" : "Surface";
 
   // Fetch order (must belong to this supplier)
   const order = await prisma.order.findFirst({
@@ -58,6 +59,7 @@ export async function POST(
     totalAmount: order.totalAmount,
     productDesc,
     weight: 0.5,
+    shipmentMode: resolvedMode,
   };
 
   let result: { awb: string; courier: string; trackingUrl?: string };
@@ -108,8 +110,8 @@ export async function POST(
         actorId:   session.user.id,
         actorRole: "SUPPLIER",
         event:     "DISPATCHED",
-        details:   `Auto-dispatched via ${provider.label}`,
-        metadata:  { awb: result.awb, courier: result.courier, provider: provider.provider },
+        details:   `Auto-dispatched via ${provider.label} (${resolvedMode})`,
+        metadata:  { awb: result.awb, courier: result.courier, provider: provider.provider, shipmentMode: resolvedMode },
       },
     }),
   ];
