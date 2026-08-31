@@ -82,7 +82,7 @@ export default function SupplierOrdersPage() {
   const [selectedProviderId, setSelectedProviderId] = useState("");
   const [autoDispatching, setAutoDispatching]       = useState(false);
   const [autoDispatchError, setAutoDispatchError]   = useState("");
-  const [shipmentMode, setShipmentMode]             = useState<"Surface" | "Air">("Surface");
+  const [shipmentMode, setShipmentMode]             = useState<"Surface" | "Express">("Surface");
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -564,7 +564,7 @@ export default function SupplierOrdersPage() {
                     <div>
                       <p className="text-xs font-semibold text-green-800 mb-1.5">Shipment Mode</p>
                       <div className="flex gap-2">
-                        {(["Surface", "Air"] as const).map((mode) => (
+                        {(["Surface", "Express"] as const).map((mode) => (
                           <button
                             key={mode}
                             type="button"
@@ -576,7 +576,7 @@ export default function SupplierOrdersPage() {
                               borderColor:  shipmentMode === mode ? "#16A34A" : "#BBF7D0",
                             }}
                           >
-                            {mode === "Surface" ? "🚚 Surface" : "✈️ Air"}
+                            {mode === "Surface" ? "🚚 Surface" : "✈️ Express"}
                           </button>
                         ))}
                       </div>

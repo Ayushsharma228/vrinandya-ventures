@@ -21,7 +21,7 @@ export async function POST(
   const { id } = await params;
   const { providerId, shipmentMode } = await req.json();
   if (!providerId) return NextResponse.json({ error: "providerId required" }, { status: 400 });
-  const resolvedMode: "Surface" | "Air" = shipmentMode === "Air" ? "Air" : "Surface";
+  const resolvedMode: "Surface" | "Express" = shipmentMode === "Express" ? "Express" : "Surface";
 
   // Fetch order (must belong to this supplier)
   const order = await prisma.order.findFirst({

@@ -33,7 +33,7 @@ export interface ShipmentInput {
   totalAmount: number;
   productDesc: string;
   weight?: number;
-  shipmentMode?: "Surface" | "Air";
+  shipmentMode?: "Surface" | "Express";
 }
 
 export interface ShipmentResult {
@@ -84,7 +84,7 @@ export async function shiprocketCreateShipment(
       sub_total: input.totalAmount,
       length: 10, breadth: 10, height: 5,
       weight: input.weight ?? 0.5,
-      is_surface: input.shipmentMode !== "Air",
+      is_surface: input.shipmentMode !== "Express",
     }),
   });
   const orderData = await orderRes.json();
@@ -152,7 +152,7 @@ export async function delhiveryCreateShipment(
       return_country: "India",
       products_desc: input.productDesc,
       hsn_code: "",
-      shipment_type: input.shipmentMode === "Air" ? "Airway" : "Surface",
+      shipment_type: input.shipmentMode === "Express" ? "Express" : "Surface",
       cod_amount: input.totalAmount,
       order_date: new Date().toISOString().replace("T", " ").split(".")[0],
       total_amount: input.totalAmount,
