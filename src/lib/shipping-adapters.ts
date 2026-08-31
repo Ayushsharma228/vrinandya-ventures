@@ -114,57 +114,73 @@ export async function delhiveryCreateShipment(
   apiToken: string,
   input: ShipmentInput
 ): Promise<ShipmentResult> {
-  // Fetch pickup location name
-  let pickupLocation = "SELF";
+  // Fetch first active warehouse — used for both pickup_location and return address
+  let pickupName    = "";
+  let returnAdd     = process.env.RETURN_ADDRESS ?? "";
+  let returnCity    = process.env.RETURN_CITY    ?? "";
+  let returnState   = process.env.RETURN_STATE   ?? "";
+  let returnPincode = process.env.RETURN_PINCODE ?? "";
+  let returnPhone   = process.env.RETURN_PHONE   ?? "";
+
   try {
     const wRes = await fetch("https://track.delhivery.com/api/backend/clientwarehouse/get/", {
       headers: { Authorization: `Token ${apiToken}` },
     });
     if (wRes.ok) {
       const wData = await wRes.json();
-      const warehouses = wData?.results ?? wData?.data ?? [];
-      if (warehouses.length > 0) pickupLocation = warehouses[0].name;
+      const warehouses: Record<string, string>[] = wData?.results ?? wData?.data ?? [];
+      if (warehouses.length > 0) {
+        const wh = warehouses[0];
+        pickupName = wh.name ?? wh.registered_name ?? "";
+        // Use warehouse address for return if env vars not set
+        if (!returnAdd)     returnAdd     = wh.address ?? "";
+        if (!returnCity)    returnCity    = wh.city    ?? "";
+        if (!returnState)   returnState   = wh.state   ?? "";
+        if (!returnPincode) returnPincode = String(wh.pin ?? wh.pincode ?? "");
+        if (!returnPhone)   returnPhone   = wh.phone   ?? "";
+      }
     }
-  } catch { /* use default */ }
+  } catch { /* fall through */ }
 
-  const returnAddress = process.env.RETURN_ADDRESS ?? "";
-  const returnCity    = process.env.RETURN_CITY    ?? "";
-  const returnState   = process.env.RETURN_STATE   ?? "";
-  const returnPincode = process.env.RETURN_PINCODE ?? "";
-  const returnPhone   = process.env.RETURN_PHONE   ?? "";
+  if (!pickupName) throw new Error("Delhivery: no warehouse/pickup location found on your account. Please add one at one.delhivery.com.");
+
+  const shipment: Record<string, unknown> = {
+    name:           input.customerName,
+    add:            input.address,
+    city:           input.city,
+    state:          input.state,
+    country:        "India",
+    pin:            input.pincode,
+    phone:          input.phone.replace(/\D/g, "").slice(-10),
+    order:          input.externalOrderId,
+    payment_mode:   "COD",
+    products_desc:  input.productDesc,
+    cod_amount:     String(input.totalAmount),
+    order_date:     new Date().toISOString().replace("T", " ").split(".")[0],
+    total_amount:   String(input.totalAmount),
+    seller_inv:     input.externalOrderId,
+    quantity:       "1",
+    waybill:        "",
+    shipment_width:  13,
+    shipment_height: 4,
+    weight:          input.weight ?? 0.5,
+    shipment_length: 23,
+    pickup_location: pickupName,
+  };
+
+  // Only include return address fields when we have valid data
+  if (returnAdd && returnCity && returnPincode) {
+    shipment.return_add     = returnAdd;
+    shipment.return_city    = returnCity;
+    shipment.return_state   = returnState;
+    shipment.return_pin     = returnPincode;
+    shipment.return_phone   = returnPhone;
+    shipment.return_country = "India";
+  }
 
   const payload = {
-    shipments: [{
-      name: input.customerName,
-      add: input.address,
-      city: input.city,
-      state: input.state,
-      country: "India",
-      pin: input.pincode,
-      phone: input.phone.replace(/\D/g, "").slice(-10),
-      order: input.externalOrderId,
-      payment_mode: "COD",
-      return_pin:     returnPincode,
-      return_city:    returnCity,
-      return_phone:   returnPhone,
-      return_add:     returnAddress,
-      return_state:   returnState,
-      return_country: "India",
-      products_desc: input.productDesc,
-      hsn_code: "",
-      shipment_type: input.shipmentMode === "Express" ? "Express" : "Surface",
-      cod_amount: input.totalAmount,
-      order_date: new Date().toISOString().replace("T", " ").split(".")[0],
-      total_amount: input.totalAmount,
-      seller_add: "", seller_name: "", seller_inv: input.externalOrderId,
-      quantity: 1,
-      waybill: "",
-      shipment_width: 13, shipment_height: 4,
-      weight: input.weight ?? 0.5,
-      shipment_length: 23,
-      pickup_location: pickupLocation,
-    }],
-    pickup_location: { name: pickupLocation },
+    shipments: [shipment],
+    pickup_location: { name: pickupName },
   };
 
   const res = await fetch("https://track.delhivery.com/api/cmu/create.json", {
@@ -173,11 +189,17 @@ export async function delhiveryCreateShipment(
     body: `format=json&data=${encodeURIComponent(JSON.stringify(payload))}`,
   });
 
-  if (!res.ok) throw new Error(`Delhivery HTTP ${res.status}`);
-  const result = await res.json();
-  const pkg = result?.packages?.[0];
+  const rawText = await res.text();
+  if (!res.ok) throw new Error(`Delhivery HTTP ${res.status}: ${rawText.slice(0, 300)}`);
+
+  let result: Record<string, unknown>;
+  try { result = JSON.parse(rawText); }
+  catch { throw new Error(`Delhivery bad response: ${rawText.slice(0, 300)}`); }
+
+  const pkg = (result?.packages as Record<string, unknown>[])?.[0];
   if (!pkg?.waybill || pkg?.status === "Error") {
-    throw new Error(pkg?.remark ?? result?.rmk ?? "Delhivery shipment failed");
+    const remark = (pkg?.remark ?? result?.rmk ?? result?.error ?? "Delhivery shipment failed") as string;
+    throw new Error(`Delhivery: ${remark}`);
   }
 
   return {
