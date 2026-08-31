@@ -75,7 +75,7 @@ export async function POST(
     } else if (provider.provider === "DELHIVERY") {
       if (!plainApiKey)
         return NextResponse.json({ error: "Delhivery API token not configured" }, { status: 400 });
-      result = await delhiveryCreateShipment(plainApiKey, input);
+      result = await delhiveryCreateShipment(plainApiKey, input, provider.baseUrl ?? undefined);
     } else if (provider.provider === "CUSTOM") {
       if (!plainApiKey || !provider.baseUrl)
         return NextResponse.json({ error: "Custom provider API key/URL not configured" }, { status: 400 });

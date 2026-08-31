@@ -34,14 +34,16 @@ const PROVIDER_HELP: Record<string, {
   },
   DELHIVERY: {
     steps: [
-      "Log in to your Delhivery Business dashboard at app.delhivery.com",
-      "Go to Settings → API Integration",
-      "Copy the API Token shown on that page",
+      "Log in to your Delhivery dashboard at one.delhivery.com",
+      "Go to Settings → Warehouses → add a warehouse if not already added",
+      "Copy the exact Warehouse Name (e.g. 'Main Warehouse') — you'll need it below",
+      "Go to Settings → API Integration and copy your API Token",
     ],
-    link: "https://app.delhivery.com",
+    link: "https://one.delhivery.com",
     linkLabel: "Open Delhivery",
     fields: [
-      { key: "apiKey", label: "API Token", hint: "Found in Delhivery dashboard → Settings → API Integration", type: "text" },
+      { key: "apiKey",  label: "API Token",             hint: "Found in Delhivery → Settings → API Integration",                              type: "text" },
+      { key: "baseUrl", label: "Pickup Location Name",  hint: "Exact warehouse name from Delhivery → Settings → Warehouses (e.g. Main Warehouse)", type: "text" },
     ],
   },
   CUSTOM: {

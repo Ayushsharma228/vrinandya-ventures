@@ -112,37 +112,17 @@ export async function shiprocketCreateShipment(
 // ── Delhivery ─────────────────────────────────────────────────────────────────
 export async function delhiveryCreateShipment(
   apiToken: string,
-  input: ShipmentInput
+  input: ShipmentInput,
+  pickupLocationName?: string,
 ): Promise<ShipmentResult> {
-  // Fetch first active warehouse — used for both pickup_location and return address
-  let pickupName    = "";
-  let returnAdd     = process.env.RETURN_ADDRESS ?? "";
-  let returnCity    = process.env.RETURN_CITY    ?? "";
-  let returnState   = process.env.RETURN_STATE   ?? "";
-  let returnPincode = process.env.RETURN_PINCODE ?? "";
-  let returnPhone   = process.env.RETURN_PHONE   ?? "";
+  const pickupName = pickupLocationName?.trim() || "";
+  if (!pickupName) throw new Error("Delhivery: Pickup Location Name not set. Go to Profile → Shipping → edit your Delhivery provider and fill in the Pickup Location Name.");
 
-  try {
-    const wRes = await fetch("https://track.delhivery.com/api/backend/clientwarehouse/get/", {
-      headers: { Authorization: `Token ${apiToken}` },
-    });
-    if (wRes.ok) {
-      const wData = await wRes.json();
-      const warehouses: Record<string, string>[] = wData?.results ?? wData?.data ?? [];
-      if (warehouses.length > 0) {
-        const wh = warehouses[0];
-        pickupName = wh.name ?? wh.registered_name ?? "";
-        // Use warehouse address for return if env vars not set
-        if (!returnAdd)     returnAdd     = wh.address ?? "";
-        if (!returnCity)    returnCity    = wh.city    ?? "";
-        if (!returnState)   returnState   = wh.state   ?? "";
-        if (!returnPincode) returnPincode = String(wh.pin ?? wh.pincode ?? "");
-        if (!returnPhone)   returnPhone   = wh.phone   ?? "";
-      }
-    }
-  } catch { /* fall through */ }
-
-  if (!pickupName) throw new Error("Delhivery: no warehouse/pickup location found on your account. Please add one at one.delhivery.com.");
+  const returnAdd     = process.env.RETURN_ADDRESS ?? "";
+  const returnCity    = process.env.RETURN_CITY    ?? "";
+  const returnState   = process.env.RETURN_STATE   ?? "";
+  const returnPincode = process.env.RETURN_PINCODE ?? "";
+  const returnPhone   = process.env.RETURN_PHONE   ?? "";
 
   const shipment: Record<string, unknown> = {
     name:           input.customerName,
