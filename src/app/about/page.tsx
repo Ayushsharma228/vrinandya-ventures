@@ -127,7 +127,7 @@ export default function AboutPage() {
 
           {/* Founder card */}
           <div className="flex-shrink-0 flex flex-col items-center gap-3">
-            {/* Photo frame — swap the initials div with <img src="/founder.jpg" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> */}
+            {/* Photo frame — swap the initials div with <img src="/Founder.jpeg" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> */}
             <div style={{
               width: 188, height: 228,
               borderRadius: "18px 18px 18px 4px",
@@ -143,7 +143,7 @@ export default function AboutPage() {
             }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/founder.jpg"
+                src="/Founder.jpeg"
                 alt="Aayush Sharma — Founder & Director"
                 style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }}
               />
