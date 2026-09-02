@@ -79,6 +79,7 @@ export default function SellerAnalyticsPage() {
   interface AttributionData {
     campaigns: AttributionCampaign[];
     recharges: { amount: number; date: string; note: string | null }[];
+    adAccountId: string | null;
     summary: {
       totalSpend: number; totalRevenue: number; totalOrders: number; totalDelivered: number;
       totalClicks: number; overallRoas: number | null; overallCpc: number | null;
@@ -96,61 +97,57 @@ export default function SellerAnalyticsPage() {
   const [to, setTo]     = useState(today);
   const [preset, setPreset] = useState<number>(30);
   const [showRecharge, setShowRecharge] = useState(false);
+  const [rechargeStep, setRechargeStep] = useState<"scan" | "log">("scan");
   const [rechargeForm, setRechargeForm] = useState({ amount: "", note: "" });
   const [rechargeSaving, setRechargeSaving] = useState(false);
   const [rechargeMsg, setRechargeMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
-  async function handlePayRecharge() {
+  // Build Meta billing URL from connected ad account
+  function getMetaBillingUrl(adAccountId: string | null | undefined) {
+    if (!adAccountId) return "https://adsmanager.facebook.com/adsmanager/billing/";
+    const numId = adAccountId.replace("act_", "");
+    return `https://adsmanager.facebook.com/adsmanager/billing/?act=${numId}`;
+  }
+
+  // Generate QR code as data URL using qrcode library
+  async function generateQr(url: string) {
+    const QRCode = (await import("qrcode")).default;
+    const dataUrl = await QRCode.toDataURL(url, { width: 220, margin: 1, color: { dark: "#1877F2", light: "#ffffff" } });
+    setQrDataUrl(dataUrl);
+  }
+
+  function openRecharge() {
+    setShowRecharge(true);
+    setRechargeStep("scan");
+    setRechargeMsg(null);
+    setQrDataUrl(null);
+    const url = getMetaBillingUrl(attribution?.adAccountId);
+    generateQr(url);
+  }
+
+  async function handleLogRecharge() {
     const amt = Number(rechargeForm.amount);
-    if (!amt || isNaN(amt) || amt < 100) {
-      setRechargeMsg({ ok: false, text: "Minimum recharge is ₹100" });
+    if (!amt || isNaN(amt) || amt <= 0) {
+      setRechargeMsg({ ok: false, text: "Enter a valid amount" });
       return;
     }
     setRechargeSaving(true);
     setRechargeMsg(null);
-    try {
-      const res  = await fetch("/api/seller/meta/recharge/create-order", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: amt }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Order creation failed");
-
-      const rzp = new (window as any).Razorpay({
-        key:         process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount:      data.amount,
-        currency:    data.currency,
-        order_id:    data.orderId,
-        name:        "Vrinandya Ventures",
-        description: "Meta Ads Recharge",
-        theme:       { color: "#2563EB" },
-        handler: async (resp: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
-          const verify = await fetch("/api/seller/meta/recharge", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              amount:              amt,
-              note:                rechargeForm.note || null,
-              razorpay_order_id:   resp.razorpay_order_id,
-              razorpay_payment_id: resp.razorpay_payment_id,
-              razorpay_signature:  resp.razorpay_signature,
-            }),
-          });
-          const vdata = await verify.json();
-          if (verify.ok) {
-            setRechargeMsg({ ok: true, text: `₹${amt.toLocaleString("en-IN")} recharged successfully! Your Meta ad account will be topped up within a few minutes.` });
-            setRechargeForm({ amount: "", note: "" });
-            setShowRecharge(false);
-            fetchData(from, to, true);
-          } else {
-            setRechargeMsg({ ok: false, text: vdata.error ?? "Verification failed" });
-          }
-        },
-        modal: { ondismiss: () => setRechargeSaving(false) },
-      });
-      rzp.open();
-    } catch (e: any) {
-      setRechargeMsg({ ok: false, text: e.message ?? "Something went wrong" });
-      setRechargeSaving(false);
+    const res = await fetch("/api/seller/meta/recharge", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: amt, note: rechargeForm.note || null }),
+    });
+    setRechargeSaving(false);
+    if (res.ok) {
+      setRechargeMsg({ ok: true, text: `₹${amt.toLocaleString("en-IN")} logged successfully.` });
+      setRechargeForm({ amount: "", note: "" });
+      setShowRecharge(false);
+      setRechargeStep("scan");
+      fetchData(from, to, true);
+    } else {
+      const d = await res.json();
+      setRechargeMsg({ ok: false, text: d.error ?? "Failed to log recharge" });
     }
   }
 
@@ -230,14 +227,6 @@ export default function SellerAnalyticsPage() {
       .map(([, v]) => ({ ...v, inTransit: Math.max(0, v.total - v.delivered - v.rto - v.cancelled) }));
   }, [data]);
 
-  // Load Razorpay checkout script once
-  useEffect(() => {
-    if (document.getElementById("rzp-script")) return;
-    const s = document.createElement("script");
-    s.id  = "rzp-script";
-    s.src = "https://checkout.razorpay.com/v1/checkout.js";
-    document.body.appendChild(s);
-  }, []);
 
   return (
     <div className="p-6 space-y-5">
@@ -700,36 +689,81 @@ export default function SellerAnalyticsPage() {
                 {rechargeMsg?.ok && !showRecharge && (
                   <span className="text-xs text-green-600 font-medium">{rechargeMsg.text}</span>
                 )}
-              <button
-                onClick={() => { setShowRecharge(v => !v); setRechargeMsg(null); }}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors"
-                style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE" }}>
-                💳 Recharge Meta Ads
-              </button>
+                <button
+                  onClick={() => showRecharge ? (setShowRecharge(false), setRechargeMsg(null)) : openRecharge()}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors"
+                  style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE" }}>
+                  💳 Recharge Meta Ads
+                </button>
               </div>
             </div>
             {showRecharge && (
-              <div className="px-5 py-4 bg-blue-50/50 border-b border-blue-100 flex flex-wrap gap-3 items-end">
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 mb-1">Amount (₹)</p>
-                  <input type="number" placeholder="e.g. 5000" value={rechargeForm.amount}
-                    onChange={e => setRechargeForm(f => ({ ...f, amount: e.target.value }))}
-                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 w-36 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              <div className="border-b border-blue-100 bg-blue-50/40">
+                {/* Step tabs */}
+                <div className="flex border-b border-blue-100">
+                  <button onClick={() => setRechargeStep("scan")}
+                    className={`px-5 py-2.5 text-xs font-semibold transition-colors ${rechargeStep === "scan" ? "text-blue-600 border-b-2 border-blue-500 bg-white" : "text-gray-500 hover:text-gray-700"}`}>
+                    Step 1 — Pay on Meta
+                  </button>
+                  <button onClick={() => setRechargeStep("log")}
+                    className={`px-5 py-2.5 text-xs font-semibold transition-colors ${rechargeStep === "log" ? "text-blue-600 border-b-2 border-blue-500 bg-white" : "text-gray-500 hover:text-gray-700"}`}>
+                    Step 2 — Log Amount
+                  </button>
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 mb-1">Note (optional)</p>
-                  <input type="text" placeholder="e.g. Cupid campaign top-up" value={rechargeForm.note}
-                    onChange={e => setRechargeForm(f => ({ ...f, note: e.target.value }))}
-                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 w-52 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                </div>
-                <button onClick={handlePayRecharge} disabled={rechargeSaving || !rechargeForm.amount}
-                  className="text-sm font-semibold px-4 py-2 rounded-lg text-white disabled:opacity-50 flex items-center gap-2"
-                  style={{ background: "#2563EB" }}>
-                  {rechargeSaving ? "Processing..." : "💳 Pay & Recharge"}
-                </button>
-                <button onClick={() => { setShowRecharge(false); setRechargeMsg(null); }} className="text-sm text-gray-400 hover:text-gray-600">Cancel</button>
-                {rechargeMsg && (
-                  <p className={`text-xs font-medium w-full mt-1 ${rechargeMsg.ok ? "text-green-600" : "text-red-500"}`}>{rechargeMsg.text}</p>
+
+                {rechargeStep === "scan" && (
+                  <div className="px-5 py-5 flex gap-8 items-start">
+                    {/* QR code */}
+                    <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                      {qrDataUrl
+                        ? <img src={qrDataUrl} alt="Meta Billing QR" className="w-40 h-40 rounded-xl border border-blue-200 shadow-sm" />
+                        : <div className="w-40 h-40 rounded-xl bg-blue-100 animate-pulse" />
+                      }
+                      <p className="text-[10px] text-gray-400 text-center">Scan to open Meta billing</p>
+                    </div>
+                    {/* Instructions */}
+                    <div className="space-y-3">
+                      <p className="text-sm font-semibold text-gray-800">Add funds directly to your Meta Ads account</p>
+                      <ol className="text-xs text-gray-600 space-y-1.5 list-decimal list-inside">
+                        <li>Scan the QR code with your phone <span className="text-gray-400">— or click the button below</span></li>
+                        <li>You'll land on <strong>Meta Ads Manager → Billing</strong> for your ad account</li>
+                        <li>Click <strong>"Add Funds"</strong> and pay any amount via UPI / card</li>
+                        <li>Come back here and click <strong>Step 2 → Log Amount</strong> to record it</li>
+                      </ol>
+                      <a href={getMetaBillingUrl(attribution?.adAccountId)} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg text-white"
+                        style={{ background: "#1877F2" }}>
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                        Open Meta Ads Billing
+                      </a>
+                      <p className="text-[10px] text-gray-400">Your ad account: <span className="font-mono">{attribution?.adAccountId ?? "not connected"}</span></p>
+                    </div>
+                  </div>
+                )}
+
+                {rechargeStep === "log" && (
+                  <div className="px-5 py-5 flex flex-wrap gap-3 items-end">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500 mb-1">Amount Recharged (₹)</p>
+                      <input type="number" placeholder="e.g. 5000" value={rechargeForm.amount}
+                        onChange={e => setRechargeForm(f => ({ ...f, amount: e.target.value }))}
+                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 w-36 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500 mb-1">Note (optional)</p>
+                      <input type="text" placeholder="e.g. Cupid campaign" value={rechargeForm.note}
+                        onChange={e => setRechargeForm(f => ({ ...f, note: e.target.value }))}
+                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 w-52 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    </div>
+                    <button onClick={handleLogRecharge} disabled={rechargeSaving || !rechargeForm.amount}
+                      className="text-sm font-semibold px-4 py-2 rounded-lg text-white disabled:opacity-50"
+                      style={{ background: "#2563EB" }}>
+                      {rechargeSaving ? "Saving..." : "Save Recharge"}
+                    </button>
+                    {rechargeMsg && (
+                      <p className={`text-xs font-medium w-full ${rechargeMsg.ok ? "text-green-600" : "text-red-500"}`}>{rechargeMsg.text}</p>
+                    )}
+                  </div>
                 )}
               </div>
             )}

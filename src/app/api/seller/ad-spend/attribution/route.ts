@@ -18,6 +18,11 @@ export async function GET(req: NextRequest) {
   const dateGte = from ? new Date(from) : defaultFrom;
   const dateLte = to   ? new Date(to + "T23:59:59") : new Date();
 
+  const seller = await prisma.user.findUnique({
+    where:  { id: sellerId },
+    select: { metaAdAccountId: true },
+  });
+
   const [spendRows, orders, recharges] = await Promise.all([
     prisma.adSpend.findMany({
       where: { sellerId, date: { gte: dateGte, lte: dateLte } },
@@ -162,5 +167,6 @@ export async function GET(req: NextRequest) {
       totalRecharged, rechargeBalance,
     },
     recharges,
+    adAccountId: seller?.metaAdAccountId ?? null,
   });
 }
