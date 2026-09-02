@@ -33,8 +33,13 @@ export default function SellerProfilePage() {
   const [business, setBusiness] = useState({ brandName: "", gst: "" });
   const [bank, setBank] = useState({ accountHolder: "", accountNumber: "", ifsc: "", bankName: "" });
   const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
-  const [metaConnected, setMetaConnected] = useState(false);
-  const [metaLoading, setMetaLoading] = useState(false);
+  const [metaConnected, setMetaConnected]   = useState(false);
+  const [metaLoading, setMetaLoading]       = useState(false);
+  const [metaForm, setMetaForm]             = useState(false);
+  const [metaToken, setMetaToken]           = useState("");
+  const [metaAccountId, setMetaAccountId]   = useState("");
+  const [metaError, setMetaError]           = useState("");
+  const [metaSaving, setMetaSaving]         = useState(false);
   const [shopifyConnected, setShopifyConnected] = useState(false);
   const [shopifyStore, setShopifyStore] = useState<{ storeUrl: string; storeName: string } | null>(null);
   const [shopifyLoading, setShopifyLoading] = useState(false);
@@ -66,6 +71,23 @@ export default function SellerProfilePage() {
     await fetch("/api/seller/meta/disconnect", { method: "POST" });
     setMetaConnected(false);
     setMetaLoading(false);
+  }
+
+  async function handleMetaManualConnect() {
+    setMetaError("");
+    setMetaSaving(true);
+    const res = await fetch("/api/seller/meta/manual-connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accessToken: metaToken, adAccountId: metaAccountId }),
+    });
+    const d = await res.json();
+    setMetaSaving(false);
+    if (!res.ok) { setMetaError(d.error || "Failed to connect"); return; }
+    setMetaConnected(true);
+    setMetaForm(false);
+    setMetaToken("");
+    setMetaAccountId("");
   }
 
   async function handleShopifyDisconnect() {
@@ -282,13 +304,63 @@ export default function SellerProfilePage() {
                       </button>
                     </div>
                   ) : (
-                    <a href="/api/seller/meta/connect"
+                    <button
+                      onClick={() => { setMetaForm((p) => !p); setMetaError(""); }}
                       className="text-xs font-semibold px-4 py-2 rounded-xl text-white transition-opacity hover:opacity-90"
                       style={{ background: "#1877F2" }}>
-                      Connect
-                    </a>
+                      {metaForm ? "Cancel" : "Connect"}
+                    </button>
                   )}
                 </div>
+
+                {/* Manual token entry form */}
+                {!metaConnected && metaForm && (
+                  <div className="rounded-xl p-4 flex flex-col gap-3"
+                    style={{ background: "#EFF6FF", border: "1px solid #BFDBFE" }}>
+                    <p className="text-xs font-semibold" style={{ color: "#1D4ED8" }}>
+                      How to get your token:
+                    </p>
+                    <ol className="text-xs flex flex-col gap-1 list-decimal list-inside" style={{ color: "#1e40af" }}>
+                      <li>Go to <strong>business.facebook.com</strong> → Settings → System Users</li>
+                      <li>Create a System User → Generate Token → select your Ad Account + <code>ads_read</code>, <code>ads_management</code></li>
+                      <li>Copy the token and your Ad Account ID (from Ads Manager URL: <code>act_XXXXXXXX</code>)</li>
+                    </ol>
+                    <div className="flex flex-col gap-2">
+                      <div>
+                        <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--text-500)" }}>Access Token</label>
+                        <input
+                          type="password"
+                          value={metaToken}
+                          onChange={(e) => setMetaToken(e.target.value)}
+                          placeholder="Paste your Meta System User token"
+                          className="w-full px-3 py-2 text-xs rounded-lg border focus:outline-none focus:ring-2"
+                          style={{ border: "1px solid #BFDBFE", background: "#fff" }}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--text-500)" }}>Ad Account ID</label>
+                        <input
+                          type="text"
+                          value={metaAccountId}
+                          onChange={(e) => setMetaAccountId(e.target.value)}
+                          placeholder="e.g. act_123456789 or just 123456789"
+                          className="w-full px-3 py-2 text-xs rounded-lg border focus:outline-none focus:ring-2"
+                          style={{ border: "1px solid #BFDBFE", background: "#fff" }}
+                        />
+                      </div>
+                      {metaError && (
+                        <p className="text-xs" style={{ color: "#EF4444" }}>{metaError}</p>
+                      )}
+                      <button
+                        onClick={handleMetaManualConnect}
+                        disabled={metaSaving || !metaToken || !metaAccountId}
+                        className="text-xs font-semibold px-4 py-2.5 rounded-lg text-white disabled:opacity-50 transition-opacity hover:opacity-90"
+                        style={{ background: "#1877F2" }}>
+                        {metaSaving ? "Verifying & Connecting..." : "Connect Meta Ads"}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Shopify */}
                 <div className="rounded-xl p-5 flex flex-col gap-4"
