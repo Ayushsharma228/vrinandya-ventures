@@ -212,6 +212,7 @@ model User {
   remittances         Remittance[]
   walletTransactions  WalletTransaction[]
   adSpends            AdSpend[]
+  metaRecharges       MetaRecharge[]
   settlements         Settlement[]
   assignedLeads       Lead[]               @relation("AssignedLeads")
   createdLeads        Lead[]               @relation("CreatedLeads")
@@ -496,12 +497,26 @@ model AdSpend {
   seller       User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   date         DateTime
   amount       Float
+  clicks       Int?
+  impressions  Int?
   note         String?
   campaignId   String?
   campaignName String?
   createdAt    DateTime @default(now())
 
   @@map("ad_spends")
+}
+
+model MetaRecharge {
+  id        String   @id @default(cuid())
+  sellerId  String
+  seller    User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  date      DateTime
+  amount    Float
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@map("meta_recharges")
 }
 
 model WalletTransaction {

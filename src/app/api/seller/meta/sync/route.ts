@@ -28,7 +28,7 @@ export async function syncSellerAdSpend(sellerId: string, adAccountId: string, a
   const untilStr = new Date().toISOString().split("T")[0];
 
   // Pull campaign-level daily spend so we can attribute per campaign
-  const url = `https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=campaign_id,campaign_name,spend,date_start&level=campaign&time_increment=1&time_range={"since":"${sinceStr}","until":"${untilStr}"}&access_token=${accessToken}`;
+  const url = `https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=campaign_id,campaign_name,spend,clicks,impressions,date_start&level=campaign&time_increment=1&time_range={"since":"${sinceStr}","until":"${untilStr}"}&access_token=${accessToken}`;
 
   const res  = await fetch(url);
   const data = await res.json();
@@ -38,26 +38,25 @@ export async function syncSellerAdSpend(sellerId: string, adAccountId: string, a
   }
 
   let synced = 0;
-  for (const row of data.data as { campaign_id: string; campaign_name: string; spend: string; date_start: string }[]) {
-    const amount = parseFloat(row.spend);
+  for (const row of data.data as { campaign_id: string; campaign_name: string; spend: string; clicks: string; impressions: string; date_start: string }[]) {
+    const amount      = parseFloat(row.spend);
     if (!amount) continue;
 
-    const date        = new Date(row.date_start);
+    const date         = new Date(row.date_start);
     const campaignId   = row.campaign_id;
     const campaignName = row.campaign_name;
+    const clicks       = parseInt(row.clicks      ?? "0", 10);
+    const impressions  = parseInt(row.impressions ?? "0", 10);
 
-    const existing = await prisma.adSpend.findFirst({
-      where: { sellerId, date, campaignId },
-    });
-
+    const existing = await prisma.adSpend.findFirst({ where: { sellerId, date, campaignId } });
     if (existing) {
       await prisma.adSpend.update({
         where: { id: existing.id },
-        data: { amount, campaignName, note: "Meta Ads (auto-synced)" },
+        data: { amount, campaignName, clicks, impressions, note: "Meta Ads (auto-synced)" },
       });
     } else {
       await prisma.adSpend.create({
-        data: { sellerId, date, amount, campaignId, campaignName, note: "Meta Ads (auto-synced)" },
+        data: { sellerId, date, amount, campaignId, campaignName, clicks, impressions, note: "Meta Ads (auto-synced)" },
       });
     }
     synced++;

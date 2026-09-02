@@ -70,13 +70,21 @@ export default function SellerAnalyticsPage() {
 
   interface AttributionCampaign {
     campaignId: string | null; campaignName: string;
-    totalSpend: number; orderCount: number; revenue: number;
-    rtoCount: number; roas: number | null; cpa: number | null;
+    totalSpend: number; totalClicks: number;
+    orderCount: number; deliveredCount: number; revenue: number;
+    rtoCount: number;
+    roas: number | null; cpc: number | null; cpr: number | null; roi: number | null;
     products: { name: string; quantity: number; revenue: number }[];
   }
   interface AttributionData {
     campaigns: AttributionCampaign[];
-    summary: { totalSpend: number; totalRevenue: number; totalOrders: number; overallRoas: number | null };
+    recharges: { amount: number; date: string; note: string | null }[];
+    summary: {
+      totalSpend: number; totalRevenue: number; totalOrders: number; totalDelivered: number;
+      totalClicks: number; overallRoas: number | null; overallCpc: number | null;
+      overallCpr: number | null; overallRoi: number | null;
+      totalRecharged: number; rechargeBalance: number;
+    };
   }
 
   const [data, setData] = useState<AnalyticsData | null>(null);
@@ -87,6 +95,23 @@ export default function SellerAnalyticsPage() {
   const [from, setFrom] = useState(d30);
   const [to, setTo]     = useState(today);
   const [preset, setPreset] = useState<number>(30);
+  const [showRecharge, setShowRecharge] = useState(false);
+  const [rechargeForm, setRechargeForm] = useState({ date: today, amount: "", note: "" });
+  const [rechargeSaving, setRechargeSaving] = useState(false);
+
+  async function handleAddRecharge() {
+    if (!rechargeForm.amount || isNaN(Number(rechargeForm.amount))) return;
+    setRechargeSaving(true);
+    await fetch("/api/seller/meta/recharge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: rechargeForm.date, amount: Number(rechargeForm.amount), note: rechargeForm.note }),
+    });
+    setRechargeSaving(false);
+    setShowRecharge(false);
+    setRechargeForm({ date: today, amount: "", note: "" });
+    fetchData(from, to, true);
+  }
 
   // fetchData takes explicit dates so changing the inputs doesn't auto-fire requests
   const fetchData = useCallback(async (fromDate: string, toDate: string, showRefreshing = false) => {
@@ -615,18 +640,70 @@ export default function SellerAnalyticsPage() {
 
           {/* Campaign Attribution */}
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2">
                 <Megaphone className="w-4 h-4 text-purple-500" />
                 <h2 className="font-semibold text-gray-900">Campaign Attribution</h2>
+                <span className="text-xs text-gray-400">(based on delivered orders)</span>
               </div>
+              <button
+                onClick={() => setShowRecharge(v => !v)}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors"
+                style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE" }}>
+                + Log Meta Recharge
+              </button>
+            </div>
+            {showRecharge && (
+              <div className="px-5 py-4 bg-blue-50/50 border-b border-blue-100 flex flex-wrap gap-3 items-end">
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 mb-1">Date</p>
+                  <input type="date" value={rechargeForm.date}
+                    onChange={e => setRechargeForm(f => ({ ...f, date: e.target.value }))}
+                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 mb-1">Amount (₹)</p>
+                  <input type="number" placeholder="e.g. 5000" value={rechargeForm.amount}
+                    onChange={e => setRechargeForm(f => ({ ...f, amount: e.target.value }))}
+                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 w-32 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 mb-1">Note (optional)</p>
+                  <input type="text" placeholder="e.g. Cupid campaign top-up" value={rechargeForm.note}
+                    onChange={e => setRechargeForm(f => ({ ...f, note: e.target.value }))}
+                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 w-48 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                </div>
+                <button onClick={handleAddRecharge} disabled={rechargeSaving || !rechargeForm.amount}
+                  className="text-sm font-semibold px-4 py-2 rounded-lg text-white disabled:opacity-50"
+                  style={{ background: "#2563EB" }}>
+                  {rechargeSaving ? "Saving..." : "Save Recharge"}
+                </button>
+                <button onClick={() => setShowRecharge(false)} className="text-sm text-gray-400 hover:text-gray-600">Cancel</button>
+              </div>
+            )}
+              <div className="px-5 py-3 border-b border-gray-100 overflow-x-auto">
               {attribution?.summary && (
-                <div className="flex items-center gap-4 text-xs text-gray-500">
+                <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
                   <span>Spend: <strong className="text-gray-800">{inr(attribution.summary.totalSpend)}</strong></span>
-                  <span>Revenue: <strong className="text-green-600">{inr(attribution.summary.totalRevenue)}</strong></span>
+                  <span>Delivered Revenue: <strong className="text-green-600">{inr(attribution.summary.totalRevenue)}</strong></span>
                   {attribution.summary.overallRoas !== null && (
                     <span>ROAS: <strong className="text-purple-600">{attribution.summary.overallRoas}×</strong></span>
                   )}
+                  {attribution.summary.overallCpc !== null && (
+                    <span>CPC: <strong className="text-blue-600">{inr(attribution.summary.overallCpc)}</strong></span>
+                  )}
+                  {attribution.summary.overallCpr !== null && (
+                    <span>CPR: <strong className="text-orange-600">{inr(attribution.summary.overallCpr)}</strong></span>
+                  )}
+                  {attribution.summary.overallRoi !== null && (
+                    <span>ROI: <strong className={attribution.summary.overallRoi >= 0 ? "text-green-600" : "text-red-500"}>{attribution.summary.overallRoi}%</strong></span>
+                  )}
+                  <span className="ml-2 pl-2 border-l border-gray-200">
+                    Recharged: <strong className="text-gray-700">{inr(attribution.summary.totalRecharged)}</strong>
+                  </span>
+                  <span className={attribution.summary.rechargeBalance >= 0 ? "text-green-600" : "text-red-500"}>
+                    Balance: <strong>{inr(attribution.summary.rechargeBalance)}</strong>
+                  </span>
                 </div>
               )}
             </div>
@@ -638,8 +715,8 @@ export default function SellerAnalyticsPage() {
             ) : (
               <div className="divide-y divide-gray-50">
                 {/* Header row */}
-                <div className="grid grid-cols-7 px-5 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400 bg-gray-50/50">
-                  {["Campaign", "Spend", "Orders", "Revenue", "ROAS", "CPA", ""].map((h) => (
+                <div className="grid grid-cols-9 px-5 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400 bg-gray-50/50">
+                  {["Campaign", "Spend", "Delivered", "Revenue", "ROAS", "CPC", "CPR", "ROI", ""].map((h) => (
                     <span key={h}>{h}</span>
                   ))}
                 </div>
@@ -647,18 +724,21 @@ export default function SellerAnalyticsPage() {
                   const key = c.campaignId ?? c.campaignName;
                   const isExpanded = expandedCampaign === key;
                   const roasColor = c.roas === null ? "text-gray-400" : c.roas >= 3 ? "text-green-600" : c.roas >= 1 ? "text-yellow-600" : "text-red-500";
+                  const roiColor  = c.roi === null ? "text-gray-400" : c.roi >= 0 ? "text-green-600" : "text-red-500";
                   return (
                     <div key={key}>
-                      <div className="grid grid-cols-7 px-5 py-3 items-center hover:bg-gray-50 cursor-pointer transition-colors"
+                      <div className="grid grid-cols-9 px-5 py-3 items-center hover:bg-gray-50 cursor-pointer transition-colors"
                         onClick={() => setExpandedCampaign(isExpanded ? null : key)}>
                         <span className="text-sm font-medium text-gray-900 truncate pr-2">{c.campaignName}</span>
                         <span className="text-sm text-gray-700">{inr(c.totalSpend)}</span>
-                        <span className="text-sm text-gray-700">{c.orderCount}</span>
+                        <span className="text-sm text-gray-700">{c.deliveredCount ?? c.orderCount}</span>
                         <span className="text-sm font-semibold text-green-600">{inr(c.revenue)}</span>
                         <span className={`text-sm font-bold ${roasColor}`}>
                           {c.roas !== null ? `${c.roas}×` : "—"}
                         </span>
-                        <span className="text-sm text-gray-600">{c.cpa !== null ? inr(c.cpa) : "—"}</span>
+                        <span className="text-sm text-blue-600">{c.cpc !== null ? inr(c.cpc) : "—"}</span>
+                        <span className="text-sm text-orange-600">{c.cpr !== null ? inr(c.cpr) : "—"}</span>
+                        <span className={`text-sm font-semibold ${roiColor}`}>{c.roi !== null ? `${c.roi}%` : "—"}</span>
                         <span className="flex justify-end">
                           {c.products.length > 0 && (
                             isExpanded
