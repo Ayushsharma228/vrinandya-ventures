@@ -141,33 +141,19 @@ export default function AboutPage() {
               position: "relative",
               overflow: "hidden",
             }}>
-              <div style={{
-                width: 72, height: 72, borderRadius: "50%",
-                background: "rgba(239,159,39,0.15)",
-                border: `1.5px solid rgba(239,159,39,0.45)`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <span style={{
-                  fontSize: 24, fontWeight: 600, color: C.amber,
-                  fontFamily: "var(--font-space)",
-                }}>AS</span>
-              </div>
-              <p style={{ fontSize: 10, color: "rgba(239,159,39,0.5)", fontFamily: "var(--font-space)", fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                Add photo
-              </p>
-              <div style={{
-                position: "absolute", bottom: 0, right: 0,
-                width: 40, height: 40,
-                background: "rgba(239,159,39,0.1)",
-                borderRadius: "18px 0 0 0",
-              }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/founder.jpg"
+                alt="Aayush Sharma — Founder & Director"
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }}
+              />
             </div>
             <div className="text-center">
               <p style={{ fontSize: "0.85rem", fontWeight: 600, color: "#fff", fontFamily: "var(--font-space)" }}>
                 Aayush Sharma
               </p>
               <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
-                Founder & CEO, Vrinandya Ventures
+                Founder & Director, Vrinandya Ventures
               </p>
             </div>
           </div>
