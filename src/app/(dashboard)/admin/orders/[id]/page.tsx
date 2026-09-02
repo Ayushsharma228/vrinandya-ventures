@@ -6,6 +6,7 @@ import {
   ArrowLeft, Package, User, Truck, Receipt, Clock,
   CheckCircle2, XCircle, AlertTriangle, RefreshCw,
   MapPin, Phone, Tag, ChevronRight, UserCheck, Loader2, Plus, Pencil, X,
+  MessageSquare, Flag, Send,
 } from "lucide-react";
 
 interface OrderItem { id: string; name: string; quantity: number; price: number; productId: string | null; }
@@ -93,6 +94,9 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   const [statusChanging, setStatusChanging] = useState(false);
   const [newStatus, setNewStatus]   = useState("");
 
+  const [replyInput, setReplyInput]   = useState("");
+  const [replySending, setReplySending] = useState(false);
+
   // Courier edit
   const [courierEdit, setCourierEdit]   = useState(false);
   const [courierValue, setCourierValue] = useState("");
@@ -164,6 +168,18 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
     setStatusChanging(false);
   }
 
+  async function handleReply() {
+    if (!replyInput.trim()) return;
+    setReplySending(true);
+    const r = await fetch(`/api/admin/orders/${id}/reply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: replyInput.trim() }),
+    });
+    if (r.ok) { setReplyInput(""); fetchOrder(); }
+    setReplySending(false);
+  }
+
   async function saveCourier() {
     if (!order) return;
     const finalValue = courierValue === "__custom__" ? courierCustom.trim() : courierValue;
@@ -196,6 +212,10 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   const addr   = order.customerAddress ?? {};
   const badge  = STATUS_COLOR[order.status] ?? STATUS_COLOR.NEW;
 
+  const sellerMessages = order.timeline.filter(e => e.event === "SELLER_MESSAGE" || e.event === "ADMIN_REPLY");
+  const flagEvents     = order.timeline.filter(e => e.event === "ORDER_FLAGGED");
+  const mainTimeline   = order.timeline.filter(e => e.event !== "SELLER_MESSAGE" && e.event !== "ADMIN_REPLY");
+
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
       {/* Top bar */}
@@ -215,6 +235,18 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
           style={{ background: badge.bg, color: badge.color }}>
           {order.status}
         </span>
+        {flagEvents.length > 0 && (
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1"
+            style={{ background: "#FEF2F2", color: "#DC2626" }}>
+            <Flag className="w-3 h-3" /> {flagEvents.length} Flag{flagEvents.length > 1 ? "s" : ""}
+          </span>
+        )}
+        {sellerMessages.some(m => m.event === "SELLER_MESSAGE") && (
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1"
+            style={{ background: "#EFF6FF", color: "#2563EB" }}>
+            <MessageSquare className="w-3 h-3" /> Seller Message
+          </span>
+        )}
       </div>
 
       <div className="px-4 md:px-8 pb-8 grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -322,11 +354,79 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
             </div>
           </Section>
 
+          {/* Flag alerts */}
+          {flagEvents.length > 0 && (
+            <div className="rounded-xl overflow-hidden"
+              style={{ border: "1px solid #FECACA", background: "#FEF2F2" }}>
+              <div className="px-4 py-2.5 flex items-center gap-2"
+                style={{ borderBottom: "1px solid #FECACA" }}>
+                <Flag className="w-4 h-4" style={{ color: "#DC2626" }} />
+                <p className="text-sm font-semibold" style={{ color: "#DC2626" }}>
+                  Seller Flagged This Order ({flagEvents.length})
+                </p>
+              </div>
+              <div className="px-4 py-3 space-y-2">
+                {flagEvents.map(f => (
+                  <div key={f.id} className="text-xs space-y-0.5">
+                    <p className="font-semibold" style={{ color: "#7F1D1D" }}>{f.details}</p>
+                    <p style={{ color: "#B91C1C" }}>
+                      {new Date(f.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Seller messages */}
+          <Section title={`Seller Messages${sellerMessages.length > 0 ? ` (${sellerMessages.length})` : ""}`} icon={MessageSquare}>
+            <div className="space-y-3 mb-4 max-h-72 overflow-y-auto pr-1">
+              {sellerMessages.length === 0 ? (
+                <p className="text-xs text-center py-6" style={{ color: "var(--text-300)" }}>
+                  No messages from seller yet.
+                </p>
+              ) : [...sellerMessages].map(m => (
+                <div key={m.id} className={`flex ${m.event === "ADMIN_REPLY" ? "justify-end" : "justify-start"}`}>
+                  <div className="max-w-[80%] rounded-2xl px-3.5 py-2.5 space-y-1"
+                    style={m.event === "ADMIN_REPLY"
+                      ? { background: "var(--accent)", color: "#fff" }
+                      : { background: "#FFF7ED", color: "#92400E", border: "1px solid #FED7AA" }}>
+                    <p className="text-xs leading-relaxed">{m.details}</p>
+                    <p className="text-[10px] opacity-70">
+                      {m.event === "ADMIN_REPLY" ? "You (Admin)" : "Seller"} · {new Date(m.createdAt).toLocaleString("en-IN", {
+                        day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+              <textarea
+                value={replyInput}
+                onChange={e => setReplyInput(e.target.value)}
+                placeholder="Reply to seller... (Enter to send)"
+                rows={2}
+                className="flex-1 px-3 py-2 text-xs rounded-xl border outline-none resize-none"
+                style={{ borderColor: "var(--border)", background: "var(--bg-muted)", color: "var(--text-900)" }}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleReply(); } }}
+              />
+              <button onClick={handleReply}
+                disabled={replySending || !replyInput.trim()}
+                className="px-3 rounded-xl text-white disabled:opacity-40 flex items-center justify-center"
+                style={{ background: "var(--accent)" }}>
+                {replySending
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <Send className="w-4 h-4" />}
+              </button>
+            </div>
+          </Section>
+
           {/* Timeline */}
-          {order.timeline.length > 0 && (
-            <Section title={`Order Timeline (${order.timeline.length})`} icon={Clock}>
+          {mainTimeline.length > 0 && (
+            <Section title={`Order Timeline (${mainTimeline.length})`} icon={Clock}>
               <div className="space-y-0">
-                {[...order.timeline].reverse().map((event, idx, arr) => {
+                {[...mainTimeline].reverse().map((event, idx, arr) => {
                   const isLatest = idx === 0;
                   const dotColor =
                     event.event.includes("DELIVERED") ? "#00C67A" :

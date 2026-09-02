@@ -508,13 +508,15 @@ model AdSpend {
 }
 
 model MetaRecharge {
-  id        String   @id @default(cuid())
-  sellerId  String
-  seller    User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  date      DateTime
-  amount    Float
-  note      String?
-  createdAt DateTime @default(now())
+  id                 String   @id @default(cuid())
+  sellerId           String
+  seller             User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  date               DateTime
+  amount             Float
+  note               String?
+  razorpayOrderId    String?  @unique
+  razorpayPaymentId  String?  @unique
+  createdAt          DateTime @default(now())
 
   @@map("meta_recharges")
 }

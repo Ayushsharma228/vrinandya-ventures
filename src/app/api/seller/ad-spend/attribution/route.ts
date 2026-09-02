@@ -116,9 +116,13 @@ export async function GET(req: NextRequest) {
 
   const campaigns = Object.values(campaignMap)
     .map((c) => {
-      const roas = c.totalSpend > 0 ? Math.round((c.revenue / c.totalSpend) * 100) / 100 : null;
+      // ROAS = all received order revenue / spend
+      const roas = c.totalSpend > 0 ? Math.round((c.allRevenue / c.totalSpend) * 100) / 100 : null;
+      // CPC = spend / clicks
       const cpc  = c.totalClicks > 0 ? Math.round((c.totalSpend / c.totalClicks) * 100) / 100 : null;
-      const cpr  = c.deliveredCount > 0 ? Math.round((c.totalSpend / c.deliveredCount) * 100) / 100 : null;
+      // CPR = spend / orders received (all non-cancelled)
+      const cpr  = c.orderCount > 0 ? Math.round((c.totalSpend / c.orderCount) * 100) / 100 : null;
+      // ROI = (delivered revenue - spend) / spend — delivered only
       const roi  = c.totalSpend > 0 ? Math.round(((c.revenue - c.totalSpend) / c.totalSpend) * 10000) / 100 : null;
       return {
         campaignId:      c.campaignId,
@@ -128,6 +132,7 @@ export async function GET(req: NextRequest) {
         orderCount:      c.orderCount,
         deliveredCount:  c.deliveredCount,
         revenue:         Math.round(c.revenue * 100) / 100,
+        allRevenue:      Math.round(c.allRevenue * 100) / 100,
         rtoCount:        c.rtoCount,
         roas, cpc, cpr, roi,
         products:        Object.values(c.products).sort((a, b) => b.revenue - a.revenue),
@@ -137,12 +142,14 @@ export async function GET(req: NextRequest) {
 
   const totalSpend      = campaigns.reduce((s, c) => s + c.totalSpend, 0);
   const totalRevenue    = campaigns.reduce((s, c) => s + c.revenue, 0);
+  const totalAllRevenue = campaigns.reduce((s, c) => s + c.allRevenue, 0);
   const totalOrders     = campaigns.reduce((s, c) => s + c.orderCount, 0);
   const totalDelivered  = campaigns.reduce((s, c) => s + c.deliveredCount, 0);
   const totalClicks     = campaigns.reduce((s, c) => s + c.totalClicks, 0);
-  const overallRoas     = totalSpend > 0 ? Math.round((totalRevenue / totalSpend) * 100) / 100 : null;
+  // Summary uses same rules: ROAS = allRevenue, CPR = all orders, ROI = delivered
+  const overallRoas     = totalSpend > 0 ? Math.round((totalAllRevenue / totalSpend) * 100) / 100 : null;
   const overallCpc      = totalClicks > 0 ? Math.round((totalSpend / totalClicks) * 100) / 100 : null;
-  const overallCpr      = totalDelivered > 0 ? Math.round((totalSpend / totalDelivered) * 100) / 100 : null;
+  const overallCpr      = totalOrders > 0 ? Math.round((totalSpend / totalOrders) * 100) / 100 : null;
   const overallRoi      = totalSpend > 0 ? Math.round(((totalRevenue - totalSpend) / totalSpend) * 10000) / 100 : null;
   const totalRecharged  = recharges.reduce((s, r) => s + r.amount, 0);
   const rechargeBalance = Math.round((totalRecharged - totalSpend) * 100) / 100;

@@ -96,21 +96,62 @@ export default function SellerAnalyticsPage() {
   const [to, setTo]     = useState(today);
   const [preset, setPreset] = useState<number>(30);
   const [showRecharge, setShowRecharge] = useState(false);
-  const [rechargeForm, setRechargeForm] = useState({ date: today, amount: "", note: "" });
+  const [rechargeForm, setRechargeForm] = useState({ amount: "", note: "" });
   const [rechargeSaving, setRechargeSaving] = useState(false);
+  const [rechargeMsg, setRechargeMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
-  async function handleAddRecharge() {
-    if (!rechargeForm.amount || isNaN(Number(rechargeForm.amount))) return;
+  async function handlePayRecharge() {
+    const amt = Number(rechargeForm.amount);
+    if (!amt || isNaN(amt) || amt < 100) {
+      setRechargeMsg({ ok: false, text: "Minimum recharge is ₹100" });
+      return;
+    }
     setRechargeSaving(true);
-    await fetch("/api/seller/meta/recharge", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: rechargeForm.date, amount: Number(rechargeForm.amount), note: rechargeForm.note }),
-    });
-    setRechargeSaving(false);
-    setShowRecharge(false);
-    setRechargeForm({ date: today, amount: "", note: "" });
-    fetchData(from, to, true);
+    setRechargeMsg(null);
+    try {
+      const res  = await fetch("/api/seller/meta/recharge/create-order", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: amt }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Order creation failed");
+
+      const rzp = new (window as any).Razorpay({
+        key:         process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount:      data.amount,
+        currency:    data.currency,
+        order_id:    data.orderId,
+        name:        "Vrinandya Ventures",
+        description: "Meta Ads Recharge",
+        theme:       { color: "#2563EB" },
+        handler: async (resp: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+          const verify = await fetch("/api/seller/meta/recharge", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              amount:              amt,
+              note:                rechargeForm.note || null,
+              razorpay_order_id:   resp.razorpay_order_id,
+              razorpay_payment_id: resp.razorpay_payment_id,
+              razorpay_signature:  resp.razorpay_signature,
+            }),
+          });
+          const vdata = await verify.json();
+          if (verify.ok) {
+            setRechargeMsg({ ok: true, text: `₹${amt.toLocaleString("en-IN")} recharged successfully! Your Meta ad account will be topped up within a few minutes.` });
+            setRechargeForm({ amount: "", note: "" });
+            setShowRecharge(false);
+            fetchData(from, to, true);
+          } else {
+            setRechargeMsg({ ok: false, text: vdata.error ?? "Verification failed" });
+          }
+        },
+        modal: { ondismiss: () => setRechargeSaving(false) },
+      });
+      rzp.open();
+    } catch (e: any) {
+      setRechargeMsg({ ok: false, text: e.message ?? "Something went wrong" });
+      setRechargeSaving(false);
+    }
   }
 
   // fetchData takes explicit dates so changing the inputs doesn't auto-fire requests
@@ -188,6 +229,15 @@ export default function SellerAnalyticsPage() {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([, v]) => ({ ...v, inTransit: Math.max(0, v.total - v.delivered - v.rto - v.cancelled) }));
   }, [data]);
+
+  // Load Razorpay checkout script once
+  useEffect(() => {
+    if (document.getElementById("rzp-script")) return;
+    const s = document.createElement("script");
+    s.id  = "rzp-script";
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    document.body.appendChild(s);
+  }, []);
 
   return (
     <div className="p-6 space-y-5">
@@ -646,39 +696,41 @@ export default function SellerAnalyticsPage() {
                 <h2 className="font-semibold text-gray-900">Campaign Attribution</h2>
                 <span className="text-xs text-gray-400">(based on delivered orders)</span>
               </div>
+              <div className="flex items-center gap-2">
+                {rechargeMsg?.ok && !showRecharge && (
+                  <span className="text-xs text-green-600 font-medium">{rechargeMsg.text}</span>
+                )}
               <button
-                onClick={() => setShowRecharge(v => !v)}
+                onClick={() => { setShowRecharge(v => !v); setRechargeMsg(null); }}
                 className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors"
                 style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE" }}>
-                + Log Meta Recharge
+                💳 Recharge Meta Ads
               </button>
+              </div>
             </div>
             {showRecharge && (
               <div className="px-5 py-4 bg-blue-50/50 border-b border-blue-100 flex flex-wrap gap-3 items-end">
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 mb-1">Date</p>
-                  <input type="date" value={rechargeForm.date}
-                    onChange={e => setRechargeForm(f => ({ ...f, date: e.target.value }))}
-                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                </div>
-                <div>
                   <p className="text-xs font-semibold text-gray-500 mb-1">Amount (₹)</p>
                   <input type="number" placeholder="e.g. 5000" value={rechargeForm.amount}
                     onChange={e => setRechargeForm(f => ({ ...f, amount: e.target.value }))}
-                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 w-32 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 w-36 focus:outline-none focus:ring-2 focus:ring-blue-400" />
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-gray-500 mb-1">Note (optional)</p>
                   <input type="text" placeholder="e.g. Cupid campaign top-up" value={rechargeForm.note}
                     onChange={e => setRechargeForm(f => ({ ...f, note: e.target.value }))}
-                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 w-48 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 w-52 focus:outline-none focus:ring-2 focus:ring-blue-400" />
                 </div>
-                <button onClick={handleAddRecharge} disabled={rechargeSaving || !rechargeForm.amount}
-                  className="text-sm font-semibold px-4 py-2 rounded-lg text-white disabled:opacity-50"
+                <button onClick={handlePayRecharge} disabled={rechargeSaving || !rechargeForm.amount}
+                  className="text-sm font-semibold px-4 py-2 rounded-lg text-white disabled:opacity-50 flex items-center gap-2"
                   style={{ background: "#2563EB" }}>
-                  {rechargeSaving ? "Saving..." : "Save Recharge"}
+                  {rechargeSaving ? "Processing..." : "💳 Pay & Recharge"}
                 </button>
-                <button onClick={() => setShowRecharge(false)} className="text-sm text-gray-400 hover:text-gray-600">Cancel</button>
+                <button onClick={() => { setShowRecharge(false); setRechargeMsg(null); }} className="text-sm text-gray-400 hover:text-gray-600">Cancel</button>
+                {rechargeMsg && (
+                  <p className={`text-xs font-medium w-full mt-1 ${rechargeMsg.ok ? "text-green-600" : "text-red-500"}`}>{rechargeMsg.text}</p>
+                )}
               </div>
             )}
               <div className="px-5 py-3 border-b border-gray-100 overflow-x-auto">
