@@ -35,6 +35,8 @@ export default function SellerProfilePage() {
   const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
   const [metaConnected, setMetaConnected]   = useState(false);
   const [metaLoading, setMetaLoading]       = useState(false);
+  const [metaSyncing, setMetaSyncing]       = useState(false);
+  const [metaSyncMsg, setMetaSyncMsg]       = useState("");
   const [metaForm, setMetaForm]             = useState(false);
   const [metaToken, setMetaToken]           = useState("");
   const [metaAccountId, setMetaAccountId]   = useState("");
@@ -71,6 +73,22 @@ export default function SellerProfilePage() {
     await fetch("/api/seller/meta/disconnect", { method: "POST" });
     setMetaConnected(false);
     setMetaLoading(false);
+  }
+
+  async function handleMetaSync() {
+    setMetaSyncing(true);
+    setMetaSyncMsg("");
+    try {
+      const res = await fetch("/api/seller/meta/sync", { method: "POST" });
+      const d   = await res.json();
+      if (!res.ok) throw new Error(d.error || "Sync failed");
+      setMetaSyncMsg(`Synced ${d.synced} records`);
+    } catch (e) {
+      setMetaSyncMsg(e instanceof Error ? e.message : "Sync failed");
+    } finally {
+      setMetaSyncing(false);
+      setTimeout(() => setMetaSyncMsg(""), 4000);
+    }
   }
 
   async function handleMetaManualConnect() {
@@ -289,12 +307,25 @@ export default function SellerProfilePage() {
                   </div>
 
                   {metaConnected ? (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
                       <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
                         style={{ background: "#F0FDF4", color: "#16A34A" }}>
                         <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
                         Connected
                       </span>
+                      {metaSyncMsg && (
+                        <span className="text-xs px-3 py-1.5 rounded-xl font-medium"
+                          style={{ background: "#EFF6FF", color: "#2563EB" }}>
+                          {metaSyncMsg}
+                        </span>
+                      )}
+                      <button
+                        onClick={handleMetaSync}
+                        disabled={metaSyncing}
+                        className="text-xs font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
+                        style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}>
+                        {metaSyncing ? "Syncing..." : "Sync Now"}
+                      </button>
                       <button
                         onClick={handleMetaDisconnect}
                         disabled={metaLoading}
