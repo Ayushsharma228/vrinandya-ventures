@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { label: "Case Studies", href: "/case-studies" },
   { label: "Plans",        href: "#plans" },
   { label: "FAQs",         href: "#faqs" },
+  { label: "About",        href: "/about" },
 ];
 
 export function Navbar() {
