@@ -146,6 +146,7 @@ export async function delhiveryCreateShipment(
     weight:          input.weight ?? 0.5,
     shipment_length: 23,
     pickup_location: pickupName,
+    shipment_type:   input.shipmentMode === "Express" ? "Express" : "Surface",
   };
 
   // Only include return address fields when we have valid data
