@@ -146,7 +146,8 @@ export async function delhiveryCreateShipment(
     weight:          input.weight ?? 0.5,
     shipment_length: 23,
     pickup_location: pickupName,
-    shipment_type:   input.shipmentMode === "Express" ? "Express" : "Surface",
+    // Only set shipment_type for Express — Surface is Delhivery's default
+    ...(input.shipmentMode === "Express" ? { shipment_type: "Express" } : {}),
   };
 
   // Only include return address fields when we have valid data
@@ -171,15 +172,20 @@ export async function delhiveryCreateShipment(
   });
 
   const rawText = await res.text();
-  if (!res.ok) throw new Error(`Delhivery HTTP ${res.status}: ${rawText.slice(0, 300)}`);
+  console.error("[Delhivery] mode=%s status=%d body=%s", input.shipmentMode, res.status, rawText.slice(0, 1000));
+  if (!res.ok) throw new Error(`Delhivery HTTP ${res.status}: ${rawText.slice(0, 500)}`);
 
   let result: Record<string, unknown>;
   try { result = JSON.parse(rawText); }
-  catch { throw new Error(`Delhivery bad response: ${rawText.slice(0, 300)}`); }
+  catch { throw new Error(`Delhivery bad response: ${rawText.slice(0, 500)}`); }
 
   const pkg = (result?.packages as Record<string, unknown>[])?.[0];
   if (!pkg?.waybill || pkg?.status === "Error") {
-    const remark = (pkg?.remark ?? result?.rmk ?? result?.error ?? "Delhivery shipment failed") as string;
+    const remark = (pkg?.remark ?? result?.rmk ?? result?.error ?? JSON.stringify(result).slice(0, 300)) as string;
+    // "internal Error" = Express not enabled on this Delhivery account / pickup location
+    if (typeof remark === "string" && remark.toLowerCase().includes("internal error")) {
+      throw new Error(`Delhivery Express is not enabled for your pickup location or account. Log into one.delhivery.com and ensure your pickup point has Express (Air) service active, or contact Delhivery support.`);
+    }
     throw new Error(`Delhivery: ${remark}`);
   }
 
