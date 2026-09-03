@@ -33,6 +33,9 @@ export interface ShipmentInput {
   totalAmount: number;
   productDesc: string;
   weight?: number;
+  length?: number;
+  breadth?: number;
+  height?: number;
   shipmentMode?: "Surface" | "Express";
 }
 
@@ -82,8 +85,10 @@ export async function shiprocketCreateShipment(
       }],
       payment_method: "COD",
       sub_total: input.totalAmount,
-      length: 10, breadth: 10, height: 5,
-      weight: input.weight ?? 0.5,
+      length:  input.length  ?? 10,
+      breadth: input.breadth ?? 10,
+      height:  input.height  ?? 5,
+      weight:  input.weight  ?? 0.5,
       is_surface: input.shipmentMode !== "Express",
     }),
   });
@@ -141,10 +146,10 @@ export async function delhiveryCreateShipment(
     seller_inv:     input.externalOrderId,
     quantity:       "1",
     waybill:        "",
-    shipment_width:  13,
-    shipment_height: 4,
-    weight:          input.weight ?? 0.5,
-    shipment_length: 23,
+    shipment_width:  input.breadth ?? 13,
+    shipment_height: input.height  ?? 4,
+    weight:          input.weight  ?? 0.5,
+    shipment_length: input.length  ?? 23,
     pickup_location: pickupName,
     // Only set shipment_type for Express — Surface is Delhivery's default
     ...(input.shipmentMode === "Express" ? { shipment_type: "Express" } : {}),

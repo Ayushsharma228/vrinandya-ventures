@@ -83,6 +83,10 @@ export default function SupplierOrdersPage() {
   const [autoDispatching, setAutoDispatching]       = useState(false);
   const [autoDispatchError, setAutoDispatchError]   = useState("");
   const [shipmentMode, setShipmentMode]             = useState<"Surface" | "Express">("Surface");
+  const [pkgWeight, setPkgWeight]   = useState("0.5");
+  const [pkgLength, setPkgLength]   = useState("23");
+  const [pkgBreadth, setPkgBreadth] = useState("13");
+  const [pkgHeight, setPkgHeight]   = useState("4");
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -174,7 +178,14 @@ export default function SupplierOrdersPage() {
       const res = await fetch(`/api/supplier/orders/${showDispatch}/create-shipment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ providerId: selectedProviderId, shipmentMode }),
+        body: JSON.stringify({
+          providerId: selectedProviderId,
+          shipmentMode,
+          weight:  Number(pkgWeight)  || 0.5,
+          length:  Number(pkgLength)  || 23,
+          breadth: Number(pkgBreadth) || 13,
+          height:  Number(pkgHeight)  || 4,
+        }),
       });
       const d = await res.json();
       if (!res.ok) { setAutoDispatchError(d.error || "Shipment creation failed"); return; }
@@ -579,6 +590,37 @@ export default function SupplierOrdersPage() {
                             {mode === "Surface" ? "🚚 Surface" : "✈️ Express"}
                           </button>
                         ))}
+                      </div>
+                    </div>
+
+                    {/* Package details */}
+                    <div>
+                      <p className="text-xs font-semibold text-green-800 mb-1.5">Package Details</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-xs text-green-700 mb-1">Weight (kg)</p>
+                          <input type="number" min="0.1" step="0.1" value={pkgWeight}
+                            onChange={(e) => setPkgWeight(e.target.value)}
+                            className="w-full px-2 py-1.5 text-sm border border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 bg-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-green-700 mb-1">Length (cm)</p>
+                          <input type="number" min="1" step="1" value={pkgLength}
+                            onChange={(e) => setPkgLength(e.target.value)}
+                            className="w-full px-2 py-1.5 text-sm border border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 bg-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-green-700 mb-1">Breadth (cm)</p>
+                          <input type="number" min="1" step="1" value={pkgBreadth}
+                            onChange={(e) => setPkgBreadth(e.target.value)}
+                            className="w-full px-2 py-1.5 text-sm border border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 bg-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-green-700 mb-1">Height (cm)</p>
+                          <input type="number" min="1" step="1" value={pkgHeight}
+                            onChange={(e) => setPkgHeight(e.target.value)}
+                            className="w-full px-2 py-1.5 text-sm border border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 bg-white" />
+                        </div>
                       </div>
                     </div>
 

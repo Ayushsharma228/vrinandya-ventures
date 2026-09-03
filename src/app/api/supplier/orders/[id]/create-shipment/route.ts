@@ -19,7 +19,7 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const { providerId, shipmentMode } = await req.json();
+  const { providerId, shipmentMode, weight, length, breadth, height } = await req.json();
   if (!providerId) return NextResponse.json({ error: "providerId required" }, { status: 400 });
   const resolvedMode: "Surface" | "Express" = shipmentMode === "Express" ? "Express" : "Surface";
 
@@ -58,7 +58,10 @@ export async function POST(
     address, city, state, pincode, phone,
     totalAmount: order.totalAmount,
     productDesc,
-    weight: 0.5,
+    weight:  typeof weight  === "number" && weight  > 0 ? weight  : 0.5,
+    length:  typeof length  === "number" && length  > 0 ? length  : 23,
+    breadth: typeof breadth === "number" && breadth > 0 ? breadth : 13,
+    height:  typeof height  === "number" && height  > 0 ? height  : 4,
     shipmentMode: resolvedMode,
   };
 
