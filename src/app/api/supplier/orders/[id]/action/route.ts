@@ -10,7 +10,8 @@ type Action =
   | "MARK_PROCESSING"
   | "MARK_PACKED"
   | "READY_TO_SHIP"
-  | "DISPATCH";
+  | "DISPATCH"
+  | "CANCEL_ORDER";
 
 const ACTION_TO_STATUS: Record<Action, string> = {
   ACCEPT: "ACCEPTED",
@@ -19,6 +20,7 @@ const ACTION_TO_STATUS: Record<Action, string> = {
   MARK_PACKED: "PACKED",
   READY_TO_SHIP: "READY_TO_SHIP",
   DISPATCH: "DISPATCHED",
+  CANCEL_ORDER: "REJECTED",
 };
 
 const PO_STATUS_MAP: Record<Action, string> = {
@@ -28,6 +30,7 @@ const PO_STATUS_MAP: Record<Action, string> = {
   MARK_PACKED: "PACKED",
   READY_TO_SHIP: "PACKED",
   DISPATCH: "DISPATCHED",
+  CANCEL_ORDER: "REJECTED",
 };
 
 const EVENT_LABEL: Record<Action, string> = {
@@ -37,6 +40,7 @@ const EVENT_LABEL: Record<Action, string> = {
   MARK_PACKED: "MARKED_PACKED",
   READY_TO_SHIP: "READY_TO_SHIP",
   DISPATCH: "DISPATCHED",
+  CANCEL_ORDER: "SUPPLIER_CANCELLED",
 };
 
 export async function POST(
@@ -76,9 +80,13 @@ export async function POST(
     supplierNote: note,
   };
 
-  if (action === "REJECT") {
+  if (action === "REJECT" || action === "CANCEL_ORDER") {
     orderUpdate.supplierId = null;
     orderUpdate.supplierStatus = "REJECTED";
+    if (action === "CANCEL_ORDER") {
+      orderUpdate.status = "CANCELLED";
+      orderUpdate.supplierNote = note ? `Supplier cancelled: ${note}` : "Supplier cancelled";
+    }
   }
 
   if (action === "DISPATCH") {
@@ -126,20 +134,26 @@ export async function POST(
     );
   }
 
-  // Notify admin on reject or dispatch
-  if (action === "REJECT" || action === "DISPATCH") {
+  // Notify admin on reject, cancel or dispatch
+  if (action === "REJECT" || action === "CANCEL_ORDER" || action === "DISPATCH") {
     const adminUsers = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
     const msg =
       action === "REJECT"
-        ? `Supplier rejected order ${order.id}. Reason: ${note ?? "none"}`
-        : `Order ${order.id} dispatched by supplier. Tracking: ${trackingNo ?? "N/A"}`;
+        ? `Supplier rejected order ${order.externalOrderId}. Reason: ${note ?? "none"}`
+        : action === "CANCEL_ORDER"
+        ? `Supplier cancelled order ${order.externalOrderId} after acceptance. Reason: ${note ?? "none"}`
+        : `Order ${order.externalOrderId} dispatched by supplier. Tracking: ${trackingNo ?? "N/A"}`;
+    const title =
+      action === "REJECT" ? "Order Rejected by Supplier"
+      : action === "CANCEL_ORDER" ? "Order Cancelled by Supplier"
+      : "Order Dispatched";
     for (const a of adminUsers) {
       ops.push(
         prisma.notification.create({
           data: {
             userId: a.id,
             type: "ORDER_UPDATE",
-            title: action === "REJECT" ? "Order Rejected by Supplier" : "Order Dispatched",
+            title,
             message: msg,
             data: { orderId: id },
           },

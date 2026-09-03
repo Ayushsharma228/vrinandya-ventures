@@ -76,6 +76,8 @@ export default function SupplierOrdersPage() {
   const [rejectNote, setRejectNote] = useState("");
   const [dispatchData, setDispatchData] = useState({ trackingNo: "", courier: "" });
   const [showReject, setShowReject]   = useState<string | null>(null);
+  const [showCancel, setShowCancel]   = useState<string | null>(null);
+  const [cancelNote, setCancelNote]   = useState("");
   const [showDispatch, setShowDispatch] = useState<string | null>(null);
   const [shippingProviders, setShippingProviders] = useState<{ id: string; label: string; provider: string }[]>([]);
   const [loadingProviders, setLoadingProviders]   = useState(false);
@@ -114,8 +116,10 @@ export default function SupplierOrdersPage() {
         await fetchOrders();
         setSelected(null);
         setShowReject(null);
+        setShowCancel(null);
         setShowDispatch(null);
         setRejectNote("");
+        setCancelNote("");
         setDispatchData({ trackingNo: "", courier: "" });
       }
     } finally {
@@ -416,6 +420,13 @@ export default function SupplierOrdersPage() {
                                 {isActioning ? "..." : nextAction.label}
                               </button>
                             )}
+                            {["ACCEPTED","PROCESSING","PACKED","READY_TO_SHIP"].includes(order.supplierStatus ?? "") && (
+                              <button onClick={() => { setShowCancel(order.id); setCancelNote(""); }}
+                                className="px-2 py-1 rounded-lg text-xs font-semibold"
+                                style={{ background: "#FEF2F2", color: "#DC2626" }}>
+                                Cancel
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -529,6 +540,40 @@ export default function SupplierOrdersPage() {
                 className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white"
                 style={{ background: "#EF4444", opacity: !rejectNote.trim() ? 0.5 : 1 }}>
                 Confirm Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Modal */}
+      {showCancel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="rounded-2xl w-full max-w-md p-6" style={{ background: "var(--bg-card)" }}>
+            <h3 className="font-semibold mb-1" style={{ color: "var(--text-900)" }}>Cancel Order</h3>
+            <p className="text-sm mb-4" style={{ color: "var(--text-500)" }}>
+              Provide a reason — e.g. pincode not serviceable. Admin will be notified immediately.
+            </p>
+            <textarea value={cancelNote} onChange={(e) => setCancelNote(e.target.value)}
+              className="w-full rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-300"
+              style={{ border: "1px solid var(--border)", background: "var(--bg-page)", color: "var(--text-900)" }}
+              rows={3} placeholder="e.g. Pincode not serviceable by courier..." />
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => { setShowCancel(null); setCancelNote(""); }}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-medium"
+                style={{ border: "1px solid var(--border)", color: "var(--text-600)", background: "transparent" }}>
+                Go Back
+              </button>
+              <button onClick={async () => {
+                  if (!cancelNote.trim()) return;
+                  await runAction(showCancel, "CANCEL_ORDER", { note: cancelNote });
+                  setShowCancel(null);
+                  setCancelNote("");
+                }}
+                disabled={!cancelNote.trim() || actioning === showCancel}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+                style={{ background: "#EF4444", opacity: !cancelNote.trim() ? 0.5 : 1 }}>
+                {actioning === showCancel ? "..." : "Confirm Cancel"}
               </button>
             </div>
           </div>
