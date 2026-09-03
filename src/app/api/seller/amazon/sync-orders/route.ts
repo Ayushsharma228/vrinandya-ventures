@@ -14,7 +14,7 @@ import { OrderStatus, Prisma } from "@prisma/client";
 const DELAY_MS = 300; // stay well within SP-API rate limits
 function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
 
-async function syncForSeller(sellerId: string): Promise<{ created: number; updated: number; errors: number }> {
+export async function syncForSeller(sellerId: string): Promise<{ created: number; updated: number; errors: number }> {
   const account = await prisma.marketplaceAccount.findUnique({
     where: { sellerId_platform: { sellerId, platform: "AMAZON" } },
   });

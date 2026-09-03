@@ -11,6 +11,14 @@
     {
       "path": "/api/cron/arya-followup",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/sync-orders",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/sync-meta-ads",
+      "schedule": "0 */8 * * *"
     }
   ]
 }

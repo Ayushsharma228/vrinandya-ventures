@@ -26,68 +26,31 @@ function mapShopifyStatus(financial: string, fulfillment: string | null): OrderS
   return OrderStatus.NEW;
 }
 
-export async function POST(req: NextRequest) {
-  const session = await getRouteSession(req);
-  if (!session || session.user.role !== "SELLER") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export async function syncShopifyOrders(sellerId: string): Promise<number> {
+  const store = await prisma.shopifyStore.findUnique({ where: { sellerId } });
+  if (!store) return 0;
 
-  const store = await prisma.shopifyStore.findUnique({
-    where: { sellerId: session.user.id },
-  });
-
-  if (!store) {
-    return NextResponse.json({ error: "No Shopify store connected" }, { status: 400 });
-  }
-
-  // Fetch all orders from Shopify (up to 250)
   const shopifyRes = await fetch(
     `https://${store.storeUrl}/admin/api/2025-01/orders.json?status=any&limit=250`,
     { headers: { "X-Shopify-Access-Token": decrypt(store.accessToken) } }
   );
-
-  if (!shopifyRes.ok) {
-    const statusCode = shopifyRes.status;
-    const body = await shopifyRes.text();
-    console.error(`[shopify/sync] ${statusCode} for ${store.storeUrl}:`, body);
-    if (statusCode === 401 || statusCode === 403) {
-      return NextResponse.json(
-        { error: `Shopify auth failed (${statusCode}): ${body}` },
-        { status: 400 }
-      );
-    }
-    return NextResponse.json(
-      { error: `Shopify error ${statusCode}: ${body}` },
-      { status: 400 }
-    );
-  }
+  if (!shopifyRes.ok) throw new Error(`Shopify ${shopifyRes.status}: ${await shopifyRes.text()}`);
 
   const { orders: shopifyOrders } = await shopifyRes.json();
 
-  // Get all existing orders for this seller in one query
   const existingOrders = await prisma.order.findMany({
-    where: { sellerId: session.user.id, source: "SHOPIFY" },
+    where: { sellerId, source: "SHOPIFY" },
     select: { id: true, externalOrderId: true, status: true, awbNumber: true, courier: true },
   });
   const existingMap = new Map(existingOrders.map((o) => [o.externalOrderId, o]));
-
-  // Statuses that have been manually set — don't overwrite from Shopify
   const LOCKED_STATUSES: OrderStatus[] = ["PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED"];
 
-  // Build data for new orders and updates
   type OrderCreateInput = {
-    sellerId: string;
-    externalOrderId: string;
-    source: "SHOPIFY";
-    status: OrderStatus;
-    customerName: string | null;
-    customerEmail: string | null;
+    sellerId: string; externalOrderId: string; source: "SHOPIFY"; status: OrderStatus;
+    customerName: string | null; customerEmail: string | null;
     customerAddress: Prisma.InputJsonValue | undefined;
-    totalAmount: number;
-    currency: string;
-    rawData: Prisma.InputJsonValue;
+    totalAmount: number; currency: string; rawData: Prisma.InputJsonValue;
   };
-
   const toCreate: OrderCreateInput[] = [];
   const toUpdate: { id: string; status: OrderStatus; customerName: string | null; customerEmail: string | null; customerAddress: Prisma.InputJsonValue | undefined; totalAmount: number; rawData: Prisma.InputJsonValue; utmSource: string | null; utmMedium: string | null; utmCampaign: string | null }[] = [];
 
@@ -95,123 +58,56 @@ export async function POST(req: NextRequest) {
     const externalId = so.name ?? String(so.id);
     const status = mapShopifyStatus(so.financial_status, so.fulfillment_status);
     const customerAddress: Prisma.InputJsonValue | undefined = so.shipping_address
-      ? {
-          address: so.shipping_address.address1 ?? "",
-          city: so.shipping_address.city ?? "",
-          state: so.shipping_address.province ?? "",
-          pincode: so.shipping_address.zip ?? "",
-          phone: so.shipping_address.phone || so.customer?.phone || "",
-        }
+      ? { address: so.shipping_address.address1 ?? "", city: so.shipping_address.city ?? "", state: so.shipping_address.province ?? "", pincode: so.shipping_address.zip ?? "", phone: so.shipping_address.phone || so.customer?.phone || "" }
       : undefined;
-    const customerName = so.customer
-      ? `${so.customer.first_name ?? ""} ${so.customer.last_name ?? ""}`.trim() || null
-      : null;
-
+    const customerName = so.customer ? `${so.customer.first_name ?? ""} ${so.customer.last_name ?? ""}`.trim() || null : null;
     const utm = extractUtm(so.landing_site);
     const existing = existingMap.get(externalId);
     if (existing) {
-      // If order has AWB or is in a manually-set status, don't overwrite status from Shopify
       const isLocked = existing.awbNumber || existing.courier || LOCKED_STATUSES.includes(existing.status);
-      toUpdate.push({
-        id: existing.id,
-        status: isLocked ? existing.status : status,
-        customerName,
-        customerEmail: so.email || so.customer?.email || null,
-        customerAddress,
-        totalAmount: parseFloat(so.total_price),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        rawData: so as any,
-        ...utm,
-      });
+      toUpdate.push({ id: existing.id, status: isLocked ? existing.status : status, customerName, customerEmail: so.email || so.customer?.email || null, customerAddress, totalAmount: parseFloat(so.total_price), rawData: so, ...utm });
     } else {
-      toCreate.push({
-        sellerId: session.user.id,
-        externalOrderId: externalId,
-        source: "SHOPIFY",
-        status,
-        customerName,
-        customerEmail: so.email || so.customer?.email || null,
-        customerAddress,
-        totalAmount: parseFloat(so.total_price),
-        currency: so.currency,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        rawData: so as any,
-        ...utm,
-        // Use the actual Shopify order date so filters work correctly
-        ...(so.created_at ? { createdAt: new Date(so.created_at) } : {}),
-      });
+      toCreate.push({ sellerId, externalOrderId: externalId, source: "SHOPIFY", status, customerName, customerEmail: so.email || so.customer?.email || null, customerAddress, totalAmount: parseFloat(so.total_price), currency: so.currency, rawData: so, ...utm, ...(so.created_at ? { createdAt: new Date(so.created_at) } : {}) });
     }
   }
 
-  // Batch create new orders
-  if (toCreate.length > 0) {
-    await prisma.order.createMany({ data: toCreate, skipDuplicates: true });
-  }
-
-  // Batch update existing orders in parallel (status, amounts)
+  if (toCreate.length > 0) await prisma.order.createMany({ data: toCreate, skipDuplicates: true });
   if (toUpdate.length > 0) {
-    await Promise.all(
-      toUpdate.map((u) =>
-        prisma.order.update({
-          where: { id: u.id },
-          data: {
-            status: u.status,
-            customerName: u.customerName,
-            customerEmail: u.customerEmail,
-            customerAddress: u.customerAddress,
-            totalAmount: u.totalAmount,
-            rawData: u.rawData,
-            utmSource: u.utmSource,
-            utmMedium: u.utmMedium,
-            utmCampaign: u.utmCampaign,
-          },
-        })
-      )
-    );
+    await Promise.all(toUpdate.map((u) => prisma.order.update({ where: { id: u.id }, data: { status: u.status, customerName: u.customerName, customerEmail: u.customerEmail, customerAddress: u.customerAddress, totalAmount: u.totalAmount, rawData: u.rawData, utmSource: u.utmSource, utmMedium: u.utmMedium, utmCampaign: u.utmCampaign } })));
   }
 
-  // Re-fetch all orders to get IDs for item sync
-  const allOrders = await prisma.order.findMany({
-    where: { sellerId: session.user.id, source: "SHOPIFY" },
-    select: { id: true, externalOrderId: true },
-  });
+  const allOrders = await prisma.order.findMany({ where: { sellerId, source: "SHOPIFY" }, select: { id: true, externalOrderId: true } });
   const orderIdMap = new Map(allOrders.map((o) => [o.externalOrderId, o.id]));
-
-  // Delete all existing items for this seller's Shopify orders, then recreate
   const allOrderIds = allOrders.map((o) => o.id);
-  if (allOrderIds.length > 0) {
-    await prisma.orderItem.deleteMany({ where: { orderId: { in: allOrderIds } } });
-  }
+  if (allOrderIds.length > 0) await prisma.orderItem.deleteMany({ where: { orderId: { in: allOrderIds } } });
 
-  // Build all items at once
-  type ItemCreateInput = {
-    orderId: string;
-    name: string;
-    sku: string | null;
-    quantity: number;
-    price: number;
-  };
-
+  type ItemCreateInput = { orderId: string; name: string; sku: string | null; quantity: number; price: number };
   const allItems: ItemCreateInput[] = [];
   for (const so of shopifyOrders) {
     const externalId = so.name ?? String(so.id);
     const orderId = orderIdMap.get(externalId);
     if (orderId && so.line_items?.length) {
       for (const item of so.line_items as { title: string; sku?: string; quantity: number; price: string }[]) {
-        allItems.push({
-          orderId,
-          name: item.title,
-          sku: item.sku || null,
-          quantity: item.quantity,
-          price: parseFloat(item.price),
-        });
+        allItems.push({ orderId, name: item.title, sku: item.sku || null, quantity: item.quantity, price: parseFloat(item.price) });
       }
     }
   }
+  if (allItems.length > 0) await prisma.orderItem.createMany({ data: allItems });
 
-  if (allItems.length > 0) {
-    await prisma.orderItem.createMany({ data: allItems });
+  return toCreate.length + toUpdate.length;
+}
+
+export async function POST(req: NextRequest) {
+  const session = await getRouteSession(req);
+  if (!session || session.user.role !== "SELLER") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  return NextResponse.json({ synced: toCreate.length + toUpdate.length });
+  try {
+    const synced = await syncShopifyOrders(session.user.id);
+    return NextResponse.json({ synced });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Sync failed";
+    const status = msg.startsWith("Shopify 401") || msg.startsWith("Shopify 403") ? 400 : 500;
+    return NextResponse.json({ error: msg }, { status });
+  }
 }
