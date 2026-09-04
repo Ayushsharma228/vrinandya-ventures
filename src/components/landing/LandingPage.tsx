@@ -2,6 +2,7 @@
 
 import { AnnouncementBar }  from "./AnnouncementBar";
 import { Navbar }           from "./Navbar";
+import { TickerBar }        from "./TickerBar";
 import { Hero }             from "./Hero";
 import { StatsBar }         from "./StatsBar";
 import { ProductCatalogue } from "./ProductCatalogue";
@@ -24,6 +25,7 @@ export default function LandingPage() {
       <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50 }}>
         <AnnouncementBar />
         <Navbar />
+        <TickerBar />
       </header>
       <main>
         <Hero />
