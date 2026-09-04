@@ -3,14 +3,14 @@
 const ITEMS = [
   { icon: "📦", label: "Order Management" },
   { icon: "🚀", label: "Shipping Automation" },
-  { icon: "✅", label: "95% Delivery Rate" },
+  { icon: "✅", label: "80%+ Delivery Rate" },
   { icon: "🛒", label: "Shopify Ready" },
   { icon: "📊", label: "Real-Time Analytics" },
   { icon: "⚡", label: "Scale Fast" },
   { icon: "🛡️", label: "RTO Reduction" },
   { icon: "🤖", label: "AI Powered" },
-  { icon: "🏷️", label: "10,000+ Brands" },
-  { icon: "💰", label: "₹50Cr+ GMV" },
+  { icon: "🏷️", label: "100+ Dropshippers" },
+  { icon: "💰", label: "₹10Cr+ GMV" },
 ];
 
 // Duplicate for seamless loop

@@ -23,9 +23,9 @@ export default function LandingPage() {
     <div style={{ background: C.navy, minHeight: "100vh" }}>
       {/* Single fixed header — announcement bar + navbar stacked, no overlap */}
       <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50 }}>
+        <TickerBar />
         <AnnouncementBar />
         <Navbar />
-        <TickerBar />
       </header>
       <main>
         <Hero />
